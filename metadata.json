@@ -1,0 +1,8 @@
+{
+  "name": "ProERP - Muhasebe ve Üretim",
+  "description": "Kapsamlı muhasebe, stok takibi, barkod etiketleme ve üretim yönetimi çözümü.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

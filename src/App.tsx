@@ -1,0 +1,50 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import Dashboard from './components/Dashboard';
+import Inventory from './components/Inventory';
+import Templates from './components/Inventory/Templates';
+import Production from './components/Production';
+import Orders from './components/Orders';
+import Invoices from './components/Invoices';
+import Accounting from './components/Accounting';
+import Contacts from './components/Contacts';
+import StockSummaryReport from './components/Reports/StockSummaryReport';
+import StockDetailReport from './components/Reports/StockDetailReport';
+import StockMovementReport from './components/Reports/StockMovementReport';
+import BrokenSizeReport from './components/Reports/BrokenSizeReport';
+import { seedDatabase } from './db';
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+export default function App() {
+  React.useEffect(() => {
+    seedDatabase();
+  }, []);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="inventory" element={<Inventory />} />
+          <Route path="inventory/templates" element={<Templates />} />
+          
+          <Route path="reports/summary" element={<StockSummaryReport />} />
+          <Route path="reports/detail" element={<StockDetailReport />} />
+          <Route path="reports/movements" element={<StockMovementReport />} />
+          <Route path="reports/broken" element={<BrokenSizeReport />} />
+          
+          <Route path="production" element={<Production />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="invoices" element={<Invoices />} />
+          <Route path="accounting" element={<Accounting />} />
+          <Route path="contacts" element={<Contacts />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}

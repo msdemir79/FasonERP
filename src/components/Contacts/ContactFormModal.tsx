@@ -1,0 +1,719 @@
+import React, { useState, useEffect } from 'react';
+import type { Contact, EntityType } from '../../types';
+import { 
+  Building2, 
+  User, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  CreditCard, 
+  Percent, 
+  Calendar, 
+  FileText, 
+  Tag, 
+  DollarSign,
+  ShieldCheck,
+  Globe
+} from 'lucide-react';
+import { cn } from '../../lib/utils';
+import Modal from '../Modal';
+
+interface ContactFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Partial<Contact>) => Promise<void>;
+  initialData?: Contact | null;
+}
+
+const CATEGORY_OPTIONS = [
+  'Toptancı Mağaza',
+  'Perakende Zincir Mağaza',
+  'İhracat Müşterisi',
+  'E-Ticaret / Pazaryeri',
+  'Fason Saya Dikim Atölyesi',
+  'Taban / Ökçe İmalatçısı',
+  'Deri & Kumaş Tedarikçisi',
+  'Astar & Sünger Tedarikçisi',
+  'Aksesuar & Kutu / Matbaa',
+  'Hırdavat & Kimyevi Madde',
+  'Lojistik / Kargo',
+  'Diğer Hizmet & Tedarik'
+];
+
+const TURKISH_CITIES = [
+  'İstanbul', 'İzmir', 'Ankara', 'Bursa', 'Gaziantep', 'Konya', 'Adana', 'Antalya', 
+  'Denizli', 'Kayseri', 'Kocaeli', 'Manisa', 'Kahramanmaraş', 'Aydın', 'Mersin', 'Hatay',
+  'Balıkesir', 'Diyarbakır', 'Şanlıurfa', 'Tekirdağ', 'Samsun', 'Trabzon', 'Eskişehir', 'Diğer'
+];
+
+export default function ContactFormModal({
+  isOpen,
+  onClose,
+  onSave,
+  initialData
+}: ContactFormModalProps) {
+  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'financial' | 'notes'>('general');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form states
+  const [code, setCode] = useState('');
+  const [name, setName] = useState('');
+  const [companyTitle, setCompanyTitle] = useState('');
+  const [contactPerson, setContactPerson] = useState('');
+  const [type, setType] = useState<EntityType>('customer');
+  const [category, setCategory] = useState('');
+  const [phone, setPhone] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [email, setEmail] = useState('');
+  const [website, setWebsite] = useState('');
+  const [city, setCity] = useState('');
+  const [district, setDistrict] = useState('');
+  const [address, setAddress] = useState('');
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [taxOffice, setTaxOffice] = useState('');
+  const [taxNumber, setTaxNumber] = useState('');
+  const [tcKimlik, setTcKimlik] = useState('');
+  const [paymentTermDays, setPaymentTermDays] = useState<number | ''>('');
+  const [creditLimit, setCreditLimit] = useState<number | ''>('');
+  const [discountRate, setDiscountRate] = useState<number | ''>('');
+  const [bankName, setBankName] = useState('');
+  const [iban, setIban] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [balance, setBalance] = useState<number>(0);
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (initialData) {
+      setCode(initialData.code || '');
+      setName(initialData.name || '');
+      setCompanyTitle(initialData.companyTitle || '');
+      setContactPerson(initialData.contactPerson || '');
+      setType(initialData.type || 'customer');
+      setCategory(initialData.category || '');
+      setPhone(initialData.phone || '');
+      setMobile(initialData.mobile || '');
+      setEmail(initialData.email || '');
+      setWebsite(initialData.website || '');
+      setCity(initialData.city || '');
+      setDistrict(initialData.district || '');
+      setAddress(initialData.address || '');
+      setShippingAddress(initialData.shippingAddress || '');
+      setTaxOffice(initialData.taxOffice || '');
+      setTaxNumber(initialData.taxNumber || '');
+      setTcKimlik(initialData.tcKimlik || '');
+      setPaymentTermDays(initialData.paymentTermDays ?? '');
+      setCreditLimit(initialData.creditLimit ?? '');
+      setDiscountRate(initialData.discountRate ?? '');
+      setBankName(initialData.bankName || '');
+      setIban(initialData.iban || '');
+      setBankAccountName(initialData.bankAccountName || '');
+      setBalance(initialData.balance || 0);
+      setNotes(initialData.notes || '');
+    } else {
+      // Reset form
+      setCode('');
+      setName('');
+      setCompanyTitle('');
+      setContactPerson('');
+      setType('customer');
+      setCategory('');
+      setPhone('');
+      setMobile('');
+      setEmail('');
+      setWebsite('');
+      setCity('');
+      setDistrict('');
+      setAddress('');
+      setShippingAddress('');
+      setTaxOffice('');
+      setTaxNumber('');
+      setTcKimlik('');
+      setPaymentTermDays('');
+      setCreditLimit('');
+      setDiscountRate('');
+      setBankName('');
+      setIban('');
+      setBankAccountName('');
+      setBalance(0);
+      setNotes('');
+    }
+    setActiveTab('general');
+    setError(null);
+  }, [initialData, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError('Lütfen cari ünvanını giriniz.');
+      setActiveTab('general');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await onSave({
+        code: code.trim() || undefined,
+        name: name.trim(),
+        companyTitle: companyTitle.trim() || undefined,
+        contactPerson: contactPerson.trim() || undefined,
+        type,
+        category: category || undefined,
+        phone: phone.trim() || undefined,
+        mobile: mobile.trim() || undefined,
+        email: email.trim() || undefined,
+        website: website.trim() || undefined,
+        city: city || undefined,
+        district: district.trim() || undefined,
+        address: address.trim() || undefined,
+        shippingAddress: shippingAddress.trim() || undefined,
+        taxOffice: taxOffice.trim() || undefined,
+        taxNumber: taxNumber.trim() || undefined,
+        tcKimlik: tcKimlik.trim() || undefined,
+        paymentTermDays: paymentTermDays === '' ? undefined : Number(paymentTermDays),
+        creditLimit: creditLimit === '' ? undefined : Number(creditLimit),
+        discountRate: discountRate === '' ? undefined : Number(discountRate),
+        bankName: bankName.trim() || undefined,
+        iban: iban.trim().toUpperCase() || undefined,
+        bankAccountName: bankAccountName.trim() || undefined,
+        balance: initialData ? initialData.balance : Number(balance) || 0,
+        notes: notes.trim() || undefined,
+      });
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Cari kartı kaydedilirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={initialData ? `Cari Kartı Düzenle: ${initialData.name}` : 'Yeni Cari Hesap Kartı'}
+      size="xl"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-lg text-xs font-semibold">
+            {error}
+          </div>
+        )}
+
+        {/* Tab Headers */}
+        <div className="flex border-b border-slate-200 gap-2 pb-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('general')}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
+              activeTab === 'general'
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            )}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            1. Genel & Ticari
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('contact')}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
+              activeTab === 'contact'
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            )}
+          >
+            <Phone className="w-3.5 h-3.5" />
+            2. İletişim & Adres
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('financial')}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
+              activeTab === 'financial'
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            )}
+          >
+            <CreditCard className="w-3.5 h-3.5" />
+            3. Mali & Banka
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('notes')}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
+              activeTab === 'notes'
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            )}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            4. Notlar
+          </button>
+        </div>
+
+        {/* TAB 1: GENEL & TICARI */}
+        {activeTab === 'general' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Cari Kodu
+                </label>
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Otomatik (örn: MUS-0001)"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
+                />
+              </div>
+
+              <div className="sm:col-span-2 space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Firma / Cari Ünvanı *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Örn: Eren Kundura Toptan San. Tic. Ltd. Şti."
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase text-slate-900"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Resmi Ticari Ünvan (Varsa)
+                </label>
+                <input
+                  type="text"
+                  value={companyTitle}
+                  onChange={(e) => setCompanyTitle(e.target.value)}
+                  placeholder="Fatura başlığı ile aynı değilse giriniz"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Yetkili Kişi (Ad Soyad)
+                </label>
+                <input
+                  type="text"
+                  value={contactPerson}
+                  onChange={(e) => setContactPerson(e.target.value)}
+                  placeholder="Örn: Ahmet Yılmaz (Satın Alma Müdürü)"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Cari Türü *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setType('customer')}
+                    className={cn(
+                      "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center",
+                      type === 'customer'
+                        ? "bg-indigo-50 border-indigo-600 text-indigo-700 shadow-sm"
+                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    Müşteri (Alıcı)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setType('supplier')}
+                    className={cn(
+                      "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center",
+                      type === 'supplier'
+                        ? "bg-amber-50 border-amber-600 text-amber-800 shadow-sm"
+                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    Tedarikçi (Satıcı)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setType('both')}
+                    className={cn(
+                      "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center",
+                      type === 'both'
+                        ? "bg-emerald-50 border-emerald-600 text-emerald-800 shadow-sm"
+                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    Her İkisi
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Sektör / Cari Grubu
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
+                >
+                  <option value="">Kategori Seçiniz</option>
+                  {CATEGORY_OPTIONS.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {!initialData && (
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    Açılış / Devir Bakiyesi (₺)
+                  </label>
+                  <span className="text-[10px] text-slate-400">
+                    Pozitif: Alacaklıyız (Müşteri Borcu), Negatif: Borçluyuz (Tedarikçi Alacağı)
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={balance}
+                    onChange={(e) => setBalance(parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    className="w-full border border-slate-200 bg-white rounded-lg p-2.5 text-sm font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  />
+                  <div className={cn(
+                    "px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap",
+                    balance > 0 ? "bg-emerald-100 text-emerald-800" : balance < 0 ? "bg-rose-100 text-rose-800" : "bg-slate-200 text-slate-700"
+                  )}>
+                    {balance > 0 ? 'Alacağımız Var' : balance < 0 ? 'Borcumuz Var' : 'Sıfır Bakiye'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: ILETISIM & ADRES */}
+        {activeTab === 'contact' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Sabit Telefon
+                </label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="0212 XXX XX XX"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  GSM / Cep Telefonu
+                </label>
+                <input
+                  type="text"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                  placeholder="05XX XXX XX XX"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  E-Posta Adresi
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="muhasebe@firma.com"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none font-medium"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Web Sitesi
+                </label>
+                <input
+                  type="text"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="www.firma.com.tr"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  İl / Şehir
+                </label>
+                <select
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
+                >
+                  <option value="">Şehir Seçiniz</option>
+                  {TURKISH_CITIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  İlçe / Semt
+                </label>
+                <input
+                  type="text"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  placeholder="Örn: Güngören / İkitelli"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Fatura / Merkez Adresi
+              </label>
+              <textarea
+                rows={2}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Fatura ve tebligat adresi"
+                className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Sevkiyat / Depo Teslim Adresi (Farklıysa)
+              </label>
+              <textarea
+                rows={2}
+                value={shippingAddress}
+                onChange={(e) => setShippingAddress(e.target.value)}
+                placeholder="Ürünlerin teslim edileceği depo / ambar lokasyonu"
+                className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: MALI & BANKA */}
+        {activeTab === 'financial' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Vergi Dairesi
+                </label>
+                <input
+                  type="text"
+                  value={taxOffice}
+                  onChange={(e) => setTaxOffice(e.target.value)}
+                  placeholder="Örn: Merter V.D."
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Vergi Numarası (VKN)
+                </label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={taxNumber}
+                  onChange={(e) => setTaxNumber(e.target.value)}
+                  placeholder="10 Haneli VKN"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  TC Kimlik No (Şahıs)
+                </label>
+                <input
+                  type="text"
+                  maxLength={11}
+                  value={tcKimlik}
+                  onChange={(e) => setTcKimlik(e.target.value)}
+                  placeholder="11 Haneli TCKN"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Ödeme Vadesi (Gün)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={paymentTermDays}
+                  onChange={(e) => setPaymentTermDays(e.target.value === '' ? '' : parseInt(e.target.value))}
+                  placeholder="Örn: 30 / 60 gün"
+                  className="w-full border border-slate-200 bg-white rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Kredi / Risk Limiti (₺)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={creditLimit}
+                  onChange={(e) => setCreditLimit(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                  placeholder="Örn: 250000"
+                  className="w-full border border-slate-200 bg-white rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Özel İskonto Oranı (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  value={discountRate}
+                  onChange={(e) => setDiscountRate(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                  placeholder="Örn: 5 (%5 indirim)"
+                  className="w-full border border-slate-200 bg-white rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-slate-200 pt-4 space-y-4">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
+                Banka Hesap & IBAN Bilgileri
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Banka Adı & Şube
+                  </label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="Örn: Garanti BBVA - Merter Şb."
+                    className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Hesap Sahibi (Alıcı Adı)
+                  </label>
+                  <input
+                    type="text"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
+                    placeholder="Banka hesabındaki resmi ad"
+                    className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  IBAN Numarası
+                </label>
+                <input
+                  type="text"
+                  maxLength={32}
+                  value={iban}
+                  onChange={(e) => setIban(e.target.value)}
+                  placeholder="TRXX XXXX XXXX XXXX XXXX XXXX XX"
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: NOTLAR */}
+        {activeTab === 'notes' && (
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Özel Ticari Notlar, Anlaşmalar ve Açıklamalar
+              </label>
+              <textarea
+                rows={6}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Cari ile ilgili özel anlaşmalar, teslimat şartları, iskonto kuralları veya dahili uyarılar..."
+                className="w-full border border-slate-200 rounded-lg p-3 text-xs focus:ring-1 focus:ring-indigo-500 outline-none leading-relaxed"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Actions */}
+        <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 uppercase tracking-wider"
+          >
+            İptal
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+          >
+            {loading ? 'Kaydediliyor...' : initialData ? 'Cari Bilgilerini Güncelle' : 'Yeni Cari Kartını Kaydet'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
