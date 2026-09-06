@@ -1,628 +1,1045 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
-import type { Transaction, Contact, TransactionType } from '../types';
 import { 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  Plus, 
-  Wallet, 
+  BookOpen, 
   FileText, 
+  Plus, 
   Search, 
   Filter, 
-  Edit, 
-  Trash2, 
-  Calendar, 
-  Building2, 
-  CreditCard, 
-  CheckCircle2, 
   Printer, 
+  CheckCircle2, 
+  AlertCircle, 
+  Layers, 
   TrendingUp, 
   TrendingDown, 
+  RefreshCw, 
+  ArrowRight, 
+  BarChart3, 
+  ChevronRight, 
+  Eye, 
+  Trash2,
+  Calendar,
+  Building2,
   DollarSign,
-  AlertCircle
+  Edit3
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
-import TransactionModal from './Accounting/TransactionModal';
-import TransactionDeleteModal from './Accounting/TransactionDeleteModal';
-import ContactStatementModal from './Contacts/ContactStatementModal';
+import { db } from '../db';
+import { accountingService, compareAccountCodes, type MizanRow } from '../services/accountingService';
+import type { Account, JournalEntry, Contact, Invoice, CollectionReceipt } from '../types';
+import JournalEntryModal from './Accounting/JournalEntryModal';
+import JournalEntryPrintModal from './Accounting/JournalEntryPrintModal';
+import AddAccountModal from './Accounting/AddAccountModal';
+import EditAccountModal from './Accounting/EditAccountModal';
+import MizanPrintModal from './Accounting/MizanPrintModal';
+import KebirPrintModal from './Accounting/KebirPrintModal';
 
 export default function Accounting() {
-  const transactions = useLiveQuery(() => db.transactions.toArray());
-  const contacts = useLiveQuery(() => db.contacts.toArray());
+  const [activeTab, setActiveTab] = useState<'entries' | 'chart' | 'mizan' | 'kebir' | 'financial' | 'integration'>('entries');
+
+  // Live queries
+  const rawAccounts = useLiveQuery(() => db.accounts.toArray()) || [];
+  const accounts = useMemo(() => {
+    const map = new Map<string, Account>();
+    for (const a of rawAccounts) {
+      const k = a.code.trim();
+      if (!map.has(k)) {
+        map.set(k, a);
+      }
+    }
+    const list = Array.from(map.values());
+    list.sort((a, b) => compareAccountCodes(a.code, b.code));
+    return list;
+  }, [rawAccounts]);
+  const journalEntries = useLiveQuery(() => db.journalEntries.orderBy('date').reverse().toArray()) || [];
+  const contacts = useLiveQuery(() => db.contacts.toArray()) || [];
+  const invoices = useLiveQuery(() => db.invoices.toArray()) || [];
+  const receipts = useLiveQuery(() => db.collectionReceipts.toArray()) || [];
+
+  // Modals
+  const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [selectedEntryForPrint, setSelectedEntryForPrint] = useState<JournalEntry | null>(null);
+  const [isMizanPrintModalOpen, setIsMizanPrintModalOpen] = useState(false);
+  const [isKebirPrintModalOpen, setIsKebirPrintModalOpen] = useState(false);
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'last7' | 'this_month' | 'this_year'>('all');
+  const [entryTypeFilter, setEntryTypeFilter] = useState<string>('all');
+  const [mizanRows, setMizanRows] = useState<MizanRow[]>([]);
+  const [mizanLoading, setMizanLoading] = useState(false);
+  const [mizanOnlyBalance, setMizanOnlyBalance] = useState(false);
+  const [mizanLevelFilter, setMizanLevelFilter] = useState<'all' | 'class' | 'group' | 'main' | 'sub'>('all');
 
-  // Modals state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<TransactionType>('income');
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  // Defter-i Kebir state
+  const [selectedKebirCode, setSelectedKebirCode] = useState<string>('100.01');
+  const [kebirLines, setKebirLines] = useState<any[]>([]);
+  const [kebirLoading, setKebirLoading] = useState(false);
 
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null);
+  // Integration state
+  const [integrating, setIntegrating] = useState(false);
+  const [integrationResult, setIntegrationResult] = useState<{ processedCount: number; errors: string[] } | null>(null);
 
-  const [statementContact, setStatementContact] = useState<Contact | null>(null);
-  const [isStatementOpen, setIsStatementOpen] = useState(false);
-
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  // Auto-dismiss notification
-  React.useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
-
-  // Contact quick map
-  const contactMap = useMemo(() => {
-    const map = new Map<number, Contact>();
-    if (contacts) {
-      contacts.forEach(c => {
-        if (c.id) map.set(c.id, c);
+  // Fetch Mizan whenever tab is active or filters change
+  useEffect(() => {
+    if (activeTab === 'mizan') {
+      setMizanLoading(true);
+      accountingService.getMizanReport({
+        onlyWithBalance: mizanOnlyBalance,
+        levelFilter: mizanLevelFilter
+      }).then(res => {
+        setMizanRows(res);
+        setMizanLoading(false);
       });
     }
-    return map;
-  }, [contacts]);
+  }, [activeTab, mizanOnlyBalance, mizanLevelFilter, journalEntries]);
 
-  // Distinct categories
-  const categories = useMemo(() => {
-    if (!transactions) return [];
-    const set = new Set<string>();
-    transactions.forEach(t => {
-      if (t.category) set.add(t.category);
-    });
-    return Array.from(set).sort();
-  }, [transactions]);
+  // Fetch Defter-i Kebir when selected code or tab changes
+  useEffect(() => {
+    if (activeTab === 'kebir' && selectedKebirCode) {
+      setKebirLoading(true);
+      accountingService.getGeneralLedger(selectedKebirCode).then(lines => {
+        setKebirLines(lines);
+        setKebirLoading(false);
+      });
+    }
+  }, [activeTab, selectedKebirCode, journalEntries]);
 
-  // Filtered transactions
-  const filteredTransactions = useMemo(() => {
-    if (!transactions) return [];
-
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-
-    return transactions
-      .filter(t => {
-        // Type filter
-        if (typeFilter !== 'all' && t.type !== typeFilter) return false;
-
-        // Category filter
-        if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
-
-        // Payment method filter
-        if (paymentMethodFilter !== 'all' && (t.paymentMethod || 'cash') !== paymentMethodFilter) return false;
-
-        // Date filter
-        if (dateFilter !== 'all') {
-          const tDate = new Date(t.date);
-          if (dateFilter === 'today') {
-            if (tDate.toISOString().split('T')[0] !== todayStr) return false;
-          } else if (dateFilter === 'last7') {
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(now.getDate() - 7);
-            if (tDate < sevenDaysAgo) return false;
-          } else if (dateFilter === 'this_month') {
-            if (tDate.getMonth() !== now.getMonth() || tDate.getFullYear() !== now.getFullYear()) return false;
-          } else if (dateFilter === 'this_year') {
-            if (tDate.getFullYear() !== now.getFullYear()) return false;
-          }
-        }
-
-        // Search term
-        if (searchTerm.trim()) {
-          const q = searchTerm.toLowerCase().trim();
-          const contact = t.contactId ? contactMap.get(t.contactId) : null;
-          const matchDesc = t.description?.toLowerCase().includes(q);
-          const matchDoc = t.documentNo?.toLowerCase().includes(q);
-          const matchCat = t.category?.toLowerCase().includes(q);
-          const matchContact = contact?.name?.toLowerCase().includes(q) || contact?.code?.toLowerCase().includes(q);
-          const matchAmount = t.amount.toString().includes(q);
-
-          return matchDesc || matchDoc || matchCat || matchContact || matchAmount;
-        }
-
-        return true;
-      })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || (b.id || 0) - (a.id || 0));
-  }, [transactions, typeFilter, categoryFilter, paymentMethodFilter, dateFilter, searchTerm, contactMap]);
-
-  // Totals & KPI metrics
-  const metrics = useMemo(() => {
-    if (!transactions) return { totalIncome: 0, totalExpense: 0, netBalance: 0, incomeCount: 0, expenseCount: 0 };
-
-    let totalIncome = 0;
-    let totalExpense = 0;
-    let incomeCount = 0;
-    let expenseCount = 0;
-
-    transactions.forEach(t => {
-      if (t.type === 'income') {
-        totalIncome += t.amount;
-        incomeCount++;
-      } else {
-        totalExpense += t.amount;
-        expenseCount++;
-      }
-    });
-
-    return {
-      totalIncome,
-      totalExpense,
-      netBalance: totalIncome - totalExpense,
-      incomeCount,
-      expenseCount
-    };
-  }, [transactions]);
-
-  const openAddModal = (type: TransactionType) => {
-    setEditingTransaction(null);
-    setModalType(type);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
-    setModalType(transaction.type);
-    setIsModalOpen(true);
-  };
-
-  const openDeleteModal = (transaction: Transaction) => {
-    setDeletingTransaction(transaction);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const getPaymentMethodLabel = (method?: string) => {
-    switch (method) {
-      case 'bank_transfer': return 'Banka / Havale';
-      case 'credit_card': return 'Kredi Kartı';
-      case 'check': return 'Çek / Senet';
-      case 'other': return 'Diğer';
-      case 'cash':
-      default: return 'Nakit Kasa';
+  // Handle Batch Invoice Integration
+  const handleAutoAccountInvoices = async () => {
+    setIntegrating(true);
+    setIntegrationResult(null);
+    try {
+      const result = await accountingService.autoAccountAllInvoices();
+      setIntegrationResult(result);
+    } catch (e: any) {
+      alert(`Entegrasyon hatası: ${e.message}`);
+    } finally {
+      setIntegrating(false);
     }
   };
+
+  // Delete Journal Entry
+  const handleDeleteEntry = async (id: number) => {
+    if (confirm('Bu yevmiye fişini silmek istediğinize emin misiniz?')) {
+      await accountingService.deleteJournalEntry(id);
+    }
+  };
+
+  // Filtered Journal Entries
+  const filteredEntries = journalEntries.filter(e => {
+    if (entryTypeFilter !== 'all' && e.entryType !== entryTypeFilter) return false;
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      const matchHeader = `${e.entryNumber} ${e.description} ${e.documentNumber || ''}`.toLowerCase().includes(q);
+      const matchLines = e.lines.some(l => `${l.accountCode} ${l.accountName} ${l.description}`.toLowerCase().includes(q));
+      if (!matchHeader && !matchLines) return false;
+    }
+    return true;
+  });
+
+  // Filtered Chart of Accounts
+  const filteredAccounts = accounts.filter(acc => {
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      return acc.code.toLowerCase().includes(q) || acc.name.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  // KPI Calculations
+  const totalEntriesCount = journalEntries.length;
+  const totalDebitSum = journalEntries.reduce((sum, e) => sum + (e.totalDebit || 0), 0);
+  const totalCreditSum = journalEntries.reduce((sum, e) => sum + (e.totalCredit || 0), 0);
+
+  // Calculate quick income statement figures
+  const sales600 = journalEntries.flatMap(e => e.lines).filter(l => l.accountCode.startsWith('600')).reduce((s, l) => s + (l.credit - l.debit), 0);
+  const cogs620 = journalEntries.flatMap(e => e.lines).filter(l => l.accountCode.startsWith('620') || l.accountCode.startsWith('621')).reduce((s, l) => s + (l.debit - l.credit), 0);
+  const expenses700 = journalEntries.flatMap(e => e.lines).filter(l => l.accountCode.startsWith('760') || l.accountCode.startsWith('770') || l.accountCode.startsWith('780')).reduce((s, l) => s + (l.debit - l.credit), 0);
+  const netIncome = sales600 - cogs620 - expenses700;
+
+  // Unaccounted Invoices count
+  const accountedDocIds = new Set(journalEntries.filter(e => e.documentType === 'invoice').map(e => e.documentId).filter(Boolean));
+  const unaccountedInvoicesCount = invoices.filter(inv => inv.status !== 'cancelled' && inv.id && !accountedDocIds.has(inv.id)).length;
 
   return (
     <div className="space-y-6">
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={cn(
-              "p-4 rounded-2xl flex items-center justify-between gap-3 shadow-md border text-xs font-bold",
-              notification.type === 'success' 
-                ? "bg-emerald-50 border-emerald-200 text-emerald-900" 
-                : "bg-rose-50 border-rose-200 text-rose-900"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              <span>{notification.message}</span>
-            </div>
-            <button
-              onClick={() => setNotification(null)}
-              className="text-slate-400 hover:text-slate-600"
-            >
-              ✕
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Wallet className="w-7 h-7 text-indigo-600" />
-            Muhasebe & Kasa Yönetimi
-          </h2>
-          <p className="text-slate-500 text-xs mt-0.5">
-            Tahsilat, ödeme, kasa giriş-çıkış hareketleri ve cari bakiye güncellemeleri
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Genel Muhasebe (TDHP)</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Tek Düzen Hesap Planına uygun yevmiye defteri, mizan raporu, defter-i kebir ve mali tablolar
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <button 
-            onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider shadow-2xs hover:bg-slate-50 transition-colors"
+        <div className="flex flex-wrap items-center gap-2.5">
+          {unaccountedInvoicesCount > 0 && (
+            <button
+              onClick={handleAutoAccountInvoices}
+              disabled={integrating}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 shadow-sm transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${integrating ? 'animate-spin' : ''}`} />
+              {unaccountedInvoicesCount} Faturayı Muhasebeleştir
+            </button>
+          )}
+
+          <button
+            onClick={() => setIsAccountModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 shadow-sm transition-colors"
           >
-            <Printer className="w-4 h-4 text-slate-500" />
-            <span className="hidden sm:inline">Yazdır</span>
+            <Plus className="w-4 h-4 text-gray-500" />
+            Yeni Alt Hesap Aç
           </button>
-          <button 
-            onClick={() => openAddModal('income')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm hover:bg-emerald-700 transition-all shadow-emerald-200"
+
+          <button
+            onClick={() => setIsEntryModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors"
           >
-            <ArrowDownLeft className="w-4 h-4" />
-            <span>+ Tahsilat / Gelir Ekle</span>
-          </button>
-          <button 
-            onClick={() => openAddModal('expense')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm hover:bg-rose-700 transition-all shadow-rose-200"
-          >
-            <ArrowUpRight className="w-4 h-4" />
-            <span>- Ödeme / Gider Ekle</span>
+            <Plus className="w-4 h-4" />
+            Yeni Yevmiye Fişi
           </button>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Total Income */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500 text-[11px] font-black uppercase tracking-wider mb-2">
-            <span>Toplam Tahsilat / Gelir</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <ArrowDownLeft className="w-4 h-4" />
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Kayıtlı Yevmiye Fişi</span>
+            <span className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+              <BookOpen className="w-5 h-5" />
+            </span>
           </div>
-          <div className="text-2xl font-black font-mono text-emerald-600">
-            +₺{metrics.totalIncome.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className="text-[11px] text-slate-400 font-bold mt-1">
-            {metrics.incomeCount} adet tahsilat kaydı
-          </div>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{totalEntriesCount} Adet</p>
+          <p className="text-xs text-emerald-600 font-medium mt-1">Borç/Alacak Dengeli</p>
         </div>
 
-        {/* Total Expense */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500 text-[11px] font-black uppercase tracking-wider mb-2">
-            <span>Toplam Ödeme / Gider</span>
-            <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <ArrowUpRight className="w-4 h-4" />
-            </div>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Toplam Yevmiye Hacmi</span>
+            <span className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <DollarSign className="w-5 h-5" />
+            </span>
           </div>
-          <div className="text-2xl font-black font-mono text-rose-600">
-            -₺{metrics.totalExpense.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className="text-[11px] text-slate-400 font-bold mt-1">
-            {metrics.expenseCount} adet ödeme kaydı
-          </div>
+          <p className="text-2xl font-bold text-gray-900 mt-2">
+            ₺{totalDebitSum.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Genel Toplam Borç = Alacak</p>
         </div>
 
-        {/* Net Balance */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500 text-[11px] font-black uppercase tracking-wider mb-2">
-            <span>Net Kasa Durumu</span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Wallet className="w-4 h-4" />
-            </div>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">600 Satış Gelirleri</span>
+            <span className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
+              <TrendingUp className="w-5 h-5" />
+            </span>
           </div>
-          <div className={cn(
-            "text-2xl font-black font-mono",
-            metrics.netBalance >= 0 ? "text-slate-900" : "text-rose-600"
-          )}>
-            ₺{metrics.netBalance.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <p className="text-2xl font-bold text-emerald-600 mt-2">
+            ₺{sales600.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Brüt Yurtiçi Satışlar</p>
+        </div>
+
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dönem Net Faaliyet Kârı</span>
+            <span className={`p-2 rounded-lg ${netIncome >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+              <BarChart3 className="w-5 h-5" />
+            </span>
           </div>
-          <div className="text-[11px] text-slate-400 font-bold mt-1">
-            {metrics.netBalance >= 0 ? 'Pozitif Kasa Fazlası' : 'Kasa Açığı / Net Eksi'}
-          </div>
+          <p className={`text-2xl font-bold mt-2 ${netIncome >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+            ₺{netIncome.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">600 Gelir - 700 Gider Dengesi</p>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-        <div className="flex flex-col lg:flex-row items-center gap-3">
-          {/* Search Box */}
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Açıklama, makbuz no, cari adı, kategori veya tutar ara..."
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 space-x-6 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('entries')}
+          className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex items-center gap-2 ${
+            activeTab === 'entries'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          Yevmiye Defteri (Fişler)
+          <span className="ml-1 py-0.5 px-2 rounded-full text-xs bg-gray-100 text-gray-600 font-semibold">
+            {journalEntries.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('chart')}
+          className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex items-center gap-2 ${
+            activeTab === 'chart'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          Hesap Planı (TDHP)
+          <span className="ml-1 py-0.5 px-2 rounded-full text-xs bg-gray-100 text-gray-600 font-semibold">
+            {accounts.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('mizan')}
+          className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex items-center gap-2 ${
+            activeTab === 'mizan'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          Mizan Raporu
+        </button>
+
+        <button
+          onClick={() => setActiveTab('kebir')}
+          className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex items-center gap-2 ${
+            activeTab === 'kebir'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          Defter-i Kebir (Büyük Defter)
+        </button>
+
+        <button
+          onClick={() => setActiveTab('financial')}
+          className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex items-center gap-2 ${
+            activeTab === 'financial'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          Mali Tablolar (Gelir/Bilanço)
+        </button>
+
+        <button
+          onClick={() => setActiveTab('integration')}
+          className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex items-center gap-2 ${
+            activeTab === 'integration'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <RefreshCw className="w-4 h-4" />
+          Entegrasyon Merkezi
+          {unaccountedInvoicesCount > 0 && (
+            <span className="ml-1 py-0.5 px-2 rounded-full text-xs bg-amber-100 text-amber-700 font-bold">
+              {unaccountedInvoicesCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* TAB 1: Yevmiye Defteri (Journal Entries) */}
+      {activeTab === 'entries' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-2 flex-1 max-w-md">
+              <Search className="w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Fiş no, açıklama, hesap kodu veya hesap adı ile ara..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full text-sm border-none focus:ring-0 placeholder-gray-400 p-0"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={entryTypeFilter}
+                onChange={(e) => setEntryTypeFilter(e.target.value)}
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-700"
               >
-                Temizle
+                <option value="all">Tüm Fiş Türleri</option>
+                <option value="mahsup">Mahsup Fişleri</option>
+                <option value="tahsil">Tahsil Fişleri</option>
+                <option value="tediye">Tediye Fişleri</option>
+                <option value="acilis">Açılış Fişleri</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50 text-gray-600 font-semibold">
+                  <tr>
+                    <th className="py-3 px-4 text-left">Yevmiye Fiş No</th>
+                    <th className="py-3 px-4 text-left">Tarih</th>
+                    <th className="py-3 px-4 text-left">Fiş Tipi</th>
+                    <th className="py-3 px-4 text-left">Açıklama</th>
+                    <th className="py-3 px-4 text-left">Belge No</th>
+                    <th className="py-3 px-4 text-right">Borç Toplamı</th>
+                    <th className="py-3 px-4 text-right">Alacak Toplamı</th>
+                    <th className="py-3 px-4 text-center">Denge</th>
+                    <th className="py-3 px-4 text-right">İşlem</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-gray-700">
+                  {filteredEntries.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="py-8 text-center text-gray-400">
+                        Kayıtlı yevmiye fişi bulunmamaktadır.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredEntries.map((entry) => (
+                      <tr key={entry.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-indigo-600">
+                          {entry.entryNumber}
+                        </td>
+                        <td className="py-3 px-4 text-gray-500 whitespace-nowrap">
+                          {new Date(entry.date).toLocaleDateString('tr-TR')}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase ${
+                            entry.entryType === 'tahsil' ? 'bg-emerald-100 text-emerald-800' :
+                            entry.entryType === 'tediye' ? 'bg-rose-100 text-rose-800' :
+                            entry.entryType === 'acilis' ? 'bg-purple-100 text-purple-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {entry.entryType}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-medium text-gray-900 max-w-sm truncate">
+                          {entry.description}
+                          <span className="text-xs text-gray-400 block font-normal">
+                            {entry.lines.length} satır kayıt
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-mono text-xs text-gray-600">
+                          {entry.documentNumber || '-'}
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-gray-900">
+                          ₺{entry.totalDebit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-gray-900">
+                          ₺{entry.totalCredit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {entry.isBalanced ? (
+                            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Denk
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-rose-600 bg-rose-50 px-2 py-0.5 rounded font-medium">
+                              <AlertCircle className="w-3.5 h-3.5" /> Farklı
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              onClick={() => setSelectedEntryForPrint(entry)}
+                              className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded"
+                              title="Resmi Fişi Görüntüle / Yazdır"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEntry(entry.id!)}
+                              className="p-1.5 text-gray-500 hover:text-rose-600 hover:bg-gray-100 rounded"
+                              title="Fişi Sil"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: Tek Düzen Hesap Planı (TDHP) */}
+      {activeTab === 'chart' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-2 flex-1 max-w-md">
+              <Search className="w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Hesap kodu (100, 120, 320, 600...) veya hesap adı ile filtrele..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full text-sm border-none focus:ring-0 placeholder-gray-400 p-0"
+              />
+            </div>
+            <span className="text-xs text-gray-500">
+              Toplam {filteredAccounts.length} Adet TDHP Hesabı
+            </span>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50 text-gray-600 font-semibold">
+                  <tr>
+                    <th className="py-3 px-4 text-left w-32">Hesap Kodu</th>
+                    <th className="py-3 px-4 text-left">Hesap Adı</th>
+                    <th className="py-3 px-4 text-left w-28">Seviye</th>
+                    <th className="py-3 px-4 text-left w-28">Hesap Tipi</th>
+                    <th className="py-3 px-4 text-left w-24">Para Birimi</th>
+                    <th className="py-3 px-4 text-center w-28">Durum</th>
+                    <th className="py-3 px-4 text-right w-44">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-gray-700">
+                  {filteredAccounts.map((acc) => {
+                    const isMainClass = acc.level === 1;
+                    const isGroup = acc.level === 2;
+                    const isMain = acc.level === 3;
+                    const isSub = acc.level === 4;
+                    const isMuavin = acc.level >= 5;
+
+                    return (
+                      <tr 
+                        key={acc.id} 
+                        className={`hover:bg-gray-50 transition-colors ${
+                          isMainClass ? 'bg-gray-100/80 font-black text-gray-900 border-t-2 border-gray-300' :
+                          isGroup ? 'bg-gray-50/60 font-bold text-gray-800 border-t border-gray-200' :
+                          isMain ? 'font-semibold text-gray-900' : 
+                          isSub ? 'text-gray-800' : 'bg-indigo-50/15 text-gray-900'
+                        }`}
+                      >
+                        <td className="py-2.5 px-4 font-mono">
+                          <span className={`inline-flex items-center ${
+                            isMainClass ? 'text-gray-900 font-black tracking-wide' :
+                            isGroup ? 'pl-3 text-gray-800 font-bold' :
+                            isMain ? 'pl-6 text-gray-900 font-bold' :
+                            isSub ? 'pl-9 text-indigo-900 font-semibold' :
+                            'pl-12 text-indigo-600 font-bold'
+                          }`}>
+                            {isSub && <span className="text-gray-400 font-normal mr-1.5 select-none">├─</span>}
+                            {isMuavin && <span className="text-indigo-400 font-normal mr-1.5 select-none">└──</span>}
+                            {acc.code}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-4 group">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`inline-flex items-center ${
+                              isMainClass ? 'font-black text-gray-900' :
+                              isGroup ? 'pl-3 font-bold text-gray-800' :
+                              isMain ? 'pl-6 font-semibold text-gray-900' :
+                              isSub ? 'pl-9 font-medium text-gray-800' :
+                              'pl-12 font-medium text-gray-900'
+                            }`}>
+                              {acc.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setEditingAccount(acc)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all cursor-pointer"
+                              title="Hesap adını düzenle"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-4 text-xs">
+                          {isMainClass ? '1: Sınıf' : 
+                           isGroup ? '2: Grup' : 
+                           isMain ? '3: Ana Hesap' : 
+                           isSub ? '4: Alt Hesap' : 
+                           '5: Muavin Hesap'}
+                        </td>
+                        <td className="py-2.5 px-4 text-xs uppercase font-medium text-gray-500">
+                          {acc.type === 'asset' ? 'Aktif' : acc.type === 'liability' ? 'Pasif' : acc.type === 'revenue' ? 'Gelir' : acc.type === 'cost' ? 'Maliyet' : acc.type === 'equity' ? 'Özkaynak' : 'Gider'}
+                        </td>
+                        <td className="py-2.5 px-4 font-mono text-xs text-gray-500">
+                          {acc.currency || 'TRY'}
+                        </td>
+                        <td className="py-2.5 px-4 text-center">
+                          {acc.isSystem ? (
+                            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">Sistem</span>
+                          ) : (
+                            <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-bold">
+                              {isMuavin ? 'Cari / Muavin' : 'Özel Alt Hesap'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-4 text-right">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setEditingAccount(acc)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors"
+                              title="Hesap Adını Düzenle"
+                            >
+                              <Edit3 className="w-3 h-3 text-indigo-600" />
+                              Düzenle
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedKebirCode(acc.code);
+                                setActiveTab('kebir');
+                              }}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition-colors"
+                            >
+                              Kebir
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: Mizan Raporu (Trial Balance) */}
+      {activeTab === 'mizan' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={mizanOnlyBalance}
+                  onChange={(e) => setMizanOnlyBalance(e.target.checked)}
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                Sadece Bakiyesi Olan Hesapları Göster
+              </label>
+
+              <select
+                value={mizanLevelFilter}
+                onChange={(e) => setMizanLevelFilter(e.target.value as any)}
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-700"
+              >
+                <option value="all">Tüm Seviyeler (Sınıf, Grup, Ana, Alt)</option>
+                <option value="class">Sadece Sınıflar (1, 2, 3, 4, 5, 6, 7)</option>
+                <option value="group">Grup Düzeyinde (10, 12, 15, 32...)</option>
+                <option value="main">Ana Hesaplar (100, 102, 120, 320...)</option>
+                <option value="sub">Alt / Muavin Hesaplar (100.01, 102.01...)</option>
+              </select>
+            </div>
+
+            <button
+              onClick={() => setIsMizanPrintModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs font-semibold text-indigo-700 shadow-sm transition-colors"
+              title="Resmi Mizan Cetveli Önizleme ve Yazdırma"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              Mizanı Yazdır
+            </button>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-xs">
+                <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-300">
+                  <tr>
+                    <th className="py-2.5 px-3 text-left w-28">Hesap Kodu</th>
+                    <th className="py-2.5 px-3 text-left">Hesap Adı</th>
+                    <th className="py-2.5 px-3 text-right w-32">Toplam Borç (₺)</th>
+                    <th className="py-2.5 px-3 text-right w-32">Toplam Alacak (₺)</th>
+                    <th className="py-2.5 px-3 text-right w-32">Borç Bakiyesi (₺)</th>
+                    <th className="py-2.5 px-3 text-right w-32">Alacak Bakiyesi (₺)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-gray-800">
+                  {mizanLoading ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-gray-400">
+                        Mizan hesaplanıyor...
+                      </td>
+                    </tr>
+                  ) : mizanRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-gray-400">
+                        Kriterlere uygun mizan kaydı bulunamadı.
+                      </td>
+                    </tr>
+                  ) : (
+                    mizanRows.map((r, idx) => {
+                      const isBold = r.level <= 2;
+                      return (
+                        <tr 
+                          key={`mizan-${r.code}-${idx}`} 
+                          className={`hover:bg-gray-50 ${isBold ? 'bg-gray-50/70 font-bold text-gray-900' : ''}`}
+                        >
+                          <td className="py-2 px-3 font-mono font-medium">{r.code}</td>
+                          <td className="py-2 px-3">{r.name}</td>
+                          <td className="py-2 px-3 text-right font-mono">
+                            {r.totalDebit > 0 ? r.totalDebit.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '-'}
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono">
+                            {r.totalCredit > 0 ? r.totalCredit.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '-'}
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-emerald-700">
+                            {r.debitBalance > 0 ? r.debitBalance.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '-'}
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-blue-700">
+                            {r.creditBalance > 0 ? r.creditBalance.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '-'}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: Defter-i Kebir (Büyük Defter) */}
+      {activeTab === 'kebir' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                Hesap Seçimi:
+              </label>
+              <select
+                value={selectedKebirCode}
+                onChange={(e) => setSelectedKebirCode(e.target.value)}
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-900 font-mono font-bold min-w-[280px]"
+              >
+                {accounts.map((acc) => (
+                  <option key={acc.id} value={acc.code}>
+                    {acc.code} - {acc.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => setIsKebirPrintModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs font-semibold text-indigo-700 shadow-sm transition-colors"
+              title="Defter-i Kebir Ekstresi Önizleme ve Yazdırma"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              Ekstreyi Yazdır
+            </button>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-xs">
+                <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-300">
+                  <tr>
+                    <th className="py-2.5 px-3 text-left w-36">Yevmiye Fiş No</th>
+                    <th className="py-2.5 px-3 text-left w-24">Tarih</th>
+                    <th className="py-2.5 px-3 text-left">Açıklama</th>
+                    <th className="py-2.5 px-3 text-right w-28">Borç (₺)</th>
+                    <th className="py-2.5 px-3 text-right w-28">Alacak (₺)</th>
+                    <th className="py-2.5 px-3 text-right w-32">Bakiye (₺)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-gray-800">
+                  {kebirLoading ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-gray-400">
+                        Defter-i Kebir yükleniyor...
+                      </td>
+                    </tr>
+                  ) : kebirLines.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-gray-400">
+                        Bu hesap için henüz yevmiye hareketi bulunmuyor.
+                      </td>
+                    </tr>
+                  ) : (
+                    kebirLines.map((row, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="py-2 px-3 font-mono font-bold text-indigo-600">{row.entryNumber}</td>
+                        <td className="py-2 px-3 whitespace-nowrap">{new Date(row.date).toLocaleDateString('tr-TR')}</td>
+                        <td className="py-2 px-3">{row.description}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold">
+                          {row.debit > 0 ? row.debit.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono font-bold">
+                          {row.credit > 0 ? row.credit.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                        <td className={`py-2 px-3 text-right font-mono font-bold ${row.balance >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                          ₺{Math.abs(row.balance).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} {row.balance >= 0 ? '(B)' : '(A)'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: Mali Tablolar (Gelir Tablosu & Bilanço) */}
+      {activeTab === 'financial' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* GELİR TABLOSU */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h2 className="text-base font-bold text-gray-900">Özet Gelir Tablosu (6 Grubu)</h2>
+              <span className="text-xs text-gray-500">TL Bazında</span>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between py-1.5 border-b border-gray-100">
+                <span className="font-semibold text-gray-800">A. BRÜT SATIŞLAR (600)</span>
+                <span className="font-mono font-bold text-gray-900">₺{sales600.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+              </div>
+
+              <div className="flex justify-between py-1.5 border-b border-gray-100 text-gray-600 pl-4">
+                <span>B. Satış İndirimleri (-)</span>
+                <span className="font-mono">₺0,00</span>
+              </div>
+
+              <div className="flex justify-between py-1.5 bg-gray-50 px-2 rounded font-bold">
+                <span>NET SATIŞLAR</span>
+                <span className="font-mono text-indigo-700">₺{sales600.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+              </div>
+
+              <div className="flex justify-between py-1.5 border-b border-gray-100 text-rose-600 pl-4">
+                <span>C. Satışların Maliyeti (620) (-)</span>
+                <span className="font-mono">-₺{cogs620.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+              </div>
+
+              <div className="flex justify-between py-1.5 bg-indigo-50/50 px-2 rounded font-bold">
+                <span>BRÜT SATIŞ KÂRI / ZARARI</span>
+                <span className="font-mono text-indigo-900">₺{(sales600 - cogs620).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+              </div>
+
+              <div className="flex justify-between py-1.5 border-b border-gray-100 text-rose-600 pl-4">
+                <span>D. Faaliyet Giderleri (760/770) (-)</span>
+                <span className="font-mono">-₺{expenses700.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+              </div>
+
+              <div className={`flex justify-between p-3 rounded-lg font-black text-base ${netIncome >= 0 ? 'bg-emerald-100 text-emerald-900' : 'bg-rose-100 text-rose-900'}`}>
+                <span>DÖNEM NET KÂRI / ZARARI</span>
+                <span className="font-mono">₺{netIncome.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* BİLANÇO ÖZETİ */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h2 className="text-base font-bold text-gray-900">Özet Bilanço Göstergesi</h2>
+              <span className="text-xs text-gray-500">Aktif = Pasif</span>
+            </div>
+
+            <div className="space-y-4 text-sm">
+              <div className="p-3 bg-blue-50/60 rounded-lg border border-blue-100 space-y-2">
+                <span className="font-bold text-blue-900 block text-xs uppercase">I. AKTİF (VARLIKLAR)</span>
+                <div className="flex justify-between text-xs text-blue-800">
+                  <span>1. Dönen Varlıklar (Kasa, Banka, Alacaklar, Stoklar)</span>
+                  <span className="font-mono font-bold">Aktif Varlıklar</span>
+                </div>
+                <div className="flex justify-between text-xs text-blue-800">
+                  <span>2. Duran Varlıklar (Makineler, Demirbaşlar)</span>
+                  <span className="font-mono font-bold">Tesis & Ekipman</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50/60 rounded-lg border border-amber-100 space-y-2">
+                <span className="font-bold text-amber-900 block text-xs uppercase">II. PASİF (KAYNAKLAR)</span>
+                <div className="flex justify-between text-xs text-amber-800">
+                  <span>3. Kısa Vadeli Yabancı Kaynaklar (Satıcılar, Borçlar, KDV)</span>
+                  <span className="font-mono font-bold">Ticari Borçlar</span>
+                </div>
+                <div className="flex justify-between text-xs text-amber-800">
+                  <span>5. Özkaynaklar (Sermaye, Dönem Kârı)</span>
+                  <span className="font-mono font-bold">Şirket Sermayesi</span>
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-500 italic bg-gray-50 p-2.5 rounded">
+                * Bilanço kalemleri, Tek Düzen Hesap Planındaki 1-5 sınıf hesaplarının yevmiye kapanış bakiyelerinden anlık olarak üretilmektedir.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 6: Entegrasyon Merkezi */}
+      {activeTab === 'integration' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">ERP Modülleri Otomatik TDHP Entegrasyonu</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Faturalar (Satış/Alış) ve Tahsilat/Tediye makbuzlarının Tek Düzen Hesap Planına tek tıkla toplu aktarımı
+                </p>
+              </div>
+
+              <button
+                onClick={handleAutoAccountInvoices}
+                disabled={integrating || unaccountedInvoicesCount === 0}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${integrating ? 'animate-spin' : ''}`} />
+                {integrating ? 'Muhasebeleştiriliyor...' : 'Bekleyen Faturaları Muhasebeleştir'}
               </button>
+            </div>
+
+            {integrationResult && (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 space-y-1">
+                <p className="font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  İşlem Tamamlandı: {integrationResult.processedCount} adet fatura TDHP yevmiye fişlerine aktarıldı.
+                </p>
+                {integrationResult.errors.length > 0 && (
+                  <div className="mt-2 text-rose-700 space-y-0.5">
+                    {integrationResult.errors.map((err, i) => (
+                      <p key={i}>• {err}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Quick Type Filter Tabs */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0 overflow-x-auto">
-            <button
-              onClick={() => setTypeFilter('all')}
-              className={cn(
-                "px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap",
-                typeFilter === 'all'
-                  ? "bg-white text-slate-800 shadow-xs"
-                  : "text-slate-500 hover:text-slate-800"
-              )}
-            >
-              Tüm Hareketler ({transactions?.length || 0})
-            </button>
-            <button
-              onClick={() => setTypeFilter('income')}
-              className={cn(
-                "px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 whitespace-nowrap",
-                typeFilter === 'income'
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-slate-500 hover:text-slate-800"
-              )}
-            >
-              <ArrowDownLeft className="w-3.5 h-3.5" />
-              Tahsilatlar ({metrics.incomeCount})
-            </button>
-            <button
-              onClick={() => setTypeFilter('expense')}
-              className={cn(
-                "px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 whitespace-nowrap",
-                typeFilter === 'expense'
-                  ? "bg-rose-600 text-white shadow-xs"
-                  : "text-slate-500 hover:text-slate-800"
-              )}
-            >
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              Ödemeler ({metrics.expenseCount})
-            </button>
-          </div>
-        </div>
-
-        {/* Dropdown Filters */}
-        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold">
-            <Filter className="w-3.5 h-3.5" />
-            <span>Filtrele:</span>
-          </div>
-
-          {/* Category */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            <option value="all">Tüm Kategoriler</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-
-          {/* Payment Method */}
-          <select
-            value={paymentMethodFilter}
-            onChange={(e) => setPaymentMethodFilter(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            <option value="all">Tüm Ödeme Şekilleri</option>
-            <option value="cash">Nakit (Kasa)</option>
-            <option value="bank_transfer">Banka / Havale</option>
-            <option value="credit_card">Kredi Kartı</option>
-            <option value="check">Çek / Senet</option>
-            <option value="other">Diğer</option>
-          </select>
-
-          {/* Date Filter */}
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value as any)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            <option value="all">Tüm Tarihler</option>
-            <option value="today">Bugün</option>
-            <option value="last7">Son 7 Gün</option>
-            <option value="this_month">Bu Ay</option>
-            <option value="this_year">Bu Yıl</option>
-          </select>
-
-          {(categoryFilter !== 'all' || paymentMethodFilter !== 'all' || dateFilter !== 'all' || searchTerm) && (
-            <button
-              onClick={() => {
-                setCategoryFilter('all');
-                setPaymentMethodFilter('all');
-                setDateFilter('all');
-                setSearchTerm('');
-              }}
-              className="text-xs text-rose-600 hover:text-rose-700 font-bold ml-auto"
-            >
-              Filtreleri Sıfırla
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Transactions Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-5 py-3.5 font-bold text-slate-500 uppercase tracking-wider">Tarih</th>
-                <th className="px-5 py-3.5 font-bold text-slate-500 uppercase tracking-wider">Makbuz / Belge No</th>
-                <th className="px-5 py-3.5 font-bold text-slate-500 uppercase tracking-wider">Tür</th>
-                <th className="px-5 py-3.5 font-bold text-slate-500 uppercase tracking-wider">İlgili Cari</th>
-                <th className="px-5 py-3.5 font-bold text-slate-500 uppercase tracking-wider">Kategori</th>
-                <th className="px-5 py-3.5 font-bold text-slate-500 uppercase tracking-wider">Ödeme Şekli</th>
-                <th className="px-5 py-3.5 font-bold text-slate-500 uppercase tracking-wider">Açıklama</th>
-                <th className="px-5 py-3.5 font-bold text-slate-500 uppercase tracking-wider text-right">Tutar</th>
-                <th className="px-5 py-3.5 font-bold text-slate-500 uppercase tracking-wider text-center w-28">İşlemler</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredTransactions.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-slate-400 font-medium">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Wallet className="w-8 h-8 text-slate-300" />
-                      <p>Kayıtlı finansal hareket veya arama kriterine uygun işlem bulunamadı.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredTransactions.map((t) => {
-                  const contact = t.contactId ? contactMap.get(t.contactId) : null;
-                  const isIncome = t.type === 'income';
-
-                  return (
-                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors group">
-                      {/* Date */}
-                      <td className="px-5 py-3.5 font-mono font-bold text-slate-600 whitespace-nowrap">
-                        {new Date(t.date).toLocaleDateString('tr-TR')}
-                      </td>
-
-                      {/* Doc No */}
-                      <td className="px-5 py-3.5 font-mono font-bold text-indigo-700 whitespace-nowrap">
-                        {t.documentNo || `MAK-${t.id}`}
-                      </td>
-
-                      {/* Type Badge */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className={cn(
-                          "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
-                          isIncome 
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
-                            : "bg-rose-50 text-rose-700 border border-rose-200"
-                        )}>
-                          {isIncome ? <ArrowDownLeft className="w-3 h-3 text-emerald-600" /> : <ArrowUpRight className="w-3 h-3 text-rose-600" />}
-                          {isIncome ? 'Tahsilat (Giriş)' : 'Ödeme (Çıkış)'}
-                        </span>
-                      </td>
-
-                      {/* Contact */}
-                      <td className="px-5 py-3.5">
-                        {contact ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStatementContact(contact);
-                              setIsStatementOpen(true);
-                            }}
-                            className="text-left group/btn"
-                            title="Cari Ekstresini Görüntüle"
-                          >
-                            <div className="font-bold text-slate-900 group-hover/btn:text-indigo-600 group-hover/btn:underline flex items-center gap-1.5">
-                              <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                              {contact.name}
-                            </div>
-                            <div className="text-[10px] text-slate-400 font-mono">
-                              {contact.code || `ID: ${contact.id}`} • {contact.type === 'customer' ? 'Müşteri' : contact.type === 'supplier' ? 'Tedarikçi' : 'Müşteri/Tedarikçi'}
-                            </div>
-                          </button>
-                        ) : (
-                          <span className="text-slate-400 italic">Genel Kasa Hareketi</span>
-                        )}
-                      </td>
-
-                      {/* Category */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className="text-[11px] font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
-                          {t.category || 'Genel'}
-                        </span>
-                      </td>
-
-                      {/* Payment Method */}
-                      <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium">
-                        {getPaymentMethodLabel(t.paymentMethod)}
-                      </td>
-
-                      {/* Description */}
-                      <td className="px-5 py-3.5 text-slate-700 max-w-xs truncate" title={t.description}>
-                        {t.description || '-'}
-                      </td>
-
-                      {/* Amount */}
-                      <td className={cn(
-                        "px-5 py-3.5 text-right font-mono font-black text-sm whitespace-nowrap",
-                        isIncome ? "text-emerald-600" : "text-rose-600"
-                      )}>
-                        {isIncome ? '+' : '-'}₺{t.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => openEditModal(t)}
-                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="İşlemi Düzenle"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(t)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="İşlemi Sil"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+          {/* Invoices accounting status list */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-sm font-bold text-gray-900">Faturaların Muhasebe Durumu</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50 text-gray-600 font-semibold">
+                  <tr>
+                    <th className="py-3 px-4 text-left">Fatura No</th>
+                    <th className="py-3 px-4 text-left">Tarih</th>
+                    <th className="py-3 px-4 text-left">Tür</th>
+                    <th className="py-3 px-4 text-left">Cari</th>
+                    <th className="py-3 px-4 text-right">Tutar</th>
+                    <th className="py-3 px-4 text-center">TDHP Durumu</th>
+                    <th className="py-3 px-4 text-right">İşlem</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-gray-700">
+                  {invoices.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-6 text-center text-gray-400">
+                        Henüz kayıtlı fatura bulunmuyor.
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                  ) : (
+                    invoices.map((inv) => {
+                      const isAccounted = accountedDocIds.has(inv.id);
+                      return (
+                        <tr key={inv.id} className="hover:bg-gray-50">
+                          <td className="py-3 px-4 font-mono font-medium text-indigo-600">{inv.invoiceNumber}</td>
+                          <td className="py-3 px-4 text-gray-500">{new Date(inv.date).toLocaleDateString('tr-TR')}</td>
+                          <td className="py-3 px-4 text-xs font-semibold">
+                            {inv.type === 'sales' ? 'Satış Faturası' : 'Alış Faturası'}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-gray-900">
+                            {contacts.find(c => c.id === inv.contactId)?.name || `Cari #${inv.contactId}`}
+                          </td>
+                          <td className="py-3 px-4 text-right font-bold">
+                            ₺{inv.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {isAccounted ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Muhasebeleşti
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-semibold">
+                                <AlertCircle className="w-3.5 h-3.5" /> Bekliyor
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {!isAccounted && (
+                              <button
+                                onClick={async () => {
+                                  await accountingService.createInvoiceJournalEntry(inv.id!);
+                                  alert(`${inv.invoiceNumber} faturası başarıyla muhasebeleştirildi.`);
+                                }}
+                                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
+                              >
+                                Şimdi Muhasebeleştir
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* CREATE / EDIT TRANSACTION MODAL */}
-      {isModalOpen && (
-        <TransactionModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingTransaction(null);
-          }}
-          transactionToEdit={editingTransaction}
-          defaultType={modalType}
-          onSuccess={(msg) => {
-            setNotification({
-              type: 'success',
-              message: msg || 'İşlem başarıyla kaydedildi.'
-            });
-          }}
-        />
       )}
 
-      {/* DELETE CONFIRMATION MODAL */}
-      {isDeleteModalOpen && deletingTransaction && (
-        <TransactionDeleteModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => {
-            setIsDeleteModalOpen(false);
-            setDeletingTransaction(null);
-          }}
-          transaction={deletingTransaction}
-          contact={deletingTransaction.contactId ? contactMap.get(deletingTransaction.contactId) : null}
-          onSuccess={(msg) => {
-            setNotification({
-              type: 'success',
-              message: msg || 'İşlem başarıyla silindi.'
-            });
-          }}
-        />
-      )}
+      {/* MODAL: Yeni Yevmiye Fişi */}
+      <JournalEntryModal
+        isOpen={isEntryModalOpen}
+        onClose={() => setIsEntryModalOpen(false)}
+        accounts={accounts}
+        contacts={contacts}
+        onSuccess={() => alert('Yevmiye fişi başarıyla kaydedildi.')}
+      />
 
-      {/* CONTACT STATEMENT MODAL (Opened when clicking contact name) */}
-      {isStatementOpen && statementContact && (
-        <ContactStatementModal
-          isOpen={isStatementOpen}
-          onClose={() => {
-            setIsStatementOpen(false);
-            setStatementContact(null);
-          }}
-          contact={statementContact}
-        />
-      )}
+      {/* MODAL: Yeni Alt Hesap Açma */}
+      <AddAccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        parentAccounts={accounts}
+        onSuccess={() => alert('Yeni alt hesap başarıyla açıldı.')}
+      />
+
+      {/* MODAL: Fiş Yazdırma */}
+      <JournalEntryPrintModal
+        entry={selectedEntryForPrint}
+        onClose={() => setSelectedEntryForPrint(null)}
+      />
+
+      {/* MODAL: Mizan Raporu Yazdırma */}
+      <MizanPrintModal
+        isOpen={isMizanPrintModalOpen}
+        onClose={() => setIsMizanPrintModalOpen(false)}
+        mizanRows={mizanRows}
+        options={{
+          onlyWithBalance: mizanOnlyBalance,
+          levelFilter: mizanLevelFilter
+        }}
+      />
+
+      {/* MODAL: Defter-i Kebir Ekstresi Yazdırma */}
+      <KebirPrintModal
+        isOpen={isKebirPrintModalOpen}
+        onClose={() => setIsKebirPrintModalOpen(false)}
+        accountCode={selectedKebirCode}
+        account={accounts.find(a => a.code === selectedKebirCode)}
+        lines={kebirLines}
+      />
+
+      {/* MODAL: Hesap Bilgilerini / Adını Düzenleme */}
+      <EditAccountModal
+        isOpen={!!editingAccount}
+        onClose={() => setEditingAccount(null)}
+        account={editingAccount}
+      />
     </div>
   );
 }

@@ -21,6 +21,7 @@ import {
   RefreshCw, 
   ShoppingCart, 
   FileText, 
+  FileSpreadsheet,
   Calendar, 
   User, 
   Eye, 
@@ -33,13 +34,20 @@ import {
   HelpCircle,
   TrendingUp,
   AlertCircle,
-  Palette
+  Palette,
+  Loader2,
+  Download,
+  ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { erpService, PRODUCTION_STAGES_CONFIG } from '../services/erpService';
 import Modal from './Modal';
 import { BarcodeSvg } from './BarcodeSvg';
+import DetailedWorkOrderCardModal from './Production/DetailedWorkOrderCardModal';
+import { printElement, openPrintWindow } from '../lib/printService';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import type { 
   WorkOrder, 
   ProductionStage, 
@@ -103,6 +111,11 @@ export default function Production() {
   const [isRecipeModalOpen, setIsRecipeModalOpen] = React.useState(false);
   const [isTicketModalOpen, setIsTicketModalOpen] = React.useState(false);
   const [ticketWorkOrder, setTicketWorkOrder] = React.useState<WorkOrder | null>(null);
+  const [isPrintingTicket, setIsPrintingTicket] = React.useState(false);
+  const [isDownloadingTicketPdf, setIsDownloadingTicketPdf] = React.useState(false);
+  const [ticketPrintNotice, setTicketPrintNotice] = React.useState<{ message: string; blobUrl?: string } | null>(null);
+  const [isDetailedSheetModalOpen, setIsDetailedSheetModalOpen] = React.useState(false);
+  const [detailedSheetWorkOrder, setDetailedSheetWorkOrder] = React.useState<WorkOrder | null>(null);
   const [isStageTransitionModalOpen, setIsStageTransitionModalOpen] = React.useState(false);
   const [transitionTargetStage, setTransitionTargetStage] = React.useState<ProductionStage>('cutting');
   const [transitionOperator, setTransitionOperator] = React.useState('');
@@ -491,7 +504,157 @@ export default function Production() {
   // Print Work Order Ticket Modal trigger
   const openTicketModal = (wo: WorkOrder) => {
     setTicketWorkOrder(wo);
+    setTicketPrintNotice(null);
     setIsTicketModalOpen(true);
+  };
+
+  // Direct Print Ticket with Fail-Safe Blob URL (Bypasses iframe restrictions)
+  const handlePrintTicket = async () => {
+    const printArea = document.getElementById('printable-ticket');
+    if (!printArea || !ticketWorkOrder) return;
+
+    setIsPrintingTicket(true);
+    setTicketPrintNotice(null);
+
+    try {
+      // 1. Open dedicated print window via Blob URL (Bypasses iframe sandbox restrictions completely)
+      const blobUrl = openPrintWindow(
+        printArea.outerHTML,
+        `İş Emri Proses Kartı - ${ticketWorkOrder.barcode}`,
+        {
+          title: `İş Emri Proses Ref Kartı - ${ticketWorkOrder.barcode}`,
+          landscape: false,
+          css: `
+            body { background: #ffffff !important; padding: 12px !important; }
+            #printable-ticket {
+              margin: 0 auto !important;
+              max-width: 620px !important;
+              border: 2px solid #000000 !important;
+              border-radius: 16px !important;
+              padding: 16px !important;
+              background: #ffffff !important;
+              box-shadow: none !important;
+            }
+          `
+        }
+      );
+
+      setTicketPrintNotice({
+        message: 'İş emri proses kartı yeni yazdırma sekmesinde açıldı ve yazıcı penceresi otomatik tetiklendi.',
+        blobUrl: blobUrl || undefined
+      });
+
+      // 2. Also try native print if outside iframe
+      if (window.self === window.top) {
+        setTimeout(() => {
+          try {
+            window.print();
+          } catch (e) {
+            console.warn('Native window.print failed:', e);
+          }
+        }, 150);
+      }
+    } catch (err) {
+      console.error('Baskı başlatılırken hata:', err);
+      await handleDownloadTicketPdf();
+    } finally {
+      setTimeout(() => {
+        setIsPrintingTicket(false);
+      }, 1000);
+    }
+  };
+
+  // Download Ticket Card as High Quality PDF (.pdf)
+  const handleDownloadTicketPdf = async () => {
+    const printArea = document.getElementById('printable-ticket');
+    if (!printArea || !ticketWorkOrder) return;
+
+    setIsDownloadingTicketPdf(true);
+    try {
+      const helperCanvas = document.createElement('canvas');
+      const helperCtx = helperCanvas.getContext('2d');
+
+      const sanitizeColor = (colorStr: string): string => {
+        if (!colorStr) return '#000000';
+        if (!colorStr.includes('oklch') && !colorStr.includes('color(') && !colorStr.includes('lab(')) {
+          return colorStr;
+        }
+        try {
+          if (helperCtx) {
+            helperCtx.fillStyle = '#000000';
+            helperCtx.fillStyle = colorStr;
+            return helperCtx.fillStyle || '#000000';
+          }
+        } catch {}
+        return '#000000';
+      };
+
+      const canvas = await html2canvas(printArea, {
+        scale: 2.5,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const printRoot = clonedDoc.getElementById('printable-ticket');
+          if (printRoot) {
+            printRoot.style.fontFamily = 'Arial, Helvetica, sans-serif';
+            printRoot.style.letterSpacing = 'normal';
+            printRoot.style.transform = 'none';
+          }
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            try {
+              htmlEl.style.fontFamily = 'Arial, Helvetica, sans-serif';
+              htmlEl.style.letterSpacing = 'normal';
+              const computed = window.getComputedStyle(htmlEl);
+              const colorProps = ['color', 'backgroundColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor'];
+              colorProps.forEach((prop) => {
+                const val = (computed as any)[prop];
+                if (val && (val.includes('oklch') || val.includes('color(') || val.includes('lab('))) {
+                  (htmlEl.style as any)[prop] = sanitizeColor(val);
+                }
+              });
+            } catch {}
+          });
+        }
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      const imgWidth = 180;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 15, 20, imgWidth, Math.min(imgHeight, 250));
+
+      const cleanBarcode = (ticketWorkOrder.barcode || ticketWorkOrder.id || 'proses').replace(/[^a-zA-Z0-9_-]/g, '_');
+      pdf.save(`Is_Emri_Proses_Karti_${cleanBarcode}.pdf`);
+    } catch (err) {
+      console.error('PDF oluşturulurken hata:', err);
+    } finally {
+      setIsDownloadingTicketPdf(false);
+    }
+  };
+
+  // Open Full A4 Detailed Work Order & Cutting Card Modal
+  const openDetailedWorkOrderSheet = (wo: WorkOrder) => {
+    setDetailedSheetWorkOrder(wo);
+    setIsDetailedSheetModalOpen(true);
+  };
+
+  const handleSaveDetailedWorkOrder = async (updatedFields: Partial<WorkOrder>) => {
+    if (!detailedSheetWorkOrder?.id) return;
+    try {
+      await db.workOrders.update(detailedSheetWorkOrder.id, updatedFields);
+      setDetailedSheetWorkOrder({ ...detailedSheetWorkOrder, ...updatedFields });
+    } catch (err: any) {
+      console.error("İş emri güncellenirken hata:", err);
+    }
   };
 
   // Material Status Pill
@@ -902,9 +1065,18 @@ export default function Production() {
                     <div className="pt-2 flex items-center gap-1.5">
                       <button
                         type="button"
+                        onClick={() => openDetailedWorkOrderSheet(wo)}
+                        className="p-2 rounded-xl bg-amber-100 hover:bg-amber-400 text-amber-950 text-xs font-black transition-all flex items-center justify-center shrink-0 shadow-xs"
+                        title="Detaylı A4 Üretim & Kesim Kartelasını Görüntüle / Yazdır"
+                      >
+                        <FileSpreadsheet className="w-4 h-4 text-amber-800" />
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => openTicketModal(wo)}
                         className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center shrink-0"
-                        title="İş Emri & Barkod Kartını Yazdır"
+                        title="İş Emri & Barkod Ref Kartı"
                       >
                         <Printer className="w-4 h-4" />
                       </button>
@@ -1262,6 +1434,7 @@ export default function Production() {
             <AnimatePresence>
               {scanFeedback && (
                 <motion.div
+                  key={`scan-feedback-${scanFeedback.timestamp.getTime()}`}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
@@ -1778,15 +1951,84 @@ export default function Production() {
               </button>
             </div>
 
-            <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
               {recipeIngredients.map((ing, idx) => {
                 const selectedMat = productMap.get(ing.productId);
                 const isSemi = selectedMat?.categoryType === 'semi_finished';
                 return (
                   <div key={idx} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
+                    {/* Row 1: Department + Part Name + Material Select */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
+                      {/* Department Select */}
+                      <div className="md:col-span-3">
+                        <select
+                          value={ing.department || 'KESİM'}
+                          onChange={e => {
+                            const next = [...recipeIngredients];
+                            next[idx].department = e.target.value;
+                            setRecipeIngredients(next);
+                          }}
+                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-black text-amber-900 bg-amber-50 focus:outline-none uppercase"
+                        >
+                          <option value="KESİM">🟡 KESİM</option>
+                          <option value="BASKI">🟡 BASKI</option>
+                          <option value="SAYA">🟡 SAYA</option>
+                          <option value="BAĞCIK">🟡 BAĞCIK</option>
+                          <option value="MONTA">🟡 MONTA</option>
+                          <option value="TEMİZLEME">🟡 TEMİZLEME</option>
+                          <option value="DİĞER">⚪ DİĞER</option>
+                        </select>
+                      </div>
+
+                      {/* Part Name / Açıklama */}
+                      <div className="md:col-span-3">
+                        <input
+                          type="text"
+                          placeholder="Açıklama / Parça (Örn: ÇEMBER)"
+                          value={ing.partName || ''}
+                          onChange={e => {
+                            const next = [...recipeIngredients];
+                            next[idx].partName = e.target.value;
+                            setRecipeIngredients(next);
+                          }}
+                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-black text-blue-700 bg-white uppercase focus:outline-none"
+                          list="part-suggestions"
+                        />
+                        <datalist id="part-suggestions">
+                          <option value="ÇEMBER" />
+                          <option value="NAL" />
+                          <option value="GAMBA" />
+                          <option value="CIRT" />
+                          <option value="KUŞ" />
+                          <option value="FORT" />
+                          <option value="YÜZ" />
+                          <option value="DİL" />
+                          <option value="KONÇ" />
+                          <option value="GAMBA ASTAR" />
+                          <option value="DİL ASTAR" />
+                          <option value="VİZO" />
+                          <option value="FORT BASKI" />
+                          <option value="GAMBA BASKI" />
+                          <option value="KUŞ BASKISI" />
+                          <option value="CIRT BASKISI" />
+                          <option value="DİL ALTI ETİKET" />
+                          <option value="KAPSÜL" />
+                          <option value="CIRT TOKA" />
+                          <option value="MOSTRA ETİKETİ" />
+                          <option value="BAĞCIK" />
+                          <option value="TABAN" />
+                          <option value="FUSPET" />
+                          <option value="KOLİ" />
+                          <option value="KUTU" />
+                          <option value="İÇ KAĞIT" />
+                          <option value="PELUR" />
+                          <option value="ZİNCİR" />
+                          <option value="TANITIM KARTI" />
+                        </datalist>
+                      </div>
+
                       {/* Material Select */}
-                      <div className="md:col-span-5">
+                      <div className="md:col-span-6">
                         <select
                           required
                           value={ing.productId}
@@ -1816,7 +2058,7 @@ export default function Production() {
                           <optgroup label="── 🏭 Yarı Mamuller (Taban, Mostra, Parça) ──">
                             {products?.filter(p => p.categoryType === 'semi_finished').map(p => (
                               <option key={`opt-semi-${p.id}`} value={p.id}>
-                                [Yarı Mamul] {p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''}
+                                [Yarı Mamul] {p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''} {p.colors && p.colors.length > 0 ? `[Renkler: ${p.colors.join(', ')}]` : ''}
                               </option>
                             ))}
                           </optgroup>
@@ -1825,7 +2067,7 @@ export default function Production() {
                           <optgroup label="── 📦 Hammaddeler (Deri, Kumaş, Plaka) ──">
                             {products?.filter(p => (p.categoryType === 'raw_material' || (!p.categoryType && p.isRawMaterial)) && p.categoryType !== 'semi_finished').map(p => (
                               <option key={`opt-raw-${p.id}`} value={p.id}>
-                                [Hammadde] {p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''}
+                                [Hammadde] {p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''} {p.colors && p.colors.length > 0 ? `[Renkler: ${p.colors.join(', ')}]` : ''}
                               </option>
                             ))}
                           </optgroup>
@@ -1834,19 +2076,22 @@ export default function Production() {
                           <optgroup label="── ✂️ Aksesuar & Sarf Malzemeler ──">
                             {products?.filter(p => p.categoryType === 'accessory').map(p => (
                               <option key={`opt-acc-${p.id}`} value={p.id}>
-                                [Aksesuar/Sarf] {p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''}
+                                [Aksesuar/Sarf] {p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''} {p.colors && p.colors.length > 0 ? `[Renkler: ${p.colors.join(', ')}]` : ''}
                               </option>
                             ))}
                           </optgroup>
                         </select>
                       </div>
+                    </div>
 
+                    {/* Row 2: Color + Quantity + Unit + Delete */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
                       {/* Material Color / Variant */}
-                      <div className="md:col-span-3">
+                      <div className="md:col-span-5">
                         <div className="relative">
                           <input
                             type="text"
-                            placeholder="Malzeme Rengi (Opsiyonel)"
+                            placeholder="Kullanılacak Renk (Örn: SİYAH)"
                             value={ing.color || ''}
                             onChange={e => {
                               const next = [...recipeIngredients];
@@ -1867,13 +2112,13 @@ export default function Production() {
                       </div>
 
                       {/* Quantity */}
-                      <div className="md:col-span-2">
+                      <div className="md:col-span-4">
                         <input
                           type="number"
-                          step="0.001"
-                          min="0.001"
+                          step="0.00001"
+                          min="0.00001"
                           required
-                          placeholder="Miktar"
+                          placeholder="Birim Sarfiyat Miktarı"
                           value={ing.quantity}
                           onChange={e => {
                             const next = [...recipeIngredients];
@@ -1885,11 +2130,11 @@ export default function Production() {
                       </div>
 
                       {/* Unit */}
-                      <div className="md:col-span-1">
+                      <div className="md:col-span-2">
                         <input
                           type="text"
                           placeholder="Birim"
-                          value={ing.unit || 'Adet'}
+                          value={ing.unit || 'ADET'}
                           onChange={e => {
                             const next = [...recipeIngredients];
                             next[idx].unit = e.target.value;
@@ -2053,9 +2298,45 @@ export default function Production() {
       </Modal>
 
       {/* MODAL 4: WORK ORDER REF TICKET / BARCODE PRINT */}
-      <Modal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} title="İş Emri & Proses Ref Kartı" className="max-w-xl">
+      <Modal 
+        isOpen={isTicketModalOpen} 
+        onClose={() => {
+          setIsTicketModalOpen(false);
+          setTicketPrintNotice(null);
+        }} 
+        title="İş Emri & Proses Ref Kartı" 
+        className="max-w-xl"
+      >
         {ticketWorkOrder && (
-          <div className="space-y-6">
+          <div className="space-y-4">
+            {/* Print Feedback Banner */}
+            {ticketPrintNotice && (
+              <div className="bg-amber-50 border border-amber-300 text-amber-950 p-3 rounded-2xl flex items-center justify-between gap-3 text-xs font-semibold print:hidden shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>{ticketPrintNotice.message}</span>
+                  {ticketPrintNotice.blobUrl && (
+                    <a
+                      href={ticketPrintNotice.blobUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline font-bold text-indigo-700 hover:text-indigo-900 ml-1 inline-flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Yazdırma Sayfasını Aç
+                    </a>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTicketPrintNotice(null)}
+                  className="p-1 hover:bg-amber-200/70 rounded-lg text-slate-600 cursor-pointer"
+                  title="Kapat"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             <div id="printable-ticket" className="bg-white p-6 rounded-3xl border-2 border-slate-900 space-y-4 text-black">
               {/* Header */}
               <div className="flex items-center justify-between border-b-2 border-black pb-3">
@@ -2115,18 +2396,69 @@ export default function Production() {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200">
               <button
                 type="button"
-                onClick={() => window.print()}
-                className="flex-1 py-3 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-md"
+                onClick={() => {
+                  setIsTicketModalOpen(false);
+                  openDetailedWorkOrderSheet(ticketWorkOrder);
+                }}
+                className="py-2.5 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-400/20 cursor-pointer"
               >
-                <Printer className="w-4 h-4" /> Kartı Yazdır
+                <FileSpreadsheet className="w-4 h-4" /> Detaylı A4 Kartelayı Aç
               </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={isDownloadingTicketPdf}
+                  onClick={handleDownloadTicketPdf}
+                  className="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                >
+                  {isDownloadingTicketPdf ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" /> PDF İndir
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isPrintingTicket}
+                  onClick={handlePrintTicket}
+                  className="py-2.5 px-5 bg-slate-900 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                >
+                  {isPrintingTicket ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Yazıcı Açılıyor...
+                    </>
+                  ) : (
+                    <>
+                      <Printer className="w-4 h-4" /> Barkod Kartını Yazdır
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
       </Modal>
+
+      {/* MODAL 4B: DETAILED A4 WORK ORDER & CUTTING SHEET MODAL (AYAKKABI STANDART KARTELA) */}
+      <DetailedWorkOrderCardModal
+        isOpen={isDetailedSheetModalOpen}
+        onClose={() => setIsDetailedSheetModalOpen(false)}
+        workOrder={detailedSheetWorkOrder}
+        product={detailedSheetWorkOrder ? productMap.get(detailedSheetWorkOrder.productId) : undefined}
+        recipe={detailedSheetWorkOrder?.productId ? (recipes?.find(r => r.productId === detailedSheetWorkOrder.productId && (!r.targetColor || r.targetColor === 'all' || r.targetColor === detailedSheetWorkOrder.color)) || recipes?.find(r => r.productId === detailedSheetWorkOrder.productId)) : undefined}
+        allProducts={products || []}
+        customer={contacts?.find(c => c.name === detailedSheetWorkOrder?.customerName || c.code === detailedSheetWorkOrder?.customerCode)}
+        onSaveWorkOrder={handleSaveDetailedWorkOrder}
+      />
 
       {/* MODAL 5: AUTO PURCHASE ORDER FROM MRP */}
       <Modal isOpen={isPurchaseOrderModalOpen} onClose={() => setIsPurchaseOrderModalOpen(false)} title="MRP'den Otomatik Satın Alma Siparişi Oluştur">

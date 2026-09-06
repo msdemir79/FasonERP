@@ -7,7 +7,9 @@ import Templates from './components/Inventory/Templates';
 import Production from './components/Production';
 import Orders from './components/Orders';
 import Invoices from './components/Invoices';
+import Waybills from './components/Waybills';
 import Accounting from './components/Accounting';
+import Finance from './components/Finance';
 import Contacts from './components/Contacts';
 import StockSummaryReport from './components/Reports/StockSummaryReport';
 import StockDetailReport from './components/Reports/StockDetailReport';
@@ -40,7 +42,9 @@ export default function App() {
           
           <Route path="production" element={<Production />} />
           <Route path="orders" element={<Orders />} />
+          <Route path="waybills" element={<Waybills />} />
           <Route path="invoices" element={<Invoices />} />
+          <Route path="finance" element={<Finance />} />
           <Route path="accounting" element={<Accounting />} />
           <Route path="contacts" element={<Contacts />} />
         </Route>

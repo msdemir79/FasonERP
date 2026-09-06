@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db';
 import type { Contact, EntityType } from '../../types';
 import { 
   Building2, 
@@ -13,9 +15,12 @@ import {
   Tag, 
   DollarSign,
   ShieldCheck,
-  Globe
+  Globe,
+  BookOpen,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { compareAccountCodes } from '../../services/accountingService';
 import Modal from '../Modal';
 
 interface ContactFormModalProps {
@@ -81,7 +86,64 @@ export default function ContactFormModal({
   const [iban, setIban] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
   const [balance, setBalance] = useState<number>(0);
+  const [accountCode, setAccountCode] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Live queries for suggestions
+  const allContacts = useLiveQuery(() => db.contacts.toArray());
+  const tdhpAccounts = useLiveQuery(() => db.accounts.toArray());
+
+  // Auto-suggest next TDHP sub-account code (120.01.xxx or 320.01.xxx)
+  const handleAutoSuggestAccountCode = () => {
+    const isSupplier = type === 'supplier';
+    const prefix = isSupplier ? '320.01.' : '120.01.';
+    
+    let maxSeq = 0;
+    allContacts?.forEach(c => {
+      if (c.accountCode && c.accountCode.startsWith(prefix)) {
+        const parts = c.accountCode.split('.');
+        const lastPart = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(lastPart) && lastPart > maxSeq) {
+          maxSeq = lastPart;
+        }
+      }
+    });
+
+    tdhpAccounts?.forEach(a => {
+      if (a.code && a.code.startsWith(prefix)) {
+        const parts = a.code.split('.');
+        const lastPart = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(lastPart) && lastPart > maxSeq) {
+          maxSeq = lastPart;
+        }
+      }
+    });
+
+    const nextSeq = (maxSeq + 1).toString().padStart(3, '0');
+    setAccountCode(`${prefix}${nextSeq}`);
+  };
+
+  const suggestedAccounts = useMemo(() => {
+    if (!tdhpAccounts) return [];
+    const filterPrefix = type === 'supplier' ? '320' : '120';
+    const filtered = tdhpAccounts.filter(a => a.code.startsWith(filterPrefix));
+    const uniqueMap = new Map<string, typeof filtered[0]>();
+    for (const acc of filtered) {
+      const codeKey = acc.code.trim();
+      if (!uniqueMap.has(codeKey)) {
+        uniqueMap.set(codeKey, acc);
+      }
+    }
+    const list = Array.from(uniqueMap.values());
+    list.sort((a, b) => compareAccountCodes(a.code, b.code));
+    return list;
+  }, [tdhpAccounts, type]);
+
+  // Check if entered accountCode already exists in TDHP chart
+  const existingAccountMatch = useMemo(() => {
+    if (!accountCode.trim() || !tdhpAccounts) return null;
+    return tdhpAccounts.find(a => a.code.toLowerCase() === accountCode.trim().toLowerCase());
+  }, [accountCode, tdhpAccounts]);
 
   useEffect(() => {
     if (initialData) {
@@ -109,6 +171,7 @@ export default function ContactFormModal({
       setIban(initialData.iban || '');
       setBankAccountName(initialData.bankAccountName || '');
       setBalance(initialData.balance || 0);
+      setAccountCode(initialData.accountCode || '');
       setNotes(initialData.notes || '');
     } else {
       // Reset form
@@ -136,6 +199,7 @@ export default function ContactFormModal({
       setIban('');
       setBankAccountName('');
       setBalance(0);
+      setAccountCode('');
       setNotes('');
     }
     setActiveTab('general');
@@ -179,6 +243,7 @@ export default function ContactFormModal({
         iban: iban.trim().toUpperCase() || undefined,
         bankAccountName: bankAccountName.trim() || undefined,
         balance: initialData ? initialData.balance : Number(balance) || 0,
+        accountCode: accountCode.trim() || undefined,
         notes: notes.trim() || undefined,
       });
       onClose();
@@ -262,18 +327,64 @@ export default function ContactFormModal({
         {/* TAB 1: GENEL & TICARI */}
         {activeTab === 'general' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Cari Kodu
+                  Cari Kodu (ERP)
                 </label>
                 <input
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  placeholder="Otomatik (örn: MUS-0001)"
+                  placeholder="Örn: CAR-001"
                   className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
                 />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1">
+                    <BookOpen className="w-3 h-3" /> TDHP Muhasebe
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAutoSuggestAccountCode}
+                    className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded transition-colors"
+                    title="Sonraki boş hesap kodunu öner"
+                  >
+                    Öner
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={accountCode}
+                  onChange={(e) => setAccountCode(e.target.value)}
+                  placeholder={type === 'supplier' ? 'Örn: 320.01.001' : 'Örn: 120.01.001'}
+                  list="tdhp-contact-accounts-quick"
+                  className="w-full border border-indigo-200 bg-indigo-50/40 rounded-lg p-2.5 text-xs font-mono font-bold text-indigo-950 focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
+                />
+                <datalist id="tdhp-contact-accounts-quick">
+                  {suggestedAccounts.map((acc) => (
+                    <option key={`quick-${acc.id || acc.code}`} value={acc.code}>
+                      {acc.code} - {acc.name}
+                    </option>
+                  ))}
+                </datalist>
+                {accountCode.trim() && (
+                  <div className="mt-1">
+                    {existingAccountMatch ? (
+                      <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="truncate"><strong>Mevcut TDHP Hesabı:</strong> {existingAccountMatch.name}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-[10px] text-indigo-700 bg-indigo-50/80 px-2 py-1 rounded border border-indigo-200 font-medium">
+                        <Sparkles className="w-3 h-3 text-indigo-600 shrink-0 animate-pulse" />
+                        <span><strong>Otomatik Açılacak:</strong> Kaydedildiğinde bu hesap TDHP planına anında eklenecektir.</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="sm:col-span-2 space-y-1">
@@ -673,6 +784,119 @@ export default function ContactFormModal({
                   placeholder="TRXX XXXX XXXX XXXX XXXX XXXX XX"
                   className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
                 />
+              </div>
+            </div>
+
+            {/* TEK DÜZEN HESAP PLANI (TDHP) MUHASEBE BAĞLANTISI */}
+            <div className="border-t border-slate-200 pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                  Tek Düzen Muhasebe Hesap Planı (TDHP) Entegrasyonu
+                </h4>
+                <button
+                  type="button"
+                  onClick={handleAutoSuggestAccountCode}
+                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md transition-colors"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Sıradaki Kodu Öner
+                </button>
+              </div>
+
+              <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2 space-y-1">
+                    <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+                      Tanımlı Muhasebe Muavin Hesap Kodu
+                    </label>
+                    <input
+                      type="text"
+                      value={accountCode}
+                      onChange={(e) => setAccountCode(e.target.value)}
+                      placeholder={type === 'supplier' ? 'Örn: 320.01.001' : 'Örn: 120.01.001'}
+                      list="tdhp-contact-accounts-tab3"
+                      className="w-full border border-indigo-200 bg-white rounded-lg p-2.5 text-xs font-mono font-bold text-indigo-950 focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
+                    />
+                    <datalist id="tdhp-contact-accounts-tab3">
+                      {suggestedAccounts.map((acc) => (
+                        <option key={`tab3-${acc.id || acc.code}`} value={acc.code}>
+                          {acc.code} - {acc.name}
+                        </option>
+                      ))}
+                    </datalist>
+                    {accountCode.trim() && (
+                      <div className="mt-1.5">
+                        {existingAccountMatch ? (
+                          <div className="flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            <span><strong>Mevcut TDHP Hesabı:</strong> {existingAccountMatch.code} - {existingAccountMatch.name}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-xs text-indigo-900 bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-indigo-200 font-medium">
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0 animate-pulse" />
+                            <span><strong>Otomatik Açılacak Alt Hesap:</strong> {accountCode.trim()} - Bu cari kartı kaydedildiğinde Tek Düzen Hesap Planında otomatik olarak açılacaktır.</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      Hızlı Hesap Grubu
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prefix = '120.01.';
+                          let maxSeq = 0;
+                          allContacts?.forEach(c => {
+                            if (c.accountCode?.startsWith(prefix)) {
+                              const s = parseInt(c.accountCode.split('.')[2], 10);
+                              if (!isNaN(s) && s > maxSeq) maxSeq = s;
+                            }
+                          });
+                          setAccountCode(`${prefix}${(maxSeq + 1).toString().padStart(3, '0')}`);
+                        }}
+                        className={cn(
+                          "flex-1 py-2 rounded-lg text-[10px] font-bold border text-center transition-all",
+                          accountCode.startsWith('120') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        )}
+                      >
+                        120 Alıcılar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prefix = '320.01.';
+                          let maxSeq = 0;
+                          allContacts?.forEach(c => {
+                            if (c.accountCode?.startsWith(prefix)) {
+                              const s = parseInt(c.accountCode.split('.')[2], 10);
+                              if (!isNaN(s) && s > maxSeq) maxSeq = s;
+                            }
+                          });
+                          setAccountCode(`${prefix}${(maxSeq + 1).toString().padStart(3, '0')}`);
+                        }}
+                        className={cn(
+                          "flex-1 py-2 rounded-lg text-[10px] font-bold border text-center transition-all",
+                          accountCode.startsWith('320') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        )}
+                      >
+                        320 Satıcılar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-slate-600 bg-white/70 p-3 rounded-lg border border-indigo-100 flex items-start gap-2">
+                  <span className="text-indigo-600 font-bold">ℹ️</span>
+                  <span>
+                    <strong>Otomatik Yevmiye & Defter-i Kebir Entegrasyonu:</strong> Bu cariye kesilen satış veya alış faturaları ile kasa/banka/çek tahsilat-tediyeleri onaylandığında, genel hesap yerine doğrudan burada tanımlanan muavin koduna kaydedilir. Böylece Mizan ve Muavin Defterinde bu carinin net borç/alacak durumu kuruşu kuruşuna listelenir.
+                  </span>
+                </div>
               </div>
             </div>
           </div>

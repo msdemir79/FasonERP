@@ -12,15 +12,66 @@
 }
 
 @media print {
-  /* Hide non-printable elements */
+  /* Hide all non-printable UI elements */
   nav, header, aside, .no-print, button, .modal-backdrop {
     display: none !important;
   }
 
-  /* When printing from full-screen or modal */
   body {
-    background: white !important;
-    color: black !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Specific Isolated Print for Work Order Sheet */
+  body:has(#work-order-sheet-printable) nav,
+  body:has(#work-order-sheet-printable) header,
+  body:has(#work-order-sheet-printable) aside {
+    display: none !important;
+  }
+
+  body:has(#work-order-sheet-printable) {
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  #work-order-sheet-printable {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 3mm 4mm !important;
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  /* Specific Isolated Print for Process Ref Ticket */
+  body:has(#printable-ticket) nav,
+  body:has(#printable-ticket) header,
+  body:has(#printable-ticket) aside {
+    display: none !important;
+  }
+
+  body:has(#printable-ticket) {
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  #printable-ticket {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 650px !important;
+    margin: 0 auto !important;
+    padding: 16px !important;
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
   }
 
   /* Barcode container full visibility */
@@ -37,7 +88,7 @@
   }
 
   @page {
-    margin: 4mm;
-    size: auto;
+    margin: 4mm 6mm;
+    size: portrait;
   }
 }

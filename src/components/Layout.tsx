@@ -12,7 +12,10 @@ import {
   CreditCard,
   Activity,
   ChevronRight,
-  Receipt
+  Receipt,
+  Truck,
+  Landmark,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -39,9 +42,11 @@ const navigation = [
     ]
   },
   { name: 'Sipariş Yönetimi', href: '/orders', icon: ShoppingCart },
+  { name: 'İrsaliyeler', href: '/waybills', icon: Truck },
   { name: 'Faturalar', href: '/invoices', icon: Receipt },
+  { name: 'Finans & Tahsilat', href: '/finance', icon: Landmark },
+  { name: 'Genel Muhasebe', href: '/accounting', icon: BookOpen },
   { name: 'Üretim Planlama', href: '/production', icon: Hammer },
-  { name: 'Muhasebe', href: '/accounting', icon: Wallet },
   { name: 'Cari Hesaplar', href: '/contacts', icon: Users },
 ];
 

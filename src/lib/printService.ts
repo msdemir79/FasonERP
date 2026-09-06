@@ -200,128 +200,201 @@ export async function printElement(elementOrId: string | HTMLElement, options: P
 
   // Clone element content
   const clone = el.cloneNode(true) as HTMLElement;
-  return printHtml(clone.outerHTML, options);
+  
+  // If running inside an iframe or preview sandbox (e.g. AI Studio preview), opening a dedicated
+  // Blob tab completely bypasses browser silent blocking of child iframe window.print().
+  if (window.self !== window.top) {
+    const url = openPrintWindow(clone.outerHTML, options.title || 'Baskı Önizleme', options);
+    return !!url;
+  }
+
+  try {
+    const res = await printHtml(clone.outerHTML, options);
+    return res;
+  } catch (err) {
+    console.warn('printHtml failed, falling back to openPrintWindow:', err);
+    const url = openPrintWindow(clone.outerHTML, options.title || 'Baskı Önizleme', options);
+    return !!url;
+  }
 }
 
 /**
- * Open a printable document in a new tab/window with a top print action bar
+ * Open a printable document in a new tab/window with auto-trigger print and top action bar
+ * Uses Blob URL to safely bypass iframe sandbox print restrictions
  */
 export function openPrintWindow(
   htmlContent: string, 
   title: string = 'ProERP Baskı Önizleme',
   options: PrintOptions = {}
-) {
-  const win = window.open('', '_blank');
-  if (!win) {
-    alert('Tarayıcınız açılır pencereleri (popup) engelledi. Lütfen açılır pencerelere izin verin veya doğrudan yazdır butonunu kullanın.');
-    return;
-  }
-
+): string | null {
   const pageSizeCss = options.widthMm && options.heightMm 
     ? `@page { size: ${options.widthMm}mm ${options.heightMm}mm; margin: 0; }`
-    : `@page { margin: 4mm; size: ${options.landscape ? 'landscape' : 'auto'}; }`;
+    : `@page { margin: 4mm 6mm; size: ${options.landscape ? 'landscape' : 'auto'}; }`;
 
-  win.document.write(`
-    <!DOCTYPE html>
-    <html lang="tr">
-      <head>
-        <meta charset="UTF-8">
-        <title>${title}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>
-          ${pageSizeCss}
-          @media print {
-            .no-print { display: none !important; }
-            body { padding: 0 !important; margin: 0 !important; background: white !important; }
-            .print-card { 
-              page-break-after: always !important; 
-              break-after: page !important; 
-              box-shadow: none !important;
-              margin: 0 auto !important;
-            }
-          }
-          *, *::before, *::after {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
-            box-sizing: border-box;
-          }
-          .page-break {
-            page-break-after: always;
-            break-after: page;
-          }
-          .print-card {
-            background: #ffffff;
-            box-sizing: border-box;
-          }
-          .label-img-frame {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            background-color: #ffffff !important;
-            border: 1.5px solid #000000 !important;
-            border-radius: 6px !important;
-            overflow: hidden !important;
-            padding: 2px !important;
-            box-sizing: border-box !important;
-            flex-shrink: 0 !important;
-          }
-          .label-img-frame img {
-            max-width: 100% !important;
-            max-height: 100% !important;
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain !important;
-            display: block !important;
-            margin: auto !important;
-          }
-          ${options.css || ''}
-        </style>
-      </head>
-      <body class="bg-slate-100 min-h-screen text-slate-900 font-sans p-4">
-        <!-- Top Toolbar -->
-        <div class="no-print max-w-4xl mx-auto mb-6 bg-slate-900 text-white p-4 rounded-2xl shadow-xl flex items-center justify-between sticky top-4 z-50">
-          <div>
-            <h1 class="text-base font-black uppercase tracking-wider">${title}</h1>
-            <p class="text-xs text-slate-400 font-bold">
-              ${options.widthMm && options.heightMm ? `Etiket Boyutu: ${options.widthMm} x ${options.heightMm} mm | ` : ''}
-              Yazdırmak için butona basın veya Ctrl+P yapın
-            </p>
-          </div>
-          <div class="flex items-center gap-3">
-            <button 
-              onclick="window.close()" 
-              class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold uppercase transition-all"
-            >
-              Kapat
-            </button>
-            <button 
-              onclick="window.print()" 
-              class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
-              Yazdır (Print)
-            </button>
-          </div>
+  // Collect all active styles from current document to ensure identical rendering
+  const activeStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map(el => el.outerHTML)
+    .join('\n');
+
+  const fullHtml = `<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8">
+    <title>${title}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    ${activeStyles}
+    <style>
+      ${pageSizeCss}
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f1f5f9;
+        color: #000000;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      @media print {
+        .no-print { display: none !important; }
+        body { 
+          background: #ffffff !important; 
+          padding: 0 !important; 
+          margin: 0 !important; 
+        }
+        .print-card-wrapper {
+          padding: 0 !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+        }
+      }
+      .no-print-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 9999;
+        background: #0f172a;
+        color: #ffffff;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .print-btn {
+        background: #f59e0b;
+        color: #0f172a;
+        font-weight: 900;
+        font-size: 13px;
+        padding: 8px 18px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+        transition: background 0.2s;
+      }
+      .print-btn:hover { background: #fbbf24; }
+      .close-btn {
+        background: #334155;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .close-btn:hover { background: #475569; }
+      .print-card-wrapper {
+        padding: 16px;
+        display: flex;
+        justify-content: center;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      ${options.css || ''}
+    </style>
+  </head>
+  <body>
+    <!-- Top Print Action Bar (Hidden when printing) -->
+    <div class="no-print no-print-toolbar">
+      <div>
+        <div style="font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">
+          🖨️ ${title}
         </div>
-
-        <!-- Printable Content -->
-        <div class="max-w-4xl mx-auto flex flex-col items-center gap-4">
-          ${htmlContent}
+        <div style="font-size: 11px; color: #94a3b8; font-weight: 600; margin-top: 2px;">
+          Yazdırma penceresi otomatik açılmadıysa sağdaki sarı butona tıklayın veya Ctrl+P tuşlayın.
         </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="close-btn" onclick="window.close()">Kapat</button>
+        <button class="print-btn" onclick="window.print()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Yazdır (Print)
+        </button>
+      </div>
+    </div>
 
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.focus();
-            }, 300);
-          };
-        </script>
-      </body>
-    </html>
-  `);
-  win.document.close();
+    <!-- Printable Work Order Content -->
+    <div class="print-card-wrapper">
+      ${htmlContent}
+    </div>
+
+    <script>
+      // Automatically trigger native print dialog once DOM & images load
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          try {
+            window.focus();
+            window.print();
+          } catch (e) {
+            console.warn('Auto print error in tab:', e);
+          }
+        }, 400);
+      });
+    </script>
+  </body>
+</html>`;
+
+  try {
+    const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Open via invisible anchor click (supported in iframe user-click handlers)
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
+      link.remove();
+    }, 100);
+
+    return blobUrl;
+  } catch (err) {
+    console.warn('Blob window open failed, fallback to window.open:', err);
+    try {
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.write(fullHtml);
+        win.document.close();
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
 }
 
 /**

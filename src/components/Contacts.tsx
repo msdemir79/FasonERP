@@ -524,6 +524,11 @@ export default function Contacts() {
                           {c.name}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
+                          {c.accountCode && (
+                            <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-mono font-bold" title="TDHP Muhasebe Muavin Kodu">
+                              TDHP: {c.accountCode}
+                            </span>
+                          )}
                           {c.category && (
                             <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-semibold">
                               {c.category}
@@ -680,11 +685,18 @@ export default function Contacts() {
                       >
                         {c.name}
                       </h3>
-                      {c.category && (
-                        <span className="inline-block text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.2 rounded mt-1">
-                          {c.category}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        {c.accountCode && (
+                          <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-mono font-bold" title="TDHP Muhasebe Muavin Kodu">
+                            TDHP: {c.accountCode}
+                          </span>
+                        )}
+                        {c.category && (
+                          <span className="inline-block text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                            {c.category}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 

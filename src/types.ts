@@ -29,6 +29,8 @@ export interface Contact {
   iban?: string;                 // IBAN Numarası
   bankAccountName?: string;      // Hesap Sahibi
   balance: number;               // Cari Bakiye
+  currency?: string;             // Para Birimi (TRY, USD, EUR, GBP)
+  accountCode?: string;          // TDHP Muhasebe Hesap Kodu (örn: 120.01.001 Müşteri, 320.01.001 Satıcı)
   notes?: string;                // Özel Notlar
   createdAt?: Date;
   updatedAt?: Date;
@@ -67,6 +69,9 @@ export interface Product {
   categoryType?: StockCategoryType; // 'finished' | 'semi_finished' | 'raw_material' | 'accessory'
   hasSizeVariants?: boolean;        // true for finished goods and size-variant semi-finished (Taban, Mostra, Fuspet, Salpa)
   subType?: string;                 // e.g. 'Taban', 'Mostra', 'Fuspet', 'Salpa', 'Saya', 'Deri', 'Tekstil', 'Toka', 'Bağcık', 'Yapıştırıcı'
+  moldCode?: string;                // Kalıp Kodu (örn: 018)
+  moldGroup?: string;               // Kalıp / Seri Grubu (örn: PTK _ PATİK (26-30))
+  documentNo?: string;              // Belge No (örn: KİŞ 74)
   unit: string;                     // 'Çift', 'Adet', 'dm²', 'm²', 'Metre', 'Kg', 'Litre', 'Tabaka', 'Paket', 'Koli', 'Bobin', 'Rulo'
   secondaryUnit?: string;           // e.g., "Çift"
   multiplier?: number;              // e.g., 10 (items per box)
@@ -92,6 +97,10 @@ export interface Product {
   colorImages?: { color: string, image: string }[];
   shelf?: string;
   location?: string;
+  accountingCode?: string;       // TDHP Stok Hesap Kodu (örn: 150.01 Hammadde, 152.01 Yarı Mamul, 153.01 Ticari Mal, 157.01 Mamul)
+  salesAccountCode?: string;     // TDHP Satış Gelir Hesabı (örn: 600.01, 600.20)
+  purchaseAccountCode?: string;  // TDHP Alış / Gider / Maliyet Hesabı (örn: 150.01, 153.01, 710.01)
+  vatRate?: number;              // KDV Oranı (%) (örn: 20, 10, 1)
   notes?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -108,9 +117,11 @@ export interface ProductVariant {
 
 export interface RecipeIngredient {
   productId: number;
-  color?: string;                  // Malzeme / Yarı mamul rengi (Örn: Siyah)
+  department?: string;             // 'KESİM' | 'BASKI' | 'SAYA' | 'BAĞCIK' | 'MONTA' | 'TEMİZLEME' | 'DİĞER'
+  partName?: string;               // Açıklama / Parça Notu (örn: 'ÇEMBER', 'NAL', 'GAMBA', 'FORT', 'DİL ASTAR', 'TABAN', 'KUTU')
+  color?: string;                  // Malzeme / Yarı mamul rengi / Kullanılacak Renk (Örn: Siyah, Beyaz, Saks)
   quantity: number;                // 1 çift/adet mamul için sarfiyat
-  unit?: string;                   // Çift, dm2, Adet, Kg, Metre vb.
+  unit?: string;                   // Çift, dm2, Adet, Kg, Metre, Plak vb.
   isMatrixMatched?: boolean;       // Numara/Beden Matris Eşleşmeli (Taban, Mostra, Fuspet için sipariş asortisi ile 1:1 eşleşir)
   notes?: string;
 }
@@ -171,10 +182,16 @@ export interface WorkOrder {
   orderItemId?: number;
   orderNumber?: string;
   customerName?: string;
+  customerCode?: string;
+  orderDate?: Date | string;
+  documentNo?: string;        // Belge No (örn: KİŞ 74)
+  moldCode?: string;          // Kalıp Kodu (örn: 018)
+  moldGroup?: string;         // Kalıp / Seri Grubu (örn: PTK _ PATİK (26-30))
   
-  // Product Variant info
+  // Product Variant info & Size Breakdown
   color?: string;
   size?: string;
+  assortmentBreakdown?: { size: string; quantity: number }[];
   
   // Stages & Progress
   currentStage: ProductionStage;
@@ -319,6 +336,64 @@ export interface InvoiceItem {
   total: number;                 // Satır Net Tutarı (KDV Dahil)
 }
 
+export type WaybillType = 'sales' | 'purchase';
+export type WaybillStatus = 'draft' | 'issued' | 'cancelled';
+export type WaybillScenario = 'sevk' | 'matbu' | 'konsinye' | 'fason' | 'ihracat';
+
+export interface Waybill {
+  id?: number;
+  waybillNumber: string;         // e.g., IRS-2026-000001, GIR-2026-000001 or GIB e-Waybill No
+  type: WaybillType;             // 'sales' = Sevk / Satış İrsaliyesi | 'purchase' = Alış / Gelen İrsaliye
+  scenario: WaybillScenario;     // 'sevk' (Sevk İrsaliyesi) | 'matbu' | 'konsinye' | 'fason' | 'ihracat'
+  contactId: number;             // Müşteri veya Tedarikçi
+  orderId?: number;              // Bağlı Sipariş (opsiyonel)
+  orderNumber?: string;
+  date: Date;                    // İrsaliye Düzenleme Tarihi
+  dispatchDate?: Date;           // Fiili Sevk Tarihi
+  dispatchTime?: string;         // Fiili Sevk Saati (örn: "14:30")
+  carrierTitle?: string;         // Taşıyıcı Firma / Kargo (örn: Yurtiçi Kargo, MNG, Özlem Lojistik)
+  carrierTaxNo?: string;         // Taşıyıcı VKN / TCKN
+  driverName?: string;           // Sürücü Adı Soyadı
+  driverTc?: string;             // Sürücü TCKN
+  vehiclePlate?: string;         // Taşıt Plakası (örn: 34 ABC 123)
+  trailerPlate?: string;         // Dorse Plakası
+  deliveryAddress?: string;      // Teslimat / Sevkiyat Adresi
+  ettn?: string;                 // e-İrsaliye UUID / ETTN
+  subtotal: number;              // KDV Hariç Matrah Toplamı (₺)
+  discountTotal: number;         // Toplam İskonto Tutarı (₺)
+  taxTotal: number;              // Toplam KDV Tutarı (₺)
+  grandTotal: number;            // İrsaliye Toplam Tutarı (₺)
+  totalQuantity: number;         // Toplam Sevk Miktarı (Çift/Adet)
+  currency: string;              // 'TRY' | 'USD' | 'EUR'
+  status: WaybillStatus;         // 'draft' | 'issued' | 'cancelled'
+  isStockDeducted?: boolean;     // Otomatik stok hareketi yapıldı mı (default: true)
+  invoicedStatus?: 'not_invoiced' | 'invoiced'; // Faturalaşma durumu
+  invoiceId?: number;            // Bağlı Fatura ID
+  invoiceNumber?: string;        // Bağlı Fatura No
+  notes?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface WaybillItem {
+  id?: number;
+  waybillId: number;
+  productId?: number;
+  orderItemId?: number;          // Bağlı sipariş kalemi
+  productCode: string;
+  productName: string;
+  color?: string;
+  size?: string;
+  quantity: number;              // Sevk Edilen Miktar (Çift / Adet)
+  unit: string;                  // 'Çift', 'Adet', 'Metre', 'Kg', 'Paket' vb.
+  unitPrice: number;             // Birim Fiyat (KDV Hariç)
+  discountRate: number;          // İskonto %
+  discountAmount: number;        // İskonto Tutarı
+  taxRate: number;               // KDV % (0, 1, 10, 20)
+  taxAmount: number;             // KDV Tutarı
+  total: number;                 // Satır Net Tutarı (KDV Dahil)
+}
+
 export interface InventoryLog {
   id?: number;
   productId: number;
@@ -327,3 +402,143 @@ export interface InventoryLog {
   date: Date;
   description: string;
 }
+
+// ==========================================
+// TEK DÜZEN HESAP PLANI (TDHP) & GENEL MUHASEBE
+// ==========================================
+
+export type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'cost';
+
+export interface Account {
+  id?: number;
+  code: string;            // e.g. "100", "100.01", "102.01", "120.01", "320.01", "600.20", "391.20"
+  name: string;            // e.g. "MERKEZ TL KASASI", "GARANTİ BANKASI VADESİZ TL"
+  type: AccountType;       // 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'cost'
+  level: number;           // 1: Sınıf (1-7), 2: Grup (10-77), 3: Ana Hesap (100-770), 4: Alt/Muavin Hesap
+  parentCode?: string;     // Üst hesap kodu (örn: "100" -> parent of "100.01")
+  currency?: string;       // TRY, USD, EUR
+  description?: string;
+  isSystem?: boolean;      // Silinemez standart sistem hesabı mı
+  isActive?: boolean;
+}
+
+export type JournalEntryType = 'mahsup' | 'tahsil' | 'tediye' | 'acilis' | 'kapanis';
+
+export interface JournalEntryLine {
+  id: string;              // unique row id
+  accountCode: string;     // Hesap Kodu
+  accountName: string;     // Hesap Adı
+  description: string;     // Satır Açıklaması
+  debit: number;           // Borç (₺)
+  credit: number;          // Alacak (₺)
+  contactId?: number;      // İlgili Cari (opsiyonel)
+}
+
+export interface JournalEntry {
+  id?: number;
+  entryNumber: string;     // YEV-2026-000001
+  entryType: JournalEntryType; // 'mahsup' | 'tahsil' | 'tediye' | 'acilis' | 'kapanis'
+  date: Date;              // Yevmiye Tarihi
+  description: string;     // Genel Açıklama
+  documentType?: 'invoice' | 'collection' | 'disbursement' | 'check' | 'manual' | 'opening';
+  documentId?: number;     // Fatura veya Tahsilat ID'si
+  documentNumber?: string; // Fatura / Makbuz No
+  lines: JournalEntryLine[];
+  totalDebit: number;      // Toplam Borç
+  totalCredit: number;     // Toplam Alacak
+  isBalanced: boolean;     // Borç === Alacak
+  status: 'approved' | 'draft';
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+// ==========================================
+// TAHSİLAT & FİNANS MODÜLÜ (KASA, BANKA, ÇEK-SENET)
+// ==========================================
+
+export interface CashBox {
+  id?: number;
+  code: string;            // KAS-01
+  name: string;            // Merkez TL Kasası
+  accountCode: string;     // 100.01
+  currency: string;        // TRY, USD, EUR
+  balance: number;
+  responsiblePerson?: string;
+  notes?: string;
+  createdAt?: Date;
+}
+
+export interface BankAccount {
+  id?: number;
+  bankName: string;        // Garanti BBVA, Ziraat Bankası vb.
+  branchName?: string;     // Kadıköy Şubesi
+  accountNumber?: string;  // 12345678
+  iban: string;            // TR...
+  accountCode: string;     // 102.01
+  currency: string;        // TRY, USD, EUR
+  balance: number;
+  notes?: string;
+  createdAt?: Date;
+}
+
+export type CheckType = 'received_check' | 'given_check' | 'received_note' | 'given_note';
+
+export type CheckStatus = 
+  | 'portfolio'         // Portföyde (Kasada/Cüzdanda)
+  | 'bank_collection'   // Tahsilde (Bankaya Verildi)
+  | 'collected'         // Tahsil Edildi (Nakit/Banka ödendi)
+  | 'endorsed'          // Ciro Edildi (Tedarikçiye verildi)
+  | 'bounced'           // Karşılıksız / Protestolu
+  | 'returned';         // İade Edildi
+
+export interface CheckNote {
+  id?: number;
+  type: CheckType;         // Alınan Çek, Verilen Çek, Alınan Senet, Verilen Senet
+  portfolioNumber: string; // Portföy No (PRF-2026-001)
+  serialNumber: string;    // Çek/Senet No
+  bankName?: string;       // Keşideci Bankası
+  branchName?: string;     // Şube
+  accountNumber?: string;  // Hesap No
+  drawer: string;          // Keşideci (İmzalayan / Düzenleyen)
+  drawerTaxNumber?: string;// Keşideci VKN / TCKN
+  contactId: number;       // Hangi cariden alındı / kime verildi
+  contactName: string;
+  endorsedToContactId?: number; // Ciro edilen cari ID
+  endorsedToContactName?: string;
+  issueDate: Date;         // Tanzim Tarihi
+  dueDate: Date;           // Vade Tarihi
+  amount: number;          // Tutar
+  currency: string;        // TRY, USD, EUR
+  status: CheckStatus;     // 'portfolio' | 'bank_collection' | 'collected' | 'endorsed' | 'bounced' | 'returned'
+  statusChangeDate?: Date;
+  statusNotes?: string;
+  accountCode?: string;    // 101.01 (Alınan Çekler) veya 103.01 (Verilen Çekler)
+  journalEntryId?: number; // Bağlı muhasebe yevmiye fişi
+  notes?: string;
+  createdAt: Date;
+}
+
+export type ReceiptType = 'collection' | 'disbursement'; // Tahsilat (Giriş) | Tediye (Çıkış)
+export type PaymentInstrument = 'cash' | 'bank' | 'check' | 'credit_card';
+
+export interface CollectionReceipt {
+  id?: number;
+  receiptNumber: string;   // MAK-2026-000001
+  type: ReceiptType;       // 'collection' (Tahsilat) | 'disbursement' (Tediye)
+  date: Date;
+  contactId: number;
+  contactName: string;
+  instrument: PaymentInstrument; // Nakit, Banka, Çek/Senet, Kredi Kartı
+  cashBoxId?: number;
+  bankAccountId?: number;
+  checkId?: number;
+  amount: number;
+  currency: string;
+  description: string;
+  invoiceId?: number;      // İlişkili Fatura
+  invoiceNumber?: string;
+  journalEntryId?: number; // Bağlı muhasebe yevmiye fişi
+  isAccounted?: boolean;   // Muhasebeleştirildi mi
+  createdAt: Date;
+}
+

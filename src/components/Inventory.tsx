@@ -31,7 +31,8 @@ import {
   ShoppingBag,
   Scissors,
   Wrench,
-  Grid
+  Grid,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -114,6 +115,7 @@ export const CATEGORY_CONFIGS: Record<StockCategoryType, CategoryConfig> = {
 export default function Inventory() {
   const products = useLiveQuery(() => db.products.toArray());
   const templates = useLiveQuery(() => db.assortmentTemplates.toArray());
+  const tdhpAccounts = useLiveQuery(() => db.accounts.toArray());
 
   // Navigation & Filter States
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<'all' | StockCategoryType>('all');
@@ -133,8 +135,8 @@ export default function Inventory() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Active Tab inside Add/Edit Modal: 'general' | 'matrix' | 'images' | 'barcodes'
-  const [activeTab, setActiveTab] = useState<'general' | 'matrix' | 'images' | 'barcodes'>('general');
+  // Active Tab inside Add/Edit Modal: 'general' | 'matrix' | 'images' | 'barcodes' | 'accounting'
+  const [activeTab, setActiveTab] = useState<'general' | 'matrix' | 'images' | 'barcodes' | 'accounting'>('general');
   const [barcodeSubTab, setBarcodeSubTab] = useState<'box' | 'variants'>('box');
 
   // Form State for Stock Card
@@ -155,6 +157,10 @@ export default function Inventory() {
     sellingPrice: 0,
     multiplier: 1,
     secondaryUnit: 'Çift',
+    accountingCode: '157.01',
+    salesAccountCode: '600.01',
+    purchaseAccountCode: '620.01',
+    vatRate: 20,
     notes: ''
   });
 
@@ -319,6 +325,10 @@ export default function Inventory() {
       sellingPrice: 0,
       multiplier: 1,
       secondaryUnit: 'Çift',
+      accountingCode: '157.01',
+      salesAccountCode: '600.01',
+      purchaseAccountCode: '620.01',
+      vatRate: 20,
       notes: ''
     });
     setColors([]);
@@ -353,10 +363,14 @@ export default function Inventory() {
         ...prev,
         unit: 'Çift',
         secondaryUnit: 'Çift',
-        multiplier: 1
+        multiplier: 1,
+        accountingCode: '157.01',
+        salesAccountCode: '600.01',
+        purchaseAccountCode: '620.01',
+        vatRate: 20
       }));
       setSubType(config.subTypes[0] || 'Spor');
-      if (colors.length === 0) setColors(['Siyah']);
+      if (colors.length === 0) setColors(['SİYAH', 'BEYAZ']);
       if (!selectedTemplateId && templates && templates.length > 0) {
         setSelectedTemplateId(templates[0].id);
       }
@@ -367,10 +381,14 @@ export default function Inventory() {
         ...prev,
         unit: 'Çift',
         secondaryUnit: 'Çift',
-        multiplier: 1
+        multiplier: 1,
+        accountingCode: '152.01',
+        salesAccountCode: '600.01',
+        purchaseAccountCode: '710.01',
+        vatRate: 20
       }));
       setSubType('Taban (Sole)');
-      if (colors.length === 0) setColors(['Siyah']);
+      if (colors.length === 0) setColors(['SİYAH', 'BEYAZ']);
       // Pick Taban/Fuspet template if exists
       const tabanTmpl = templates?.find(t => t.name.toLowerCase().includes('taban') || t.name.toLowerCase().includes('fuspet'));
       if (tabanTmpl) {
@@ -384,20 +402,28 @@ export default function Inventory() {
         ...prev,
         unit: 'dm²',
         secondaryUnit: 'dm²',
-        multiplier: 1
+        multiplier: 1,
+        accountingCode: '150.01',
+        salesAccountCode: '600.20',
+        purchaseAccountCode: '150.01',
+        vatRate: 20
       }));
       setSubType(config.subTypes[0] || 'Vidala Deri');
-      setColors([]);
+      if (colors.length === 0) setColors(['SİYAH', 'BEYAZ', 'GRİ']);
     } else if (newCat === 'accessory') {
       setHasSizeVariants(false);
       setProductForm(prev => ({
         ...prev,
         unit: 'Adet',
         secondaryUnit: 'Adet',
-        multiplier: 1
+        multiplier: 1,
+        accountingCode: '150.02',
+        salesAccountCode: '600.20',
+        purchaseAccountCode: '150.02',
+        vatRate: 20
       }));
       setSubType(config.subTypes[0] || 'Bağcık');
-      setColors([]);
+      if (colors.length === 0) setColors(['SİYAH', 'BEYAZ']);
     }
   };
 
@@ -424,6 +450,10 @@ export default function Inventory() {
       sellingPrice: product.sellingPrice || 0,
       multiplier: product.multiplier || 1,
       secondaryUnit: product.secondaryUnit || product.unit || 'Çift',
+      accountingCode: product.accountingCode || (cat === 'finished' ? '157.01' : cat === 'semi_finished' ? '152.01' : '150.01'),
+      salesAccountCode: product.salesAccountCode || '600.01',
+      purchaseAccountCode: product.purchaseAccountCode || (cat === 'finished' ? '620.01' : '150.01'),
+      vatRate: product.vatRate ?? 20,
       notes: product.notes || ''
     });
 
@@ -614,8 +644,12 @@ export default function Inventory() {
       isFootwear: categoryType === 'finished' || (categoryType === 'semi_finished' && hasSizeVariants),
       shelf: productForm.shelf.trim(),
       location: productForm.location.trim(),
+      accountingCode: productForm.accountingCode?.trim() || undefined,
+      salesAccountCode: productForm.salesAccountCode?.trim() || undefined,
+      purchaseAccountCode: productForm.purchaseAccountCode?.trim() || undefined,
+      vatRate: Number(productForm.vatRate) || 20,
       notes: productForm.notes.trim(),
-      colors: hasSizeVariants ? colors : undefined,
+      colors: colors && colors.length > 0 ? colors : undefined,
       assortmentTemplateId: hasSizeVariants ? selectedTemplateId : undefined,
       assortment: effectiveAssortment,
       colorBoxBarcodes: colorBoxBarcodes.length > 0 ? colorBoxBarcodes : undefined,
@@ -935,6 +969,11 @@ export default function Inventory() {
                               <span className="font-mono text-[10px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                                 {product.code}
                               </span>
+                              {product.accountingCode && (
+                                <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700" title={`TDHP Stok Hesabı: ${product.accountingCode}`}>
+                                  TDHP: {product.accountingCode}
+                                </span>
+                              )}
                               {product.shelf && (
                                 <span className="text-[9px] font-bold text-slate-400 uppercase">
                                   Raf: {product.shelf}
@@ -971,21 +1010,21 @@ export default function Inventory() {
                         </div>
                       </td>
 
-                      {/* Variants / Sizes */}
+                      {/* Variants / Sizes / Colors */}
                       <td className="py-3.5 px-4">
-                        {isVariant ? (
+                        {(product.colors && product.colors.length > 0) || isVariant ? (
                           <div className="space-y-1.5">
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {product.colors && product.colors.length > 0 ? (
-                                product.colors.map(col => (
-                                  <span key={col} className="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                            {product.colors && product.colors.length > 0 ? (
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {product.colors.map(col => (
+                                  <span key={col} className="text-[9px] font-black uppercase px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
                                     {col}
                                   </span>
-                                ))
-                              ) : (
-                                <span className="text-[9px] text-slate-400 font-bold">Matris Var</span>
-                              )}
-                            </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-[9px] text-slate-400 font-bold">Matris Var</span>
+                            )}
                             {product.variantBarcodes && product.variantBarcodes.length > 0 && (
                               <div className="text-[9px] font-mono text-indigo-600 font-bold">
                                 {product.variantBarcodes.length} Beden Varyantı
@@ -1285,6 +1324,17 @@ export default function Inventory() {
             >
               {hasSizeVariants ? '4.' : '3.'} Barkod Yönetimi
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('accounting')}
+              className={cn(
+                "pb-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5",
+                activeTab === 'accounting' ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"
+              )}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              {hasSizeVariants ? '5.' : '4.'} Muhasebe (TDHP)
+            </button>
           </div>
 
           {/* TAB 1: GENERAL INFO */}
@@ -1425,6 +1475,140 @@ export default function Inventory() {
                     onChange={e => setProductForm(prev => ({ ...prev, minStock: Number(e.target.value) }))}
                     className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
                   />
+                </div>
+              </div>
+
+              {/* TDHP Muhasebe Özeti & Hızlı Erişim */}
+              <div className="p-3.5 bg-gradient-to-r from-indigo-50/80 to-slate-50 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-sm">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 flex items-center flex-wrap gap-1.5">
+                      <span>TDHP Stok Kodu:</span>
+                      <span className="font-mono bg-white px-2 py-0.5 rounded border border-indigo-200 text-indigo-700 font-black">
+                        {productForm.accountingCode || 'Belirtilmedi'}
+                      </span>
+                      <span className="text-[11px] text-slate-500 font-medium">
+                        | Satış: <span className="font-mono text-slate-700 font-bold">{productForm.salesAccountCode || '600.01'}</span>
+                        | Alış: <span className="font-mono text-slate-700 font-bold">{productForm.purchaseAccountCode || '150.01'}</span>
+                        | KDV: <span className="font-mono text-slate-700 font-bold">%{productForm.vatRate ?? 20}</span>
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-normal">
+                      Fatura ve stok hareketlerinde bu hesap kodlarına otomatik yevmiye kaydı işlenir.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('accounting')}
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm active:scale-95"
+                >
+                  Hesap Planı Detayları &rarr;
+                </button>
+              </div>
+
+              {/* Color Options for ALL Categories (Deri, Kumaş, Bağcık, Mostra, Fuspet, Taban vb.) */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-indigo-600" />
+                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                      Renk Seçenekleri & Varyantlar
+                    </label>
+                    <span className="text-[10px] font-black bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                      {colors.length} Renk Tanımlı
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-semibold">
+                    {categoryType === 'raw_material' ? 'Deri, Suni Deri, Kumaş, Astar renkleri' :
+                     categoryType === 'accessory' ? 'Bağcık, Toka, İplik, Fermuar renkleri' :
+                     categoryType === 'semi_finished' ? 'Mostra, Fuspet, Taban renk varyantları' : 'Ayakkabı renk varyantları'}
+                  </span>
+                </div>
+
+                {/* Color Input and Popular Color Badges */}
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Renk adı yazıp Enter'a veya Ekle'ye basınız (Örn: SİYAH, BEYAZ, GRİ, TABA, FÜME)..."
+                      value={newColor}
+                      onChange={e => setNewColor(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColor(); } }}
+                      className="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={addColor}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-xl font-black text-xs uppercase tracking-wider shadow-sm transition-all"
+                    >
+                      Ekle
+                    </button>
+                  </div>
+
+                  {/* Quick Color Suggestions */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Hızlı Seçim:</span>
+                    {['SİYAH', 'BEYAZ', 'GRİ', 'TABA', 'KAHVE', 'LACİVERT', 'BEJ', 'BORDO', 'HAKİ', 'KIRMIZI', 'HARDAL', 'NUBUK', 'ŞEFFAF'].map(quickCol => {
+                      const isAdded = colors.includes(quickCol);
+                      return (
+                        <button
+                          key={quickCol}
+                          type="button"
+                          onClick={() => {
+                            if (isAdded) {
+                              removeColor(quickCol);
+                            } else {
+                              setColors([...colors, quickCol]);
+                            }
+                          }}
+                          className={cn(
+                            "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1",
+                            isAdded
+                              ? "bg-indigo-600 text-white shadow-sm"
+                              : "bg-white border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+                          )}
+                        >
+                          {quickCol}
+                          {isAdded && <X className="w-2.5 h-2.5 ml-0.5 opacity-80" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Active Selected Colors Chips */}
+                  {colors.length > 0 ? (
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      {colors.map(col => (
+                        <span
+                          key={col}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border-2 border-indigo-100 rounded-xl text-xs font-black uppercase text-indigo-950 shadow-sm"
+                        >
+                          <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                          {col}
+                          <button
+                            type="button"
+                            onClick={() => removeColor(col)}
+                            className="text-slate-400 hover:text-rose-600 transition-colors p-0.5 rounded-md hover:bg-rose-50"
+                            title={`${col} rengini kaldır`}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200 font-medium">
+                      ⚠️ Henüz bir renk eklenmedi. Örnek: Deniz suni deri için yukarıdan <b>SİYAH</b>, <b>BEYAZ</b> ve <b>GRİ</b> renklerini seçebilir veya özel renk yazabilirsiniz.
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-[10px] text-slate-400 font-medium">
+                  💡 Bu renkler üretim reçetelerinde (BoM), siparişlerde ve stok hareketlerinde otomatik filtrelenir ve malzeme eşleştirmelerinde kullanılır.
                 </div>
               </div>
 
@@ -1848,6 +2032,296 @@ export default function Inventory() {
               </div>
             </div>
           )}
+
+          {/* TAB 5: ACCOUNTING (TDHP) */}
+          {activeTab === 'accounting' && (
+            <div className="space-y-5">
+              {/* Presets / Information Bar */}
+              <div className="p-4 bg-indigo-50/60 border border-indigo-200/80 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-black text-indigo-900 uppercase tracking-wider">
+                    <BookOpen className="w-4 h-4 text-indigo-600" />
+                    Tek Düzen Hesap Planı (TDHP) Entegrasyonu
+                  </div>
+                  <span className="text-[11px] font-bold text-indigo-600 bg-white px-2.5 py-0.5 rounded-full border border-indigo-200">
+                    Otomatik Yevmiye Eşlemesi
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Bu stok kartı kaydedildiğinde, tanımlanan tüm TDHP hesapları (Stok, Satış Geliri ve Alış/Maliyet) Muhasebe Modülünde <strong>otomatik olarak açılır</strong>. Faturalara veya irsaliyelere eklendiğinde ise sistem bu hesap kodlarını doğrudan yevmiye maddelerine aktarır.
+                </p>
+
+                {/* Quick Presets */}
+                <div className="pt-1">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                    Hızlı Şablon Uygula:
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setProductForm(prev => ({
+                        ...prev,
+                        accountingCode: '157.01',
+                        salesAccountCode: '600.01',
+                        purchaseAccountCode: '620.01',
+                        vatRate: 20
+                      }))}
+                      className="p-2 bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
+                    >
+                      <div className="text-[11px] font-black group-hover:text-white text-indigo-900">Mamul (Ayakkabı)</div>
+                      <div className="text-[10px] text-slate-500 group-hover:text-indigo-100 font-mono">157 / 600 / 620</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setProductForm(prev => ({
+                        ...prev,
+                        accountingCode: '150.01',
+                        salesAccountCode: '600.20',
+                        purchaseAccountCode: '150.01',
+                        vatRate: 20
+                      }))}
+                      className="p-2 bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
+                    >
+                      <div className="text-[11px] font-black group-hover:text-white text-indigo-900">İlk Madde (Deri/Kumaş)</div>
+                      <div className="text-[10px] text-slate-500 group-hover:text-indigo-100 font-mono">150.01 / 600 / 150</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setProductForm(prev => ({
+                        ...prev,
+                        accountingCode: '152.01',
+                        salesAccountCode: '600.01',
+                        purchaseAccountCode: '710.01',
+                        vatRate: 20
+                      }))}
+                      className="p-2 bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
+                    >
+                      <div className="text-[11px] font-black group-hover:text-white text-indigo-900">Yarı Mamul (Taban/Mostra)</div>
+                      <div className="text-[10px] text-slate-500 group-hover:text-indigo-100 font-mono">152.01 / 600 / 710</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setProductForm(prev => ({
+                        ...prev,
+                        accountingCode: '153.01',
+                        salesAccountCode: '600.20',
+                        purchaseAccountCode: '153.01',
+                        vatRate: 20
+                      }))}
+                      className="p-2 bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
+                    >
+                      <div className="text-[11px] font-black group-hover:text-white text-indigo-900">Ticari Mal / Aksesuar</div>
+                      <div className="text-[10px] text-slate-500 group-hover:text-indigo-100 font-mono">153.01 / 600 / 153</div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form inputs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. Stok Hesabı */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                      1. Stok Bilanço Hesabı (Aktif)
+                    </label>
+                    <span className="text-[10px] font-bold text-indigo-600">150, 152, 153, 157 Grubu</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={productForm.accountingCode}
+                    onChange={e => setProductForm(prev => ({ ...prev, accountingCode: e.target.value }))}
+                    list="tdhp-stock-accounts"
+                    placeholder="Örn: 157.01, 150.01..."
+                    className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  />
+                  <div className="text-[11px] mt-1">
+                    {productForm.accountingCode?.trim() && (
+                      tdhpAccounts?.some(a => a.code.toLowerCase() === productForm.accountingCode.trim().toLowerCase()) ? (
+                        <span className="text-emerald-700 font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Tanımlı TDHP Hesabı: {tdhpAccounts?.find(a => a.code.toLowerCase() === productForm.accountingCode.trim().toLowerCase())?.name}
+                        </span>
+                      ) : (
+                        <span className="text-indigo-700 font-medium flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-indigo-600" />
+                          Otomatik Açılacak: Kaydedildiğinde Tek Düzen Hesap Planına eklenecektir.
+                        </span>
+                      )
+                    )}
+                    {!productForm.accountingCode?.trim() && (
+                      <span className="text-slate-500">Envanter giriş/çıkışlarında borç/alacak çalışan aktif stok hesabı.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Satış Gelir Hesabı */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                      2. Yurtiçi Satış Gelir Hesabı
+                    </label>
+                    <span className="text-[10px] font-bold text-indigo-600">600 Grubu</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={productForm.salesAccountCode}
+                    onChange={e => setProductForm(prev => ({ ...prev, salesAccountCode: e.target.value }))}
+                    list="tdhp-sales-accounts"
+                    placeholder="Örn: 600.01 (Mamul Satışları)..."
+                    className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  />
+                  <div className="text-[11px] mt-1">
+                    {productForm.salesAccountCode?.trim() && (
+                      tdhpAccounts?.some(a => a.code.toLowerCase() === productForm.salesAccountCode.trim().toLowerCase()) ? (
+                        <span className="text-emerald-700 font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Tanımlı Gelir Hesabı: {tdhpAccounts?.find(a => a.code.toLowerCase() === productForm.salesAccountCode.trim().toLowerCase())?.name}
+                        </span>
+                      ) : (
+                        <span className="text-indigo-700 font-medium flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-indigo-600" />
+                          Otomatik Açılacak: Kaydedildiğinde 600 grubu altına eklenecektir.
+                        </span>
+                      )
+                    )}
+                    {!productForm.salesAccountCode?.trim() && (
+                      <span className="text-slate-500">Satış faturasında alacak kaydı açılacak gelir hesabı.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Alış / Maliyet Hesabı */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                      3. Alış / Maliyet Hesabı
+                    </label>
+                    <span className="text-[10px] font-bold text-indigo-600">150, 620, 710 Grubu</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={productForm.purchaseAccountCode}
+                    onChange={e => setProductForm(prev => ({ ...prev, purchaseAccountCode: e.target.value }))}
+                    list="tdhp-purchase-accounts"
+                    placeholder="Örn: 620.01 (Mamul Maliyeti) veya 150.01..."
+                    className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  />
+                  <div className="text-[11px] mt-1">
+                    {productForm.purchaseAccountCode?.trim() && (
+                      tdhpAccounts?.some(a => a.code.toLowerCase() === productForm.purchaseAccountCode.trim().toLowerCase()) ? (
+                        <span className="text-emerald-700 font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Tanımlı Hesap: {tdhpAccounts?.find(a => a.code.toLowerCase() === productForm.purchaseAccountCode.trim().toLowerCase())?.name}
+                        </span>
+                      ) : (
+                        <span className="text-indigo-700 font-medium flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-indigo-600" />
+                          Otomatik Açılacak: Kaydedildiğinde TDHP planına eklenecektir.
+                        </span>
+                      )
+                    )}
+                    {!productForm.purchaseAccountCode?.trim() && (
+                      <span className="text-slate-500">Alış faturasında veya satılan mamul maliyeti mahsubunda kullanılır.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. KDV Oranı (%) */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                      4. Varsayılan KDV Oranı (%)
+                    </label>
+                    <span className="text-[10px] font-bold text-indigo-600">391 / 191 Hesapları</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={productForm.vatRate}
+                      onChange={e => setProductForm(prev => ({ ...prev, vatRate: Number(e.target.value) }))}
+                      className="w-24 bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    />
+                    <div className="flex gap-1.5 flex-1">
+                      {[0, 1, 10, 20].map(rate => (
+                        <button
+                          key={rate}
+                          type="button"
+                          onClick={() => setProductForm(prev => ({ ...prev, vatRate: rate }))}
+                          className={cn(
+                            "flex-1 py-2 rounded-xl text-xs font-bold border transition-all",
+                            productForm.vatRate === rate
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                          )}
+                        >
+                          %{rate}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Fatura hesaplamalarında 391 Hesaplanan KDV veya 191 İndirilecek KDV için uygulanır.
+                  </p>
+                </div>
+              </div>
+
+              {/* Datalists for Accounts Auto-suggest */}
+              <datalist id="tdhp-stock-accounts">
+                {tdhpAccounts
+                  ?.filter(a => a.code.startsWith('15'))
+                  .reduce((acc, a) => acc.some(x => x.code === a.code) ? acc : [...acc, a], [] as typeof tdhpAccounts)
+                  .map(a => (
+                    <option key={`stk-${a.id || a.code}`} value={a.code}>{a.name}</option>
+                  ))}
+              </datalist>
+              <datalist id="tdhp-sales-accounts">
+                {tdhpAccounts
+                  ?.filter(a => a.code.startsWith('60'))
+                  .reduce((acc, a) => acc.some(x => x.code === a.code) ? acc : [...acc, a], [] as typeof tdhpAccounts)
+                  .map(a => (
+                    <option key={`sls-${a.id || a.code}`} value={a.code}>{a.name}</option>
+                  ))}
+              </datalist>
+              <datalist id="tdhp-purchase-accounts">
+                {tdhpAccounts
+                  ?.filter(a => a.code.startsWith('15') || a.code.startsWith('62') || a.code.startsWith('71'))
+                  .reduce((acc, a) => acc.some(x => x.code === a.code) ? acc : [...acc, a], [] as typeof tdhpAccounts)
+                  .map(a => (
+                    <option key={`prc-${a.id || a.code}`} value={a.code}>{a.name}</option>
+                  ))}
+              </datalist>
+
+              {/* Submit / Save Bar */}
+              <div className="flex justify-between pt-6 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('general')}
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100"
+                >
+                  Genel Bilgilere Dön
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setIsAddModalOpen(false); resetForm(); }}
+                    className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-500 hover:bg-slate-100"
+                  >
+                    Vazgeç
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 active:scale-95 transition-all"
+                  >
+                    {isEditMode ? 'Güncellemeyi Kaydet' : 'Kartı Envantere Ekle'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </Modal>
 
@@ -1939,6 +2413,74 @@ export default function Inventory() {
                   </div>
                 </div>
               </div>
+
+              {/* TDHP Muhasebe Entegrasyon Kartı */}
+              <div className="p-4 bg-indigo-50/50 border border-indigo-200/80 rounded-2xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-indigo-600" /> Tek Düzen Hesap Planı (TDHP) Eşleşmeleri
+                  </h4>
+                  <span className="text-[10px] font-mono font-bold bg-white text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                    KDV: %{selectedProduct.vatRate ?? 20}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Stok Hesabı (Aktif)</div>
+                    <div className="font-mono font-black text-xs text-indigo-700 mt-1">
+                      {selectedProduct.accountingCode || '157.01 (Varsayılan)'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                      {tdhpAccounts?.find(a => a.code === selectedProduct.accountingCode)?.name || 'Mamuller / Stok Hesabı'}
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Satış Gelir Hesabı</div>
+                    <div className="font-mono font-black text-xs text-slate-800 mt-1">
+                      {selectedProduct.salesAccountCode || '600.01 (Varsayılan)'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                      {tdhpAccounts?.find(a => a.code === selectedProduct.salesAccountCode)?.name || 'Yurtiçi Satışlar'}
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Alış / Maliyet Hesabı</div>
+                    <div className="font-mono font-black text-xs text-slate-800 mt-1">
+                      {selectedProduct.purchaseAccountCode || '620.01 (Varsayılan)'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                      {tdhpAccounts?.find(a => a.code === selectedProduct.purchaseAccountCode)?.name || 'Satılan Malzeme/Mamul'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Defined Color Options (For all categories: Suni Deri, Kumaş, Bağcık, Mostra, Ayakkabı vs.) */}
+              {selectedProduct.colors && selectedProduct.colors.length > 0 && (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-indigo-600" /> Tanımlı Renk Seçenekleri
+                    </h4>
+                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                      {selectedProduct.colors.length} Renk
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {selectedProduct.colors.map(c => (
+                      <span
+                        key={c}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase text-slate-800 shadow-sm"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Size Matrix Breakdown (If available) */}
               {(selectedProduct.hasSizeVariants || selectedProduct.isFootwear) && selectedProduct.variantBarcodes && selectedProduct.variantBarcodes.length > 0 && (
@@ -2072,36 +2614,38 @@ export default function Inventory() {
               </div>
             </div>
 
-            {/* If product has colors/variants */}
-            {(selectedProduct.hasSizeVariants || selectedProduct.isFootwear) && selectedProduct.colors && selectedProduct.colors.length > 0 && (
-              <div className="grid grid-cols-2 gap-3">
+            {/* If product has colors */}
+            {selectedProduct.colors && selectedProduct.colors.length > 0 && (
+              <div className={cn("grid gap-3", (selectedProduct.hasSizeVariants || selectedProduct.isFootwear) ? "grid-cols-2" : "grid-cols-1")}>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Renk</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İşlem Yapılacak Renk</label>
                   <select
                     value={adjustData.selectedColor}
                     onChange={e => setAdjustData(prev => ({ ...prev, selectedColor: e.target.value }))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
                   >
-                    <option value="">Genel</option>
+                    <option value="">Genel / Tümü</option>
                     {selectedProduct.colors.map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Numara / Beden</label>
-                  <select
-                    value={adjustData.selectedSize}
-                    onChange={e => setAdjustData(prev => ({ ...prev, selectedSize: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
-                  >
-                    <option value="">Tüm Bedenler</option>
-                    {selectedProduct.variantBarcodes?.map((v, i) => (
-                      <option key={i} value={v.size}>{v.size}</option>
-                    ))}
-                  </select>
-                </div>
+                {(selectedProduct.hasSizeVariants || selectedProduct.isFootwear) && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Numara / Beden</label>
+                    <select
+                      value={adjustData.selectedSize}
+                      onChange={e => setAdjustData(prev => ({ ...prev, selectedSize: e.target.value }))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
+                    >
+                      <option value="">Tüm Bedenler</option>
+                      {selectedProduct.variantBarcodes?.map((v, i) => (
+                        <option key={i} value={v.size}>{v.size}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 

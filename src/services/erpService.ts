@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { accountingService } from './accountingService';
 import type { 
   Contact,
   Transaction, 
@@ -21,7 +22,12 @@ import type {
   InvoiceItem,
   InvoiceType,
   InvoiceStatus,
-  InvoiceScenario
+  InvoiceScenario,
+  Waybill,
+  WaybillItem,
+  WaybillType,
+  WaybillStatus,
+  WaybillScenario
 } from '../types';
 
 export const PRODUCTION_STAGES_CONFIG: {
@@ -45,7 +51,7 @@ export const PRODUCTION_STAGES_CONFIG: {
 export const erpService = {
   // --- Accounting & Contacts ---
   async addContact(contact: Omit<Contact, 'id'>) {
-    return await db.transaction('rw', [db.contacts, db.transactions], async () => {
+    return await db.transaction('rw', [db.contacts, db.transactions, db.accounts], async () => {
       let code = contact.code?.trim();
       if (!code) {
         const prefix = contact.type === 'customer' ? 'MUS-' : contact.type === 'supplier' ? 'TED-' : 'CAR-';
@@ -75,15 +81,50 @@ export const erpService = {
         });
       }
 
+      // Otomatik TDHP Muhasebe Hesabı Açılışı:
+      if (contact.accountCode?.trim()) {
+        try {
+          const typeName = contact.type === 'customer' ? 'Müşteri' : contact.type === 'supplier' ? 'Tedarikçi' : 'Cari';
+          await accountingService.registerAccountFromCode({
+            code: contact.accountCode.trim(),
+            name: contact.name.trim(),
+            type: contact.type === 'supplier' ? 'liability' : 'asset',
+            currency: contact.currency || 'TRY',
+            sourceModule: 'contact',
+            description: `${contact.name.trim()} (${typeName} Cari Hesabı)`
+          });
+        } catch (err) {
+          console.error('Cari muhasebe hesabı otomatik oluşturulamadı:', err);
+        }
+      }
+
       return contactId;
     });
   },
 
   async updateContact(id: number, contact: Partial<Contact>) {
-    return await db.contacts.update(id, {
+    const res = await db.contacts.update(id, {
       ...contact,
       updatedAt: new Date()
     });
+
+    const fullContact = await db.contacts.get(id);
+    if (fullContact && fullContact.accountCode?.trim()) {
+      try {
+        const typeName = fullContact.type === 'customer' ? 'Müşteri' : fullContact.type === 'supplier' ? 'Tedarikçi' : 'Cari';
+        await accountingService.registerAccountFromCode({
+          code: fullContact.accountCode.trim(),
+          name: fullContact.name.trim(),
+          type: fullContact.type === 'supplier' ? 'liability' : 'asset',
+          currency: fullContact.currency || 'TRY',
+          sourceModule: 'contact',
+          description: `${fullContact.name.trim()} (${typeName} Cari Hesabı)`
+        });
+      } catch (err) {
+        console.error('Cari güncelleme muhasebe senkronizasyon hatası:', err);
+      }
+    }
+    return res;
   },
 
   async deleteContact(id: number) {
@@ -334,14 +375,21 @@ export const erpService = {
     orderItemId?: number;
     orderNumber?: string;
     customerName?: string;
+    customerCode?: string;
+    orderDate?: Date | string;
+    documentNo?: string;
+    moldCode?: string;
+    moldGroup?: string;
     color?: string;
     size?: string;
+    assortmentBreakdown?: { size: string; quantity: number }[];
     targetDate?: Date;
     notes?: string;
     operator?: string;
   }) {
     return await db.transaction('rw', [db.workOrders, db.recipes, db.products], async () => {
       const recipe = await db.recipes.where('productId').equals(data.productId).first();
+      const prod = await db.products.get(data.productId);
       
       // Determine initial material status
       let materialStatus: MaterialReadinessStatus = 'no_recipe';
@@ -364,8 +412,14 @@ export const erpService = {
         orderItemId: data.orderItemId,
         orderNumber: data.orderNumber,
         customerName: data.customerName,
+        customerCode: data.customerCode,
+        orderDate: data.orderDate || new Date(),
+        documentNo: data.documentNo || prod?.documentNo,
+        moldCode: data.moldCode || prod?.moldCode,
+        moldGroup: data.moldGroup || prod?.moldGroup,
         color: data.color,
         size: data.size,
+        assortmentBreakdown: data.assortmentBreakdown,
         notes: data.notes,
         operator: data.operator,
         materialStatus,
@@ -382,7 +436,7 @@ export const erpService = {
   },
 
   async createWorkOrdersFromOrder(orderId: number) {
-    return await db.transaction('rw', [db.orders, db.orderItems, db.workOrders, db.products, db.contacts, db.recipes], async () => {
+    return await db.transaction('rw', [db.orders, db.orderItems, db.workOrders, db.products, db.contacts, db.recipes, db.assortmentTemplates], async () => {
       const order = await db.orders.get(orderId);
       if (!order) throw new Error('Sipariş bulunamadı');
       
@@ -409,6 +463,27 @@ export const erpService = {
 
         const defaultStages = this.generateDefaultStages();
 
+        // Calculate size distribution if product has assortment
+        let assortmentBreakdown: { size: string; quantity: number }[] | undefined = undefined;
+        if (product.assortment && product.assortment.length > 0) {
+          const totalAssort = product.assortment.reduce((s, a) => s + (a.quantity || 0), 0);
+          const ratio = totalAssort > 0 ? (item.quantity / totalAssort) : 1;
+          assortmentBreakdown = product.assortment.map(a => ({
+            size: a.size,
+            quantity: Math.round(a.quantity * ratio)
+          }));
+        } else if (product.assortmentTemplateId) {
+          const tmpl = await db.assortmentTemplates.get(product.assortmentTemplateId);
+          if (tmpl && tmpl.items.length > 0) {
+            const totalAssort = tmpl.items.reduce((s, a) => s + (a.quantity || 0), 0);
+            const ratio = totalAssort > 0 ? (item.quantity / totalAssort) : 1;
+            assortmentBreakdown = tmpl.items.map(a => ({
+              size: a.size,
+              quantity: Math.round(a.quantity * ratio)
+            }));
+          }
+        }
+
         const woId = await db.workOrders.add({
           productId: item.productId,
           quantity: item.quantity,
@@ -421,8 +496,14 @@ export const erpService = {
           orderItemId: item.id,
           orderNumber: order.orderNumber,
           customerName: contact?.name,
+          customerCode: contact?.code,
+          orderDate: order.date,
+          documentNo: product.documentNo,
+          moldCode: product.moldCode,
+          moldGroup: product.moldGroup,
           color: item.color,
           size: item.size,
+          assortmentBreakdown,
           notes: `Sipariş: ${order.orderNumber} - ${item.color || ''} ${item.size ? 'Beden: ' + item.size : ''}`,
           materialStatus,
           recipeId: recipe?.id,
@@ -1028,14 +1109,59 @@ export const erpService = {
   },
 
   async addProduct(product: any) {
-    return await db.products.add({
+    const id = await db.products.add({
       ...product,
       stock: product.stock || 0
     });
+    // Otomatik TDHP Muhasebe Hesapları Senkronizasyonu (Stok, Satış Geliri, Alış/Maliyet)
+    await this.syncProductAccountingAccounts({ ...product, id });
+    return id;
   },
 
   async updateProduct(id: number, product: any) {
-    return await db.products.update(id, product);
+    const res = await db.products.update(id, product);
+    const fullProduct = await db.products.get(id);
+    if (fullProduct) {
+      await this.syncProductAccountingAccounts(fullProduct);
+    }
+    return res;
+  },
+
+  async syncProductAccountingAccounts(product: any) {
+    try {
+      const code = product.code ? `${product.code} - ` : '';
+      // 1. Envanter / Stok Hesabı (örn. 150.01.001, 152.01.001, 153.01.001)
+      if (product.accountingCode?.trim()) {
+        await accountingService.registerAccountFromCode({
+          code: product.accountingCode.trim(),
+          name: `${code}${product.name} (Stok)`,
+          type: 'asset',
+          sourceModule: 'product',
+          description: `Stok Envanter Hesabı (${product.code || ''})`
+        });
+      }
+      // 2. Satış Gelir Hesabı (örn. 600.01.001, 600.20.001)
+      if (product.salesAccountCode?.trim()) {
+        await accountingService.registerAccountFromCode({
+          code: product.salesAccountCode.trim(),
+          name: `${code}${product.name} (Satış Geliri)`,
+          type: 'revenue',
+          sourceModule: 'product',
+          description: `Satış Gelir Hesabı (${product.code || ''})`
+        });
+      }
+      // 3. Alış / Maliyet Hesabı (örn. 150.01.001 veya 620.01.001)
+      if (product.purchaseAccountCode?.trim()) {
+        await accountingService.registerAccountFromCode({
+          code: product.purchaseAccountCode.trim(),
+          name: `${code}${product.name} (Alış/Maliyet)`,
+          sourceModule: 'product',
+          description: `Alış / Maliyet Hesabı (${product.code || ''})`
+        });
+      }
+    } catch (err) {
+      console.error('Ürün muhasebe hesapları senkronizasyon hatası:', err);
+    }
   },
 
   async saveRecipe(recipe: Recipe) {
@@ -1985,6 +2111,396 @@ export const erpService = {
           if (c.id) {
             await db.contacts.update(c.id, { balance: 0, updatedAt: new Date() });
           }
+        }
+      }
+    });
+  },
+
+  // --- Waybill Management (İrsaliye & Sevkiyat Yönetimi) ---
+  async generateWaybillNumber(type: 'sales' | 'purchase'): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefix = type === 'sales' ? `IRS-${year}-` : `GIR-${year}-`;
+    const count = await db.waybills.where('type').equals(type).count();
+    const nextSeq = (count + 1).toString().padStart(6, '0');
+    return `${prefix}${nextSeq}`;
+  },
+
+  async getPendingOrdersForWaybill(contactId?: number, orderType: 'sales' | 'purchase' = 'sales') {
+    const allOrders = contactId 
+      ? await db.orders.where('contactId').equals(contactId).filter(o => o.type === orderType).toArray()
+      : await db.orders.where('type').equals(orderType).toArray();
+
+    const openOrders = allOrders.filter(o => o.status !== 'cancelled' && o.status !== 'completed');
+
+    const result = [];
+    for (const order of openOrders) {
+      const items = await db.orderItems.where('orderId').equals(order.id!).toArray();
+      const itemsWithRemaining = items.map(item => {
+        const shippedQty = item.shippedQuantity || 0;
+        const remainingQty = Math.max(0, item.quantity - shippedQty);
+        return {
+          ...item,
+          shippedQuantity: shippedQty,
+          remainingQuantity: remainingQty
+        };
+      }).filter(it => it.remainingQuantity > 0);
+
+      if (itemsWithRemaining.length > 0) {
+        result.push({
+          ...order,
+          items: itemsWithRemaining
+        });
+      }
+    }
+
+    return result;
+  },
+
+  async createWaybill(
+    waybillData: Omit<Waybill, 'id'>,
+    items: Omit<WaybillItem, 'id' | 'waybillId'>[]
+  ) {
+    return await db.transaction('rw', [
+      db.waybills,
+      db.waybillItems,
+      db.orders,
+      db.orderItems,
+      db.inventoryLogs,
+      db.products,
+      db.assortmentTemplates
+    ], async () => {
+      // 1. Add Waybill
+      const waybillId = await db.waybills.add({
+        ...waybillData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as Waybill);
+
+      // 2. Add Waybill Items
+      const itemsWithWaybillId = items.map(item => ({
+        ...item,
+        waybillId
+      }));
+      await db.waybillItems.bulkAdd(itemsWithWaybillId as WaybillItem[]);
+
+      // 3. Handle Order Shipment link
+      if (waybillData.orderId) {
+        const orderId = waybillData.orderId;
+        const allOrderItems = await db.orderItems.where('orderId').equals(orderId).toArray();
+
+        for (const item of items) {
+          if (item.orderItemId) {
+            const targetOrderItem = allOrderItems.find(oi => oi.id === item.orderItemId);
+            if (targetOrderItem) {
+              const prevShipped = targetOrderItem.shippedQuantity || 0;
+              const newShipped = prevShipped + item.quantity;
+              await db.orderItems.update(targetOrderItem.id!, {
+                shippedQuantity: newShipped
+              });
+              targetOrderItem.shippedQuantity = newShipped;
+            }
+          }
+        }
+
+        const totalOrderedQty = allOrderItems.reduce((sum, oi) => sum + oi.quantity, 0);
+        const totalShippedQty = allOrderItems.reduce((sum, oi) => sum + (oi.shippedQuantity || 0), 0);
+
+        let orderStatus: OrderStatus = 'partially_shipped';
+        if (totalShippedQty >= totalOrderedQty) {
+          orderStatus = 'completed';
+        } else if (totalShippedQty === 0) {
+          orderStatus = 'confirmed';
+        }
+
+        await db.orders.update(orderId, { status: orderStatus });
+      }
+
+      // 4. Variant-Aware Stock Movement (if isStockDeducted !== false and status !== 'draft')
+      if (waybillData.isStockDeducted !== false && waybillData.status !== 'draft') {
+        const isSales = waybillData.type === 'sales';
+        for (const item of items) {
+          if (item.productId) {
+            await this.applyItemStockMovement(
+              {
+                productId: item.productId,
+                quantity: item.quantity,
+                color: item.color,
+                size: item.size,
+                productName: item.productName
+              },
+              isSales,
+              waybillData.waybillNumber,
+              new Date(waybillData.dispatchDate || waybillData.date),
+              false
+            );
+          }
+        }
+      }
+
+      return waybillId;
+    });
+  },
+
+  async cancelWaybill(id: number, reason?: string) {
+    return await db.transaction('rw', [
+      db.waybills,
+      db.waybillItems,
+      db.orders,
+      db.orderItems,
+      db.inventoryLogs,
+      db.products,
+      db.assortmentTemplates
+    ], async () => {
+      const waybill = await db.waybills.get(id);
+      if (!waybill) return;
+      if (waybill.status === 'cancelled') return;
+
+      const items = await db.waybillItems.where('waybillId').equals(id).toArray();
+
+      // 1. Revert order item shipped quantities
+      if (waybill.orderId) {
+        const orderId = waybill.orderId;
+        const allOrderItems = await db.orderItems.where('orderId').equals(orderId).toArray();
+
+        for (const item of items) {
+          if (item.orderItemId) {
+            const targetOrderItem = allOrderItems.find(oi => oi.id === item.orderItemId);
+            if (targetOrderItem) {
+              const prevShipped = targetOrderItem.shippedQuantity || 0;
+              const newShipped = Math.max(0, prevShipped - item.quantity);
+              await db.orderItems.update(targetOrderItem.id!, {
+                shippedQuantity: newShipped
+              });
+              targetOrderItem.shippedQuantity = newShipped;
+            }
+          }
+        }
+
+        const totalOrderedQty = allOrderItems.reduce((sum, oi) => sum + oi.quantity, 0);
+        const totalShippedQty = allOrderItems.reduce((sum, oi) => sum + (oi.shippedQuantity || 0), 0);
+
+        let orderStatus: OrderStatus = 'partially_shipped';
+        if (totalShippedQty >= totalOrderedQty) {
+          orderStatus = 'completed';
+        } else if (totalShippedQty === 0) {
+          orderStatus = 'confirmed';
+        }
+
+        await db.orders.update(orderId, { status: orderStatus });
+      }
+
+      // 2. Revert stock if deducted and was issued
+      if (waybill.isStockDeducted !== false && waybill.status === 'issued') {
+        const isSales = waybill.type === 'sales';
+        for (const item of items) {
+          if (item.productId) {
+            await this.applyItemStockMovement(
+              {
+                productId: item.productId,
+                quantity: item.quantity,
+                color: item.color,
+                size: item.size,
+                productName: item.productName
+              },
+              isSales,
+              waybill.waybillNumber,
+              new Date(),
+              true
+            );
+          }
+        }
+      }
+
+      // 3. Mark as cancelled
+      const formattedDate = new Date().toLocaleDateString('tr-TR');
+      const formattedTime = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      const cancelNote = reason 
+        ? `[İPTAL EDİLDİ: ${formattedDate} ${formattedTime} - Sebep: ${reason}]` 
+        : `[İPTAL EDİLDİ: ${formattedDate} ${formattedTime}]`;
+
+      await db.waybills.update(id, {
+        status: 'cancelled',
+        updatedAt: new Date(),
+        notes: waybill.notes ? `${waybill.notes}\n${cancelNote}` : cancelNote
+      });
+    });
+  },
+
+  async deleteWaybill(id: number) {
+    return await db.transaction('rw', [
+      db.waybills,
+      db.waybillItems,
+      db.orders,
+      db.orderItems,
+      db.inventoryLogs,
+      db.products,
+      db.assortmentTemplates
+    ], async () => {
+      const waybill = await db.waybills.get(id);
+      if (!waybill) return;
+
+      const items = await db.waybillItems.where('waybillId').equals(id).toArray();
+
+      if (waybill.status === 'issued') {
+        if (waybill.orderId) {
+          const orderId = waybill.orderId;
+          const allOrderItems = await db.orderItems.where('orderId').equals(orderId).toArray();
+
+          for (const item of items) {
+            if (item.orderItemId) {
+              const targetOrderItem = allOrderItems.find(oi => oi.id === item.orderItemId);
+              if (targetOrderItem) {
+                const prevShipped = targetOrderItem.shippedQuantity || 0;
+                const newShipped = Math.max(0, prevShipped - item.quantity);
+                await db.orderItems.update(targetOrderItem.id!, {
+                  shippedQuantity: newShipped
+                });
+                targetOrderItem.shippedQuantity = newShipped;
+              }
+            }
+          }
+
+          const totalOrderedQty = allOrderItems.reduce((sum, oi) => sum + oi.quantity, 0);
+          const totalShippedQty = allOrderItems.reduce((sum, oi) => sum + (oi.shippedQuantity || 0), 0);
+
+          let orderStatus: OrderStatus = 'partially_shipped';
+          if (totalShippedQty >= totalOrderedQty) {
+            orderStatus = 'completed';
+          } else if (totalShippedQty === 0) {
+            orderStatus = 'confirmed';
+          }
+
+          await db.orders.update(orderId, { status: orderStatus });
+        }
+
+        if (waybill.isStockDeducted !== false) {
+          const isSales = waybill.type === 'sales';
+          for (const item of items) {
+            if (item.productId) {
+              await this.applyItemStockMovement(
+                {
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  color: item.color,
+                  size: item.size,
+                  productName: item.productName
+                },
+                isSales,
+                waybill.waybillNumber,
+                new Date(waybill.date),
+                true
+              );
+            }
+          }
+        }
+
+        const relatedLogs = await db.inventoryLogs
+          .filter(log => log.description?.includes(waybill.waybillNumber))
+          .toArray();
+        for (const l of relatedLogs) {
+          if (l.id) await db.inventoryLogs.delete(l.id);
+        }
+      }
+
+      await db.waybillItems.where('waybillId').equals(id).delete();
+      await db.waybills.delete(id);
+    });
+  },
+
+  async getWaybill(id: number) {
+    const waybill = await db.waybills.get(id);
+    if (!waybill) return null;
+    const items = await db.waybillItems.where('waybillId').equals(id).toArray();
+    const contact = waybill.contactId ? await db.contacts.get(waybill.contactId) : null;
+    const order = waybill.orderId ? await db.orders.get(waybill.orderId) : null;
+    return { ...waybill, items, contact, order };
+  },
+
+  async updateWaybillStatus(id: number, status: WaybillStatus) {
+    if (status === 'cancelled') {
+      return await this.cancelWaybill(id);
+    }
+
+    return await db.transaction('rw', [
+      db.waybills,
+      db.waybillItems,
+      db.products,
+      db.inventoryLogs,
+      db.assortmentTemplates
+    ], async () => {
+      const waybill = await db.waybills.get(id);
+      if (!waybill) return;
+
+      const prevStatus = waybill.status;
+      if (prevStatus === status) return;
+
+      await db.waybills.update(id, { status, updatedAt: new Date() });
+
+      // If transition from draft to issued and stock deduction enabled
+      if (prevStatus === 'draft' && status === 'issued' && waybill.isStockDeducted !== false) {
+        const items = await db.waybillItems.where('waybillId').equals(id).toArray();
+        const isSales = waybill.type === 'sales';
+        for (const item of items) {
+          if (item.productId) {
+            await this.applyItemStockMovement(
+              {
+                productId: item.productId,
+                quantity: item.quantity,
+                color: item.color,
+                size: item.size,
+                productName: item.productName
+              },
+              isSales,
+              waybill.waybillNumber,
+              new Date(waybill.dispatchDate || waybill.date),
+              false
+            );
+          }
+        }
+      }
+    });
+  },
+
+  async resetWaybillsAndShipments(options?: {
+    resetStockMovements?: boolean;
+    resetOrdersShipment?: boolean;
+  }) {
+    const resetStock = options?.resetStockMovements !== false;
+    const resetOrders = options?.resetOrdersShipment !== false;
+
+    return await db.transaction('rw', [
+      db.waybills,
+      db.waybillItems,
+      db.inventoryLogs,
+      db.orders,
+      db.orderItems,
+      db.products
+    ], async () => {
+      await db.waybills.clear();
+      await db.waybillItems.clear();
+
+      if (resetOrders) {
+        const orderItems = await db.orderItems.toArray();
+        for (const oi of orderItems) {
+          if (oi.id) {
+            await db.orderItems.update(oi.id, { shippedQuantity: 0 });
+          }
+        }
+
+        const orders = await db.orders.toArray();
+        for (const o of orders) {
+          if (o.id && (o.status === 'completed' || o.status === 'partially_shipped')) {
+            await db.orders.update(o.id, { status: 'confirmed' });
+          }
+        }
+      }
+
+      if (resetStock) {
+        const waybillLogs = await db.inventoryLogs
+          .filter(l => l.description?.includes('İrsaliye') || l.description?.includes('IRS-') || l.description?.includes('GIR-'))
+          .toArray();
+        for (const l of waybillLogs) {
+          if (l.id) await db.inventoryLogs.delete(l.id);
         }
       }
     });

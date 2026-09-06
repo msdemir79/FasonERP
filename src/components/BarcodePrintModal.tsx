@@ -48,8 +48,6 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   initialBoxCount = 1,
   orderContext
 }) => {
-  if (!product) return null;
-
   // Active print category: 'box' (Koli Barkodu) vs 'variant' (Asorti / Beden Barkodu)
   const [activeTab, setActiveTab] = useState<'box' | 'variant'>(initialMode);
 
@@ -64,7 +62,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   const [companyHeader, setCompanyHeader] = useState<string>('ProERP SHOES');
 
   // --- Image support on labels ---
-  const [showImage, setShowImage] = useState<boolean>(Boolean(product.image || (product.colorImages && product.colorImages.length > 0)));
+  const [showImage, setShowImage] = useState<boolean>(Boolean(product?.image || (product?.colorImages && product.colorImages.length > 0)));
   const [customImage, setCustomImage] = useState<string | null>(null);
   const [imageSize, setImageSize] = useState<'sm' | 'md' | 'lg'>('md');
   const [imageFit, setImageFit] = useState<'contain' | 'cover'>('contain');
@@ -104,9 +102,9 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
   // --- Koli Barkodu State ---
   const availableColors = useMemo(() => {
-    if (product.colors && product.colors.length > 0) return product.colors;
+    if (product?.colors && product.colors.length > 0) return product.colors;
     return ['Genel'];
-  }, [product.colors]);
+  }, [product?.colors]);
 
   const [boxCounts, setBoxCounts] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {};
@@ -123,6 +121,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
   // Assortment item definitions for this product
   const effectiveAssortment = useMemo(() => {
+    if (!product) return [{ size: 'Standart', quantity: 1 }];
     if (product.assortment && product.assortment.length > 0) {
       return product.assortment;
     }
@@ -154,6 +153,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   const getLabelImageForColor = (color?: string): string | null => {
     if (!showImage) return null;
     if (customImage) return customImage;
+    if (!product) return null;
     if (color && product.colorImages && product.colorImages.length > 0) {
       const found = product.colorImages.find(ci => ci.color.toLowerCase() === color.toLowerCase());
       if (found && found.image) return found.image;
@@ -189,7 +189,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
   // Initialize or reset quantities based on product and context
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !product) return;
 
     const colors = product.colors && product.colors.length > 0 ? product.colors : ['Genel'];
     setSelectedVariantColors(colors);
@@ -220,15 +220,17 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   }, [isOpen, product, orderContext, effectiveAssortment, totalPairsPerBox]);
 
   const getBoxBarcode = (color: string) => {
+    if (!product) return `BOX-${color}`;
     const found = product.colorBoxBarcodes?.find(b => b.color === color);
     if (found && found.barcode) return found.barcode;
-    return `BOX-${product.code}-${color.slice(0, 3).toUpperCase()}`;
+    return `BOX-${product.code || 'PROD'}-${color.slice(0, 3).toUpperCase()}`;
   };
 
   const getVariantBarcode = (color: string, size: string) => {
+    if (!product) return `BAR-${color}-${size}`;
     const found = product.variantBarcodes?.find(v => v.color === color && v.size === size);
     if (found && found.barcode) return found.barcode;
-    return `${product.code}-${color.slice(0, 3).toUpperCase()}-${size}`;
+    return `${product.code || 'PROD'}-${color.slice(0, 3).toUpperCase()}-${size}`;
   };
 
   // Generate label items to print
@@ -375,7 +377,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
   // OPEN IN NEW CLEAN TAB FOR PRINTING
   const handleOpenInNewTab = () => {
-    if (totalLabelsCount === 0) return;
+    if (totalLabelsCount === 0 || !product) return;
     const printContainer = document.getElementById('barcode-printable-area');
     if (printContainer) {
       const { width: currentW, height: currentH } = getEffectiveDimensions();
@@ -391,12 +393,15 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
     }
   };
 
+  if (!isOpen || !product) return null;
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Gelişmiş Barkod & Etiket Yazdırma Sistemi"
-      className="max-w-6xl w-full"
+      size="3xl"
+      className="max-w-7xl w-full"
     >
       <div className="space-y-6">
         {/* Hidden File Input for Image Upload */}
