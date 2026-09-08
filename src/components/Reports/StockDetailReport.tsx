@@ -26,11 +26,13 @@ import {
   Tag,
   Boxes,
   Eye,
-  Info
+  Info,
+  FileDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { printHtml } from '../../lib/printService';
+import { exportToCsv } from '../../lib/exportService';
 import type { Product, AssortmentTemplate, StockCategoryType } from '../../types';
 
 export type StockClassification = 'all' | 'mamul' | 'mamul_disi';
@@ -575,6 +577,99 @@ export default function StockDetailReport() {
     printHtml(html, { title: 'ProERP Stok Detay Raporu' });
   };
 
+  const handleExportExcel = () => {
+    if (!processedProducts || processedProducts.length === 0) return;
+
+    const headers = [
+      'Tür / Kategori',
+      'Ürün Kodu',
+      'Model Adı',
+      'Marka',
+      'Alt Tür',
+      'Renk / Varyant',
+      'Numara / Beden',
+      'Varyant Stok',
+      'Toplam Stok',
+      'Birim',
+      'Alış Fiyatı (₺)',
+      'Satış Fiyatı (₺)',
+      'Barkod / Koli Barkodu',
+      'Raf Konumu',
+      'Durum'
+    ];
+
+    const rows: (string | number)[][] = [];
+
+    processedProducts.forEach(p => {
+      const typeLabel = CATEGORY_TYPE_META[p.categoryType]?.label || 'Mamül';
+      const statusLabel = p.isBroken ? 'KIRIK BEDEN' : p.isCritical ? 'KRİTİK STOK' : p.isOutOfStock ? 'TÜKENDİ' : 'NORMAL';
+
+      if (p.colorRows && p.colorRows.length > 0) {
+        p.colorRows.forEach(c => {
+          if (p.isFootwear && c.sizeList && c.sizeList.length > 0) {
+            c.sizeList.forEach(s => {
+              rows.push([
+                typeLabel,
+                p.code,
+                p.name,
+                p.brand || '-',
+                p.subType || '-',
+                c.color,
+                s.size,
+                s.stock,
+                p.finalStock,
+                p.unit || 'Çift',
+                p.buyingPrice || 0,
+                p.sellingPrice || 0,
+                s.barcode || c.boxBarcode || p.barcode || '-',
+                p.shelf || '-',
+                statusLabel
+              ]);
+            });
+          } else {
+            rows.push([
+              typeLabel,
+              p.code,
+              p.name,
+              p.brand || '-',
+              p.subType || '-',
+              c.color,
+              '-',
+              c.colorTotalStock,
+              p.finalStock,
+              p.unit || 'Birim',
+              p.buyingPrice || 0,
+              p.sellingPrice || 0,
+              c.boxBarcode || p.barcode || '-',
+              p.shelf || '-',
+              statusLabel
+            ]);
+          }
+        });
+      } else {
+        rows.push([
+          typeLabel,
+          p.code,
+          p.name,
+          p.brand || '-',
+          p.subType || '-',
+          '-',
+          '-',
+          p.finalStock,
+          p.finalStock,
+          p.unit || 'Birim',
+          p.buyingPrice || 0,
+          p.sellingPrice || 0,
+          p.barcode || '-',
+          p.shelf || '-',
+          statusLabel
+        ]);
+      }
+    });
+
+    exportToCsv('Stok_Detay_Asorti_Raporu.csv', headers, rows);
+  };
+
   return (
     <div className="space-y-4" id="stock-detail-report-container">
       {/* ════════════════════════════════════════════════════════════════
@@ -664,6 +759,17 @@ export default function StockDetailReport() {
                 <span>Tümünü Genişlet</span>
               </>
             )}
+          </button>
+
+          {/* Excel Export */}
+          <button 
+            type="button"
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer"
+            title="Stok ve varyant detaylarını Excel / CSV formatında indirin"
+          >
+            <FileDown className="w-3.5 h-3.5" /> 
+            <span>Excel'e Aktar</span>
           </button>
 
           {/* Print Report */}
@@ -1035,8 +1141,12 @@ export default function StockDetailReport() {
                     {/* Aç / Kapat Butonu */}
                     <button
                       type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleProductExpand(p.id);
+                      }}
                       className={cn(
-                        "w-6 h-6 rounded-md flex items-center justify-center transition-transform shrink-0",
+                        "w-6 h-6 rounded-md flex items-center justify-center transition-transform shrink-0 cursor-pointer",
                         isExpanded ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                       )}
                       title={isExpanded ? "Detayı Kapat" : "Detayı Aç"}

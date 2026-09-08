@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
 import { erpService } from '../../services/erpService';
-import { ArrowUpRight, ArrowDownLeft, Search, Calendar, Package, Filter, Printer, Trash2, RotateCcw, AlertTriangle, X, Check } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Search, Calendar, Package, Filter, Printer, Trash2, RotateCcw, AlertTriangle, X, Check, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { printTabularReport } from '../../lib/printService';
+import { exportToCsv } from '../../lib/exportService';
 
 export default function StockMovementReport() {
   const logs = useLiveQuery(() => db.inventoryLogs.reverse().toArray());
@@ -92,6 +93,32 @@ export default function StockMovementReport() {
     );
   };
 
+  const handleExportExcel = () => {
+    if (!filteredLogs || filteredLogs.length === 0) return;
+    const headers = ['Tarih', 'Ürün Kodu', 'Ürün / Model Adı', 'Hareket Tipi', 'Miktar', 'Birim', 'Açıklama'];
+    const rows = filteredLogs.map(log => {
+      const p = productMap[log.productId];
+      const typeLabel = 
+        log.type === 'in' ? 'Stok Girişi' :
+        log.type === 'out' ? 'Stok Çıkışı' :
+        log.type === 'production_in' ? 'Üretim Girişi' :
+        log.type === 'production_out' ? 'Hammadde Sarf' : log.type;
+
+      const dateFormatted = log.date ? format(new Date(log.date), 'dd.MM.yyyy HH:mm', { locale: tr }) : '-';
+      return [
+        dateFormatted,
+        p?.code || '-',
+        p?.name || '-',
+        typeLabel,
+        log.quantity,
+        p?.unit || 'Adet',
+        log.description || '-'
+      ];
+    });
+
+    exportToCsv('Stok_Hareket_Raporu.csv', headers, rows);
+  };
+
   return (
     <div className="space-y-6">
       {clearSuccess && (
@@ -106,11 +133,11 @@ export default function StockMovementReport() {
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Stok Hareket Raporu</h2>
           <p className="text-slate-500 text-sm">Giriş, çıkış ve üretim kaynaklı tüm stok hareketlerini takip edin.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {logs && logs.length > 0 && (
             <button
               onClick={() => setIsClearModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-rose-100 transition-colors shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-rose-100 transition-colors shadow-xs cursor-pointer"
               title="Stok hareket loglarını temizle"
             >
               <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
@@ -120,10 +147,18 @@ export default function StockMovementReport() {
 
           <button 
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-xs"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-xs cursor-pointer"
           >
             <Printer className="w-4 h-4" /> Yazdır
           </button>
+
+          <button 
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
+          >
+            <FileDown className="w-4 h-4" /> Excel'e Aktar
+          </button>
+
           <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 self-start sm:self-center">
             {(['all', 'in', 'out', 'production_in', 'production_out'] as const).map((t) => (
               <button

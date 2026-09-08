@@ -17,35 +17,21 @@ import {
   Landmark,
   BookOpen,
   UserCheck,
-  BarChart3
+  BarChart3,
+  Settings
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-const navigation = [
+export interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  subItems?: { name: string; href: string }[];
+}
+
+const navigation: NavItem[] = [
   { name: 'Panel', href: '/', icon: LayoutDashboard },
-  { 
-    name: 'Stok Yönetimi', 
-    href: '/inventory', 
-    icon: Package,
-    subItems: [
-      { name: 'Stok Listesi', href: '/inventory' },
-      { name: 'Asorti Şablonları', href: '/inventory/templates' },
-    ]
-  },
-  {
-    name: 'Raporlar & Analiz',
-    href: '/reports',
-    icon: BarChart3,
-    subItems: [
-      { name: 'Raporlar Merkezi', href: '/reports' },
-      { name: 'İK & Bordro İcmali', href: '/reports?tab=hr' },
-      { name: 'Üretim & İmalat', href: '/reports?tab=production' },
-      { name: 'Sipariş & Sevkiyat', href: '/reports?tab=orders' },
-      { name: 'Finans & Likidite', href: '/reports?tab=finance' },
-      { name: 'Muhasebe (Mizan/KDV)', href: '/reports?tab=accounting' },
-      { name: 'Stok & Malzeme', href: '/reports?tab=stock' },
-    ]
-  },
+  { name: 'Stok Yönetimi', href: '/inventory', icon: Package },
   { name: 'Sipariş Yönetimi', href: '/orders', icon: ShoppingCart },
   { name: 'İrsaliyeler', href: '/waybills', icon: Truck },
   { name: 'Faturalar', href: '/invoices', icon: Receipt },
@@ -54,6 +40,8 @@ const navigation = [
   { name: 'İnsan Kaynakları (İK)', href: '/hr', icon: UserCheck },
   { name: 'Üretim Planlama', href: '/production', icon: Hammer },
   { name: 'Cari Hesaplar', href: '/contacts', icon: Users },
+  { name: 'Raporlar & Analiz', href: '/reports', icon: BarChart3 },
+  { name: 'Ayarlar & Yapılandırma', href: '/settings', icon: Settings },
 ];
 
 export default function Layout() {

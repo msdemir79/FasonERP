@@ -52,11 +52,87 @@ export interface BarcodeVariant {
   stock?: number;
 }
 
+export interface CompanySettings {
+  companyName?: string;
+  companyTitle?: string;
+  taxOffice?: string;
+  taxNumber?: string;
+  tradeRegistryNo?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  address?: string;
+  city?: string;
+  bankName?: string;
+  iban?: string;
+  currency?: string;
+}
+
+export interface StockModuleSettings {
+  barcodeType: 'EAN-13' | 'CODE-128' | 'CODE-39';
+  barcodePrefix: string;
+  nextBarcodeSequence: number;
+  autoBarcodeOnProductCreate: boolean;
+  defaultCriticalStockThreshold: number;
+  defaultShoeSizes: string[];
+}
+
+export interface OrderModuleSettings {
+  salesOrderPrefix: string;
+  purchaseOrderPrefix: string;
+  waybillSalesPrefix: string;
+  waybillPurchasePrefix: string;
+  invoiceSalesPrefix: string;
+  invoicePurchasePrefix: string;
+  defaultVatRate: number;
+  defaultCurrency: string;
+  defaultPaymentTermDays: number;
+  autoCreateWorkOrdersOnConfirm: boolean;
+  autoDeductStockOnWaybill: boolean;
+}
+
+export interface ProductionModuleSettings {
+  workOrderPrefix: string;
+  defaultDailyCapacityPairs: number;
+  scrapTolerancePercentage: number;
+  autoConsumeMaterialsOnStart: boolean;
+}
+
+export interface FinanceAccountingModuleSettings {
+  defaultCurrency: string;
+  checkAlertDaysBeforeDue: number;
+  defaultCustomerAccountCode: string;
+  defaultSupplierAccountCode: string;
+  defaultFinishedStockAccountCode: string;
+  defaultRawMaterialAccountCode: string;
+  defaultSalesRevenueAccountCode: string;
+  defaultVatCalculatedAccountCode: string;
+  defaultVatDeductibleAccountCode: string;
+}
+
+export interface HRModuleSettings {
+  weeklyWorkHours: number;
+  dailyWorkHours: number;
+  overtimeWeekdayMultiplier: number;
+  overtimeWeekendMultiplier: number;
+  annualLeaveBaseDays: number;
+  sgkEmployeeRate: number;
+  unemploymentEmployeeRate: number;
+  sgkEmployerRate: number;
+  unemploymentEmployerRate: number;
+}
+
 export interface AppSettings {
   id?: string; // 'global'
   barcodeType: 'EAN-13' | 'CODE-128' | 'CODE-39';
   barcodePrefix?: string;
   nextBarcodeSequence: number;
+  company?: CompanySettings;
+  stock?: Partial<StockModuleSettings>;
+  order?: Partial<OrderModuleSettings>;
+  production?: Partial<ProductionModuleSettings>;
+  finance?: Partial<FinanceAccountingModuleSettings>;
+  hr?: Partial<HRModuleSettings>;
 }
 
 export type StockCategoryType = 'finished' | 'semi_finished' | 'raw_material' | 'accessory';

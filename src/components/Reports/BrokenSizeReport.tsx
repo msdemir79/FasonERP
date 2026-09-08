@@ -1,10 +1,11 @@
 import React from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
-import { AlertTriangle, Search, Package, Hash, Ruler, Printer } from 'lucide-react';
+import { AlertTriangle, Search, Package, Hash, Ruler, Printer, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { printTabularReport } from '../../lib/printService';
+import { exportToCsv } from '../../lib/exportService';
 
 export default function BrokenSizeReport() {
   const products = useLiveQuery(() => db.products.toArray());
@@ -61,6 +62,21 @@ export default function BrokenSizeReport() {
     );
   };
 
+  const handleExportExcel = () => {
+    if (!brokenSizeProducts || brokenSizeProducts.length === 0) return;
+    const headers = ['Model Kodu', 'Model Adı', 'Marka', 'Mevcut Stok', 'Birim', 'Eksik / Tükenen Bedenler', 'Durum'];
+    const rows = brokenSizeProducts.map(p => [
+      p.code,
+      p.name,
+      p.brand || '-',
+      p.stock,
+      p.unit,
+      p.missingSizes?.join(', ') || 'Takım Eksik',
+      'KIRIK BEDEN (Eksik Numara)'
+    ]);
+    exportToCsv('Kirik_Beden_Raporu.csv', headers, rows);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -68,12 +84,20 @@ export default function BrokenSizeReport() {
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Kırık Beden Raporu</h2>
           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">Takımı bozulan veya eksik numarası kalan modellerinizi takip edin.</p>
         </div>
-        <button 
-          onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-xs self-start sm:self-center"
-        >
-          <Printer className="w-4 h-4" /> Yazdır
-        </button>
+        <div className="flex items-center gap-3 self-start sm:self-center">
+          <button 
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-xs cursor-pointer"
+          >
+            <Printer className="w-4 h-4" /> Yazdır
+          </button>
+          <button 
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
+          >
+            <FileDown className="w-4 h-4" /> Excel'e Aktar
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

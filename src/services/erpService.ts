@@ -1219,22 +1219,129 @@ export const erpService = {
     return await db.assortmentTemplates.add(template);
   },
 
-  // --- Barcode & Settings ---
-  async getBarcodeSettings(): Promise<AppSettings> {
-    const settings = await db.settings.get('global_barcode');
-    if (settings) return settings;
+  async updateAssortmentTemplate(id: number, template: { name: string, items: { size: string, quantity: number }[] }) {
+    return await db.assortmentTemplates.update(id, template);
+  },
+
+  async deleteAssortmentTemplate(id: number) {
+    return await db.assortmentTemplates.delete(id);
+  },
+
+  // --- Barcode & Modular Settings ---
+  async getSystemSettings(): Promise<AppSettings> {
+    const settings = await db.settings.get('global_settings') || await db.settings.get('global_barcode');
     const defaultSettings: AppSettings = {
-      id: 'global_barcode',
+      id: 'global_settings',
       barcodeType: 'CODE-128',
       barcodePrefix: '869',
-      nextBarcodeSequence: 1000000
+      nextBarcodeSequence: 1000000,
+      company: {
+        companyName: 'ProERP Ayakkabı San. ve Tic. Ltd. Şti.',
+        companyTitle: 'ProERP Ayakkabı İmalat Sanayi ve Ticaret Limited Şirketi',
+        taxOffice: 'Güngören Vergi Dairesi',
+        taxNumber: '7340981245',
+        tradeRegistryNo: '458921-5',
+        phone: '+90 212 555 44 33',
+        email: 'info@proerp-shoes.com',
+        website: 'https://proerp-shoes.com',
+        address: 'Sanayi Cad. Ayakkabıcılar Sanayi Sitesi No: 42 Kat: 3 Güngören',
+        city: 'İstanbul / TÜRKİYE',
+        bankName: 'Garanti BBVA - Merter Kurumsal',
+        iban: 'TR12 0006 2000 1234 5678 9012 34',
+        currency: 'TRY'
+      },
+      stock: {
+        barcodeType: 'CODE-128',
+        barcodePrefix: '869',
+        nextBarcodeSequence: 1000000,
+        autoBarcodeOnProductCreate: true,
+        defaultCriticalStockThreshold: 10,
+        defaultShoeSizes: ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46']
+      },
+      order: {
+        salesOrderPrefix: 'SIP-2026-',
+        purchaseOrderPrefix: 'SAT-2026-',
+        waybillSalesPrefix: 'IRS-2026-',
+        waybillPurchasePrefix: 'GIR-2026-',
+        invoiceSalesPrefix: 'EFT-2026-',
+        invoicePurchasePrefix: 'ALS-2026-',
+        defaultVatRate: 20,
+        defaultCurrency: 'TRY',
+        defaultPaymentTermDays: 30,
+        autoCreateWorkOrdersOnConfirm: true,
+        autoDeductStockOnWaybill: true
+      },
+      production: {
+        workOrderPrefix: 'WO-',
+        defaultDailyCapacityPairs: 650,
+        scrapTolerancePercentage: 2,
+        autoConsumeMaterialsOnStart: true
+      },
+      finance: {
+        defaultCurrency: 'TRY',
+        checkAlertDaysBeforeDue: 7,
+        defaultCustomerAccountCode: '120.01',
+        defaultSupplierAccountCode: '320.01',
+        defaultFinishedStockAccountCode: '157.01',
+        defaultRawMaterialAccountCode: '150.01',
+        defaultSalesRevenueAccountCode: '600.01',
+        defaultVatCalculatedAccountCode: '391.01',
+        defaultVatDeductibleAccountCode: '191.01'
+      },
+      hr: {
+        weeklyWorkHours: 45,
+        dailyWorkHours: 8,
+        overtimeWeekdayMultiplier: 1.5,
+        overtimeWeekendMultiplier: 2.0,
+        annualLeaveBaseDays: 14,
+        sgkEmployeeRate: 14,
+        unemploymentEmployeeRate: 1,
+        sgkEmployerRate: 15.5,
+        unemploymentEmployerRate: 2
+      }
     };
-    await db.settings.put(defaultSettings);
-    return defaultSettings;
+
+    if (!settings) {
+      await db.settings.put(defaultSettings);
+      return defaultSettings;
+    }
+
+    return {
+      ...defaultSettings,
+      ...settings,
+      company: { ...defaultSettings.company, ...settings.company },
+      stock: { ...defaultSettings.stock, ...settings.stock },
+      order: { ...defaultSettings.order, ...settings.order },
+      production: { ...defaultSettings.production, ...settings.production },
+      finance: { ...defaultSettings.finance, ...settings.finance },
+      hr: { ...defaultSettings.hr, ...settings.hr },
+    };
+  },
+
+  async updateSystemSettings(settings: AppSettings) {
+    const updated = {
+      ...settings,
+      id: 'global_settings',
+      barcodeType: settings.stock?.barcodeType || settings.barcodeType || 'CODE-128',
+      barcodePrefix: settings.stock?.barcodePrefix || settings.barcodePrefix || '869',
+      nextBarcodeSequence: settings.stock?.nextBarcodeSequence || settings.nextBarcodeSequence || 1000000
+    };
+    await db.settings.put(updated);
+    await db.settings.put({
+      id: 'global_barcode',
+      barcodeType: updated.barcodeType,
+      barcodePrefix: updated.barcodePrefix,
+      nextBarcodeSequence: updated.nextBarcodeSequence
+    });
+    return updated;
+  },
+
+  async getBarcodeSettings(): Promise<AppSettings> {
+    return await this.getSystemSettings();
   },
 
   async updateBarcodeSettings(settings: AppSettings) {
-    return await db.settings.put({ ...settings, id: 'global_barcode' });
+    return await this.updateSystemSettings(settings);
   },
 
   async generateAutomatedBarcodes(product: Partial<Product>) {

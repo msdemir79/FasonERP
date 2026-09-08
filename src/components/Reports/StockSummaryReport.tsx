@@ -5,6 +5,7 @@ import { Package, Search, AlertTriangle, Eye, Printer, FileDown } from 'lucide-r
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { printTabularReport } from '../../lib/printService';
+import { exportToCsv } from '../../lib/exportService';
 
 export default function StockSummaryReport() {
   const products = useLiveQuery(() => db.products.toArray());
@@ -48,6 +49,22 @@ export default function StockSummaryReport() {
     );
   };
 
+  const handleExportExcel = () => {
+    if (!filteredProducts || filteredProducts.length === 0) return;
+    const headers = ['Ürün Kodu', 'Ürün / Model Adı', 'Marka', 'Kategori', 'Stok Miktarı', 'Birim', 'Kritik Seviye', 'Durum'];
+    const rows = filteredProducts.map(p => [
+      p.code,
+      p.name,
+      p.brand || '-',
+      p.category || 'Genel',
+      p.stock,
+      p.unit,
+      p.minStock || 0,
+      p.stock <= (p.minStock || 0) ? 'KRİTİK STOK' : 'NORMAL'
+    ]);
+    exportToCsv('Stok_Ozet_Raporu.csv', headers, rows);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -58,12 +75,13 @@ export default function StockSummaryReport() {
         <div className="flex gap-3">
           <button 
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 transition-colors cursor-pointer shadow-xs"
           >
             <Printer className="w-4 h-4" /> Yazdır
           </button>
           <button 
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-sm"
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
           >
             <FileDown className="w-4 h-4" /> Excel'e Aktar
           </button>

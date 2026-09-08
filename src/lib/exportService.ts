@@ -29,7 +29,12 @@ const STATUS_MAP: Record<AttendanceStatus, { code: string; label: string; bg: st
 export function exportToCsv(filename: string, headers: string[], rows: (string | number)[][]) {
   const escapeCell = (val: string | number | undefined | null) => {
     if (val === undefined || val === null) return '""';
-    const str = String(val).replace(/"/g, '""');
+    let str = String(val);
+    // Security: Mitigate CSV Formula Injection (DDE attacks)
+    if (/^[=+\-@\t\r]/.test(str) && isNaN(Number(str))) {
+      str = `'${str}`;
+    }
+    str = str.replace(/"/g, '""');
     return `"${str}"`;
   };
 

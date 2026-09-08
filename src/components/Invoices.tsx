@@ -1473,7 +1473,11 @@ function CreateInvoiceModal({
 
                       <button
                         type="button"
-                        className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-wider"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          importOrderItems(ord);
+                        }}
+                        className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-sm cursor-pointer"
                       >
                         Aktar
                       </button>

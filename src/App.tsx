@@ -17,6 +17,7 @@ import StockSummaryReport from './components/Reports/StockSummaryReport';
 import StockDetailReport from './components/Reports/StockDetailReport';
 import StockMovementReport from './components/Reports/StockMovementReport';
 import BrokenSizeReport from './components/Reports/BrokenSizeReport';
+import SettingsHub from './components/Settings';
 import { seedDatabase } from './db';
 
 /**
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="accounting" element={<Accounting />} />
           <Route path="hr" element={<HRManagement />} />
           <Route path="contacts" element={<Contacts />} />
+          <Route path="settings" element={<SettingsHub />} />
         </Route>
       </Routes>
     </BrowserRouter>
