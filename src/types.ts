@@ -55,6 +55,7 @@ export interface BarcodeVariant {
 export interface CompanySettings {
   companyName?: string;
   companyTitle?: string;
+  logo?: string; // Base64 data URL or image URL for company logo
   taxOffice?: string;
   taxNumber?: string;
   tradeRegistryNo?: string;

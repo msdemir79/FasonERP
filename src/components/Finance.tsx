@@ -34,6 +34,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { financeService } from '../services/financeService';
 import { accountingService } from '../services/accountingService';
+import PageHeader from './PageHeader';
 import EditCashBoxModal from './Finance/EditCashBoxModal';
 import EditBankAccountModal from './Finance/EditBankAccountModal';
 import DeleteFinanceModal from './Finance/DeleteFinanceModal';
@@ -53,6 +54,8 @@ export default function Finance() {
   const [activeTab, setActiveTab] = useState<'receipts' | 'cash' | 'bank' | 'checks' | 'reports'>('receipts');
   
   // Queries
+  const systemSettings = useLiveQuery(() => db.settings.get('global_settings'));
+  const companySettings = systemSettings?.company;
   const receipts = useLiveQuery(() => db.collectionReceipts.orderBy('date').reverse().toArray()) || [];
   const cashBoxes = useLiveQuery(() => db.cashBoxes.toArray()) || [];
   const bankAccounts = useLiveQuery(() => db.bankAccounts.toArray()) || [];
@@ -404,46 +407,46 @@ export default function Finance() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Tahsilat & Finans Yönetimi</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Kasa, Banka, Çek-Senet portföyü ve müşteri/tedarikçi tahsilat-tediye makbuzları
-          </p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => {
-              setReceiptType('collection');
-              setIsReceiptModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 shadow-sm transition-colors"
-          >
-            <ArrowDownLeft className="w-4 h-4" />
-            Tahsilat Al
-          </button>
+      <PageHeader
+        title="Finans, Kasa & Banka Yönetimi"
+        subtitle="Likit varlıklar, nakit kasalar, banka hesapları ve müşteri/tedarikçi çek portföyü"
+        badge="Finans & Tahsilat"
+        icon={Landmark}
+        iconColor="emerald"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                setReceiptType('collection');
+                setIsReceiptModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 shadow-xs transition-colors cursor-pointer"
+            >
+              <ArrowDownLeft className="w-3.5 h-3.5" />
+              <span>Tahsilat Al</span>
+            </button>
 
-          <button
-            onClick={() => {
-              setReceiptType('disbursement');
-              setIsReceiptModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-rose-600 text-white text-sm font-medium hover:bg-rose-700 shadow-sm transition-colors"
-          >
-            <ArrowUpRight className="w-4 h-4" />
-            Ödeme (Tediye) Yap
-          </button>
+            <button
+              onClick={() => {
+                setReceiptType('disbursement');
+                setIsReceiptModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 shadow-xs transition-colors cursor-pointer"
+            >
+              <ArrowUpRight className="w-3.5 h-3.5" />
+              <span>Ödeme Yap</span>
+            </button>
 
-          <button
-            onClick={() => setIsVirmanModalOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors"
-          >
-            <ArrowRightLeft className="w-4 h-4" />
-            Virman Transferi
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => setIsVirmanModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-xs transition-colors cursor-pointer"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <span>Virman Transferi</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* Financial KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1667,13 +1670,20 @@ export default function Finance() {
 
             {/* Printable Receipt Canvas */}
             <div className="border-2 border-gray-800 p-6 space-y-6 rounded">
-              <div className="flex justify-between items-start border-b-2 border-gray-800 pb-4">
-                <div>
-                  <h2 className="text-xl font-black text-gray-900 uppercase tracking-wide">
-                    PRO ERP AYAKKABI SAN. TİC. LTD. ŞTİ.
-                  </h2>
-                  <p className="text-xs text-gray-600 mt-1">İkitelli OSB Aykosan Sanayi Sitesi 4. Ada B Blok No:12 Başakşehir / İstanbul</p>
-                  <p className="text-xs text-gray-600">Vergi Dairesi: İkitelli V.D. - Vergi No: 7320491820</p>
+              <div className="flex justify-between items-start border-b-2 border-gray-800 pb-4 gap-4">
+                <div className="flex items-center gap-3">
+                  {companySettings?.logo ? (
+                    <div className="w-12 h-12 rounded bg-white border border-gray-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img src={companySettings.logo} alt={companySettings.companyName} className="max-w-full max-h-full object-contain" />
+                    </div>
+                  ) : null}
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 uppercase tracking-wide">
+                      {companySettings?.companyTitle || companySettings?.companyName || 'PRO ERP AYAKKABI SAN. TİC. LTD. ŞTİ.'}
+                    </h2>
+                    <p className="text-xs text-gray-600 mt-1">{companySettings?.address || 'İkitelli OSB Aykosan Sanayi Sitesi 4. Ada B Blok No:12 Başakşehir / İstanbul'}</p>
+                    <p className="text-xs text-gray-600">Vergi Dairesi: {companySettings?.taxOffice || 'İkitelli V.D.'} - Vergi No: {companySettings?.taxNumber || '7320491820'}</p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="inline-block border-2 border-gray-800 px-3 py-1 text-sm font-black uppercase">

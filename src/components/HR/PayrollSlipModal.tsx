@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { erpService } from '../../services/erpService';
 import { 
   X, 
   Printer, 
@@ -104,6 +105,20 @@ function numberToWordsTR(val: number): string {
 }
 
 export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }: PayrollSlipModalProps) {
+  const [companySettings, setCompanySettings] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadSettings() {
+      if (isOpen) {
+        const sysSettings = await erpService.getSystemSettings();
+        if (sysSettings?.company) {
+          setCompanySettings(sysSettings.company);
+        }
+      }
+    }
+    loadSettings();
+  }, [isOpen]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -128,6 +143,13 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
 
   // Sözleşme / Anlaşılan taban ücret
   const agreedBaseSalary = employee?.baseSalary || payroll.baseSalary || 0;
+
+  const compName = companySettings?.companyName || 'ProERP Ayakkabı';
+  const compTitle = companySettings?.companyTitle || companySettings?.companyName || 'PRO ERP AYAKKABI SAN. TİC. LTD. ŞTİ.';
+  const compLogo = companySettings?.logo;
+  const compAddress = companySettings?.address || 'İkitelli OSB Aykosan Sanayi Sitesi 4. Ada B Blok No:12 Başakşehir / İstanbul';
+  const compTaxOffice = companySettings?.taxOffice || 'İkitelli V.D.';
+  const compTaxNumber = companySettings?.taxNumber || '7320491820';
 
   // Günlük hak ediş birim tutarı (30 gün standardı veya günlük yevmiye)
   const dailyRate = isDaily 
@@ -212,14 +234,20 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
           {/* 1. Kurumsal ve Belge Başlığı */}
           <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-4 gap-4">
             <div>
-              <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-indigo-700 print:text-black" />
+              <div className="flex items-center gap-3">
+                {compLogo ? (
+                  <div className="w-10 h-10 rounded bg-white border border-slate-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                    <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
+                  </div>
+                ) : (
+                  <Building2 className="w-5 h-5 text-indigo-700 print:text-black shrink-0" />
+                )}
                 <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-900">
-                  PRO ERP AYAKKABI SAN. TİC. LTD. ŞTİ.
+                  {compTitle}
                 </h2>
               </div>
-              <p className="text-xs text-slate-600 mt-1">İkitelli OSB Aykosan Sanayi Sitesi 4. Ada B Blok No:12 Başakşehir / İstanbul</p>
-              <p className="text-xs text-slate-600 font-mono">Vergi Dairesi: İkitelli V.D. 7320491820 | SGK İşyeri Sicil: 2.1029384.034.34.45</p>
+              <p className="text-xs text-slate-600 mt-1">{compAddress}</p>
+              <p className="text-xs text-slate-600 font-mono">Vergi Dairesi: {compTaxOffice} VKN: {compTaxNumber} | SGK İşyeri Sicil: 2.1029384.034.34.45</p>
             </div>
             <div className="sm:text-right shrink-0">
               <div className="inline-block border-2 border-slate-900 px-3 py-1 text-xs sm:text-sm font-black uppercase bg-slate-100 print:bg-transparent">
@@ -730,7 +758,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
             <div className="grid grid-cols-2 gap-8 pt-2 text-center">
               <div>
                 <p className="font-bold text-slate-800">İşveren / Şirket Yetkilisi</p>
-                <p className="text-[10px] text-slate-500">PRO ERP Ayakkabı San. Tic. Ltd. Şti.</p>
+                <p className="text-[10px] text-slate-500 uppercase">{compTitle}</p>
                 <div className="h-16 mt-2 border-b border-dashed border-slate-400 flex items-end justify-center pb-1">
                   <span className="text-[10px] text-slate-400">Kaşe / Yetkili İmza</span>
                 </div>

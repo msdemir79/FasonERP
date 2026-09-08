@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, Save, Check, Database, Download, Upload, AlertTriangle, RefreshCw, FileText } from 'lucide-react';
+import { Building2, Save, Check, Database, Download, Upload, AlertTriangle, RefreshCw, FileText, Image as ImageIcon, Trash2, UploadCloud } from 'lucide-react';
 import { db, seedDatabase } from '../../db';
 import type { AppSettings, CompanySettings as CompanySettingsType } from '../../types';
 
@@ -28,6 +28,27 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Logo görsel boyutu maksimum 2MB olmalıdır.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setComp(prev => ({ ...prev, logo: base64 }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveLogo = () => {
+    setComp(prev => ({ ...prev, logo: undefined }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +215,67 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* LOGO YÜKLEME ALANI */}
+          <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-indigo-600" />
+                  Firma Logosu
+                </label>
+                <p className="text-[11px] text-slate-500 font-normal mt-0.5">
+                  Eklenen logo yan menüde (panelde) ve tüm sayfa başlıklarında gösterilir. (PNG, JPG, SVG - max 2MB)
+                </p>
+              </div>
+              {comp.logo && (
+                <button
+                  type="button"
+                  onClick={handleRemoveLogo}
+                  className="px-2.5 py-1 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Logoyu Kaldır
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
+              {comp.logo ? (
+                <div className="relative group shrink-0">
+                  <div className="w-24 h-24 rounded-2xl bg-white border-2 border-indigo-200 p-2 shadow-xs flex items-center justify-center overflow-hidden">
+                    <img src={comp.logo} alt="Firma Logosu" className="max-w-full max-h-full object-contain" />
+                  </div>
+                  <div className="mt-1 text-center">
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      Aktif Logo
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-24 h-24 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 shrink-0">
+                  <ImageIcon className="w-8 h-8 stroke-1" />
+                  <span className="text-[10px] font-medium mt-1">Logo Yok</span>
+                </div>
+              )}
+
+              <div className="flex-1 space-y-2 w-full">
+                <label className="flex flex-col items-center justify-center px-4 py-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all shadow-2xs group text-center">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700 group-hover:text-indigo-600">
+                    <UploadCloud className="w-4 h-4 text-indigo-600" />
+                    <span>{comp.logo ? 'Logoyu Değiştir' : 'Yeni Logo Görseli Yükle'}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-0.5">Görsel dosyası seçmek için tıklayın</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Firma Kısa Adı (Ticari Marka)</label>

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { printTabularReport } from '../../lib/printService';
 import { exportToCsv, exportPayrollToExcel, exportPayrollToCsv } from '../../lib/exportService';
+import { erpService } from '../../services/erpService';
 import { cn } from '../../lib/utils';
 import { FileSpreadsheet } from 'lucide-react';
 import type { PayrollRecord, Employee } from '../../types';
@@ -132,10 +133,12 @@ export default function HRReport() {
   };
 
   // Handle Excel (.xls) and CSV Export
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (filteredPayrolls.length === 0) return;
     const filterTitle = sgkFilter === 'sgk_li' ? 'SGK\'lı Personeller' : sgkFilter === 'sgk_siz' ? 'Yevmiyeli Personeller' : 'Tüm Personeller';
-    exportPayrollToExcel(selectedMonth, selectedYear, filteredPayrolls, employees, { filterTitle });
+    const sysSettings = await erpService.getSystemSettings();
+    const companyName = sysSettings?.company?.companyTitle || sysSettings?.company?.companyName;
+    exportPayrollToExcel(selectedMonth, selectedYear, filteredPayrolls, employees, { filterTitle, companyName });
   };
 
   const handleExportCsv = () => {

@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Printer, X, ExternalLink, CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react';
 import { printHtml, openPrintWindow } from '../../lib/printService';
+import { erpService } from '../../services/erpService';
 import type { MizanRow } from '../../services/accountingService';
 
 interface Props {
@@ -16,7 +17,20 @@ interface Props {
 export default function MizanPrintModal({ isOpen, onClose, mizanRows, options }: Props) {
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
   const [isPrinting, setIsPrinting] = useState(false);
+  const [companySettings, setCompanySettings] = useState<any>(null);
   const printContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function loadSettings() {
+      if (isOpen) {
+        const sysSettings = await erpService.getSystemSettings();
+        if (sysSettings?.company) {
+          setCompanySettings(sysSettings.company);
+        }
+      }
+    }
+    loadSettings();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -211,19 +225,26 @@ export default function MizanPrintModal({ isOpen, onClose, mizanRows, options }:
             {/* 1. KURUMSAL VE RAPOR BAŞLIĞI */}
             <div className="border-b-2 border-slate-900 pb-4 mb-4">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                  <div className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest">
-                    T.C. MALİYE MEVZUATINA VE V.U.K.'A UYGUN RESMİ BELGE
+                <div className="flex items-center gap-3">
+                  {companySettings?.logo ? (
+                    <div className="w-12 h-12 rounded bg-white border border-slate-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img src={companySettings.logo} alt={companySettings.companyName} className="max-w-full max-h-full object-contain" />
+                    </div>
+                  ) : null}
+                  <div>
+                    <div className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest">
+                      T.C. MALİYE MEVZUATINA VE V.U.K.'A UYGUN RESMİ BELGE
+                    </div>
+                    <h1 className="text-base sm:text-lg font-black text-slate-950 uppercase tracking-tight mt-0.5">
+                      {companySettings?.companyTitle || companySettings?.companyName || 'PRO ERP AYAKKABI VE DERİ MAMULLERİ SAN. TİC. LTD. ŞTİ.'}
+                    </h1>
+                    <p className="text-[11px] text-slate-600 font-medium">
+                      {companySettings?.address || 'İkitelli OSB Mah. Aykosan Sanayi Sitesi 4. Ada A Blok No: 12-14 Başakşehir / İSTANBUL'}
+                    </p>
+                    <p className="text-[11px] text-slate-600">
+                      <span className="font-semibold text-slate-800">Vergi Dairesi:</span> {companySettings?.taxOffice || 'İkitelli V.D.'} &bull; <span className="font-semibold text-slate-800">VKN:</span> {companySettings?.taxNumber || '7320491820'} &bull; <span className="font-semibold text-slate-800">Ticaret Sicil No:</span> {companySettings?.tradeRegistryNo || '948210'}
+                    </p>
                   </div>
-                  <h1 className="text-base sm:text-lg font-black text-slate-950 uppercase tracking-tight mt-0.5">
-                    PRO ERP AYAKKABI VE DERİ MAMULLERİ SAN. TİC. LTD. ŞTİ.
-                  </h1>
-                  <p className="text-[11px] text-slate-600 font-medium">
-                    İkitelli OSB Mah. Aykosan Sanayi Sitesi 4. Ada A Blok No: 12-14 Başakşehir / İSTANBUL
-                  </p>
-                  <p className="text-[11px] text-slate-600">
-                    <span className="font-semibold text-slate-800">Vergi Dairesi:</span> İkitelli V.D. &bull; <span className="font-semibold text-slate-800">VKN:</span> 7320491820 &bull; <span className="font-semibold text-slate-800">Ticaret Sicil No:</span> 948210
-                  </p>
                 </div>
 
                 <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200">

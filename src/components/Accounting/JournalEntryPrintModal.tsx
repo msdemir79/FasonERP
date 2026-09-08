@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Printer, X, ExternalLink } from 'lucide-react';
 import { printHtml, openPrintWindow } from '../../lib/printService';
+import { erpService } from '../../services/erpService';
 import type { JournalEntry } from '../../types';
 
 interface Props {
@@ -10,7 +11,18 @@ interface Props {
 
 export default function JournalEntryPrintModal({ entry, onClose }: Props) {
   const [isPrinting, setIsPrinting] = useState(false);
+  const [companySettings, setCompanySettings] = useState<any>(null);
   const printContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function loadSettings() {
+      const sysSettings = await erpService.getSystemSettings();
+      if (sysSettings?.company) {
+        setCompanySettings(sysSettings.company);
+      }
+    }
+    loadSettings();
+  }, []);
 
   if (!entry) return null;
 
@@ -103,13 +115,20 @@ export default function JournalEntryPrintModal({ entry, onClose }: Props) {
         {/* Printable Canvas */}
         <div ref={printContentRef} className="border-2 border-gray-900 p-6 space-y-5 rounded bg-white">
           {/* Header */}
-          <div className="flex justify-between items-start border-b-2 border-gray-900 pb-3">
-            <div>
-              <h1 className="text-lg font-black text-gray-900 uppercase">
-                PRO ERP AYAKKABI VE DERİ MAMULLERİ SAN. TİC. LTD. ŞTİ.
-              </h1>
-              <p className="text-xs text-gray-600 mt-0.5">İkitelli OSB Aykosan Sanayi Sitesi Başakşehir / İstanbul</p>
-              <p className="text-xs text-gray-600">İkitelli V.D. - 7320491820</p>
+          <div className="flex justify-between items-start border-b-2 border-gray-900 pb-3 gap-4">
+            <div className="flex items-center gap-3">
+              {companySettings?.logo ? (
+                <div className="w-10 h-10 rounded bg-white border border-gray-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                  <img src={companySettings.logo} alt={companySettings.companyName} className="max-w-full max-h-full object-contain" />
+                </div>
+              ) : null}
+              <div>
+                <h1 className="text-lg font-black text-gray-900 uppercase">
+                  {companySettings?.companyTitle || companySettings?.companyName || 'PRO ERP AYAKKABI VE DERİ MAMULLERİ SAN. TİC. LTD. ŞTİ.'}
+                </h1>
+                <p className="text-xs text-gray-600 mt-0.5">{companySettings?.address || 'İkitelli OSB Aykosan Sanayi Sitesi Başakşehir / İstanbul'}</p>
+                <p className="text-xs text-gray-600">Vergi Dairesi: {companySettings?.taxOffice || 'İkitelli V.D.'} - {companySettings?.taxNumber || '7320491820'}</p>
+              </div>
             </div>
             <div className="text-right">
               <span className="inline-block border-2 border-gray-900 px-3 py-0.5 text-sm font-black uppercase tracking-wider">

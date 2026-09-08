@@ -114,6 +114,7 @@ export function InvoicePrintModal({
   onOpenActionModal 
 }: InvoicePrintModalProps) {
   const [invoiceDetail, setInvoiceDetail] = useState<any>(null);
+  const [companySettings, setCompanySettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [template, setTemplate] = useState<InvoiceTemplateType>('official_gib');
   const printContainerRef = useRef<HTMLDivElement>(null);
@@ -121,8 +122,14 @@ export function InvoicePrintModal({
   useEffect(() => {
     async function fetchDetail() {
       setLoading(true);
-      const data = await erpService.getInvoice(invoiceId);
+      const [data, sysSettings] = await Promise.all([
+        erpService.getInvoice(invoiceId),
+        erpService.getSystemSettings()
+      ]);
       setInvoiceDetail(data);
+      if (sysSettings?.company) {
+        setCompanySettings(sysSettings.company);
+      }
       setLoading(false);
     }
     if (invoiceId) {
@@ -157,6 +164,20 @@ export function InvoicePrintModal({
 
   // Türkçe Yazıyla Tutar
   const amountInWords = invoiceDetail ? numberToTurkishWords(invoiceDetail.grandTotal || 0) : '';
+
+  // Firma Bilgileri (Dinamik Ayarlardan)
+  const compName = companySettings?.companyName || 'ProERP Ayakkabı';
+  const compTitle = companySettings?.companyTitle || companySettings?.companyName || 'PROERP AYAKKABI SAN. VE TİC. LTD. ŞTİ.';
+  const compLogo = companySettings?.logo;
+  const compAddress = companySettings?.address || 'Organize Sanayi Bölgesi 12. Cadde No: 45 / Başakşehir / İSTANBUL';
+  const compTaxOffice = companySettings?.taxOffice || 'İkitelli V.D.';
+  const compTaxNumber = companySettings?.taxNumber || '7340592811';
+  const compTradeReg = companySettings?.tradeRegistryNo || '948123-5';
+  const compPhone = companySettings?.phone || '(0212) 555 01 99';
+  const compEmail = companySettings?.email || 'muhasebe@proerp.com';
+  const compWebsite = companySettings?.website || 'www.proerp.com.tr';
+  const compBank = companySettings?.bankName || 'T.C. Ziraat Bankası - İkitelli Şubesi';
+  const compIban = companySettings?.iban || 'TR33 0001 0002 0003 0004 0005 01';
 
   // Yazdırma İşlemi (Universal Print Service)
   const handlePrint = (openInNewTab: boolean = false) => {
@@ -352,6 +373,7 @@ export function InvoicePrintModal({
                   formattedTime={formattedTime}
                   dueDateFormatted={dueDateFormatted}
                   amountInWords={amountInWords}
+                  companySettings={companySettings}
                 />
               )}
 
@@ -363,6 +385,7 @@ export function InvoicePrintModal({
                   formattedTime={formattedTime}
                   dueDateFormatted={dueDateFormatted}
                   amountInWords={amountInWords}
+                  companySettings={companySettings}
                 />
               )}
 
@@ -374,6 +397,7 @@ export function InvoicePrintModal({
                   formattedTime={formattedTime}
                   dueDateFormatted={dueDateFormatted}
                   amountInWords={amountInWords}
+                  companySettings={companySettings}
                 />
               )}
 
@@ -395,8 +419,22 @@ function GibOfficialTemplate({
   formattedDate,
   formattedTime,
   dueDateFormatted,
-  amountInWords
+  amountInWords,
+  companySettings
 }: any) {
+  const compLogo = companySettings?.logo;
+  const compName = companySettings?.companyName || 'PROERP';
+  const compTitle = companySettings?.companyTitle || companySettings?.companyName || 'PROERP AYAKKABI SAN. VE TİC. LTD. ŞTİ.';
+  const compAddress = companySettings?.address || 'İkitelli OSB Aykosan San. Sit. 4. Ada A Blok No:12-14 Başakşehir / İSTANBUL';
+  const compTaxOffice = companySettings?.taxOffice || 'İkitelli V.D.';
+  const compTaxNumber = companySettings?.taxNumber || '7320491820';
+  const compTradeReg = companySettings?.tradeRegistryNo || '948210';
+  const compPhone = companySettings?.phone || '0 (212) 671 20 20';
+  const compEmail = companySettings?.email || 'info@proerp.com.tr';
+  const compWebsite = companySettings?.website || 'www.proerp.com.tr';
+  const compBank = companySettings?.bankName || 'Ziraat Bankası';
+  const compIban = companySettings?.iban || 'TR12 0001 0002 0003 0004 0005 06';
+
   const isSales = invoice.type === 'sales';
   const isCancelled = invoice.status === 'cancelled';
   const invoiceTitle = isCancelled 
@@ -411,18 +449,24 @@ function GibOfficialTemplate({
         
         {/* Sol Sütun: Firma Logosu */}
         <div className="col-span-4 flex items-center gap-3">
-          <div className="w-12 h-12 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-2xl tracking-tighter italic border border-slate-800">
-            P
-          </div>
-          <div>
-            <div className="font-black text-sm tracking-tight text-slate-900 leading-tight">
-              PROERP AYAKKABI
+          {compLogo ? (
+            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-0.5 border border-slate-300 shrink-0 overflow-hidden shadow-xs">
+              <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
             </div>
-            <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">
-              SAN. VE TİC. LTD. ŞTİ.
+          ) : (
+            <div className="w-12 h-12 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-2xl tracking-tighter italic border border-slate-800 shrink-0">
+              {compName.charAt(0)}
             </div>
-            <div className="text-[9px] text-slate-500 font-mono mt-0.5">
-              www.proerp.com.tr
+          )}
+          <div className="min-w-0">
+            <div className="font-black text-sm tracking-tight text-slate-900 leading-tight uppercase truncate">
+              {compName}
+            </div>
+            <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider line-clamp-1">
+              {compTitle}
+            </div>
+            <div className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">
+              {compWebsite}
             </div>
           </div>
         </div>
@@ -499,17 +543,16 @@ function GibOfficialTemplate({
           <div className="bg-slate-800 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-1">
             SATICI BİLGİLERİ
           </div>
-          <div className="font-black text-slate-900 text-xs">
-            PROERP AYAKKABI SAN. VE TİC. LTD. ŞTİ.
+          <div className="font-black text-slate-900 text-xs uppercase">
+            {compTitle}
           </div>
           <div className="text-slate-600">
-            Organize Sanayi Bölgesi 12. Cadde No: 45 / Başakşehir / İSTANBUL
+            {compAddress}
           </div>
           <div className="pt-1 text-slate-700 font-mono text-[10px] space-y-0.5">
-            <div><span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> İkitelli V.D.</div>
-            <div><span className="font-sans font-bold text-slate-600">VKN:</span> 7340592811 <span className="font-sans font-bold text-slate-600 ml-2">Mersis No:</span> 0734059281100001</div>
-            <div><span className="font-sans font-bold text-slate-600">Ticaret Sicil No:</span> 948123-5</div>
-            <div><span className="font-sans font-bold text-slate-600">Tel:</span> (0212) 555 01 99 | <span className="font-sans font-bold text-slate-600">E-Posta:</span> muhasebe@proerp.com</div>
+            <div><span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> {compTaxOffice}</div>
+            <div><span className="font-sans font-bold text-slate-600">VKN:</span> {compTaxNumber} <span className="font-sans font-bold text-slate-600 ml-2">Ticaret Sicil:</span> {compTradeReg}</div>
+            <div><span className="font-sans font-bold text-slate-600">Tel:</span> {compPhone} | <span className="font-sans font-bold text-slate-600">E-Posta:</span> {compEmail}</div>
           </div>
         </div>
 
@@ -694,10 +737,10 @@ function GibOfficialTemplate({
               Banka & Havale Bilgileri:
             </div>
             <div className="text-slate-800 font-medium">
-              <span className="font-bold">Banka:</span> T.C. Ziraat Bankası - İkitelli Şubesi | <span className="font-bold">Hesap:</span> ProERP Ayakkabı San. Tic. Ltd. Şti.
+              <span className="font-bold">Banka:</span> {compBank} | <span className="font-bold">Hesap Sahibi:</span> {compTitle}
             </div>
             <div className="font-mono font-bold text-slate-900 text-[10px]">
-              IBAN: TR33 0001 0002 0003 0004 0005 01 (TRY)
+              IBAN: {compIban} (TRY)
             </div>
           </div>
 
@@ -800,13 +843,27 @@ function CorporateModernTemplate({
   formattedDate,
   formattedTime,
   dueDateFormatted,
-  amountInWords
+  amountInWords,
+  companySettings
 }: any) {
   const isSales = invoice.type === 'sales';
   const isCancelled = invoice.status === 'cancelled';
   const invoiceTitle = isCancelled 
     ? 'İPTAL EDİLMİŞ FATURA' 
     : (isSales ? 'e-ARŞİV FATURA' : 'ALIŞ FATURASI');
+
+  const compName = companySettings?.companyName || 'ProERP Ayakkabı';
+  const compTitle = companySettings?.companyTitle || companySettings?.companyName || 'PROERP AYAKKABI SAN. VE TİC. LTD. ŞTİ.';
+  const compLogo = companySettings?.logo;
+  const compAddress = companySettings?.address || 'Organize Sanayi Bölgesi 12. Cadde No: 45 / Başakşehir / İSTANBUL';
+  const compTaxOffice = companySettings?.taxOffice || 'İkitelli V.D.';
+  const compTaxNumber = companySettings?.taxNumber || '7340592811';
+  const compTradeReg = companySettings?.tradeRegistryNo || '948123-5';
+  const compPhone = companySettings?.phone || '(0212) 555 01 99';
+  const compEmail = companySettings?.email || 'muhasebe@proerp.com';
+  const compWebsite = companySettings?.website || 'www.proerp.com.tr';
+  const compBank = companySettings?.bankName || 'T.C. Ziraat Bankası - İkitelli Şubesi';
+  const compIban = companySettings?.iban || 'TR33 0001 0002 0003 0004 0005 01';
 
   return (
     <div className="space-y-4 font-sans text-xs text-slate-900">
@@ -816,18 +873,24 @@ function CorporateModernTemplate({
         
         {/* Sol Sütun: Firma Logosu ve Resmi Ünvan */}
         <div className="col-span-4 flex items-center gap-3">
-          <div className="w-12 h-12 bg-indigo-950 rounded-lg flex items-center justify-center text-white font-black text-2xl tracking-tighter italic border border-indigo-900 shadow-xs">
-            P
-          </div>
-          <div>
-            <div className="font-black text-sm tracking-tight text-indigo-950 leading-tight">
-              PROERP AYAKKABI
+          {compLogo ? (
+            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-0.5 border border-indigo-200 shrink-0 overflow-hidden shadow-xs">
+              <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
             </div>
-            <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">
-              SAN. VE TİC. LTD. ŞTİ.
+          ) : (
+            <div className="w-12 h-12 bg-indigo-950 rounded-lg flex items-center justify-center text-white font-black text-2xl tracking-tighter italic border border-indigo-900 shrink-0 shadow-xs">
+              {compName.charAt(0)}
             </div>
-            <div className="text-[9px] text-indigo-700 font-mono mt-0.5">
-              www.proerp.com.tr
+          )}
+          <div className="min-w-0">
+            <div className="font-black text-sm tracking-tight text-indigo-950 leading-tight uppercase truncate">
+              {compName}
+            </div>
+            <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider line-clamp-1">
+              {compTitle}
+            </div>
+            <div className="text-[9px] text-indigo-700 font-mono mt-0.5 truncate">
+              {compWebsite}
             </div>
           </div>
         </div>
@@ -906,17 +969,16 @@ function CorporateModernTemplate({
           <div className="bg-indigo-950 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-1">
             SATICI BİLGİLERİ
           </div>
-          <div className="font-black text-slate-900 text-xs">
-            PROERP AYAKKABI SAN. VE TİC. LTD. ŞTİ.
+          <div className="font-black text-slate-900 text-xs uppercase">
+            {compTitle}
           </div>
           <div className="text-slate-600">
-            Organize Sanayi Bölgesi 12. Cadde No: 45 / Başakşehir / İSTANBUL
+            {compAddress}
           </div>
           <div className="pt-1 text-slate-700 font-mono text-[10px] space-y-0.5">
-            <div><span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> İkitelli V.D.</div>
-            <div><span className="font-sans font-bold text-slate-600">VKN:</span> 7340592811 <span className="font-sans font-bold text-slate-600 ml-2">Mersis No:</span> 0734059281100001</div>
-            <div><span className="font-sans font-bold text-slate-600">Ticaret Sicil No:</span> 948123-5</div>
-            <div><span className="font-sans font-bold text-slate-600">Tel:</span> (0212) 555 01 99 | <span className="font-sans font-bold text-slate-600">E-Posta:</span> muhasebe@proerp.com</div>
+            <div><span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> {compTaxOffice}</div>
+            <div><span className="font-sans font-bold text-slate-600">VKN:</span> {compTaxNumber} <span className="font-sans font-bold text-slate-600 ml-2">Ticaret Sicil:</span> {compTradeReg}</div>
+            <div><span className="font-sans font-bold text-slate-600">Tel:</span> {compPhone} | <span className="font-sans font-bold text-slate-600">E-Posta:</span> {compEmail}</div>
           </div>
         </div>
 
@@ -1093,10 +1155,10 @@ function CorporateModernTemplate({
             )}
             <div className="text-[9px] text-slate-700">
               <span className="font-bold text-indigo-950">Ödeme & Banka Bilgisi: </span>
-              T.C. Ziraat Bankası - İkitelli OSB Şubesi (ProERP Ayakkabı San. Ltd. Şti.)
+              {compBank} ({compTitle})
             </div>
             <div className="font-mono font-bold text-indigo-950 text-[10px]">
-              IBAN: TR33 0001 0002 0003 0004 0005 01 (TRY)
+              IBAN: {compIban} (TRY)
             </div>
           </div>
 
@@ -1199,13 +1261,27 @@ function CompactDeliveryTemplate({
   formattedDate,
   formattedTime,
   dueDateFormatted,
-  amountInWords
+  amountInWords,
+  companySettings
 }: any) {
   const isSales = invoice.type === 'sales';
   const isCancelled = invoice.status === 'cancelled';
   const invoiceTitle = isCancelled 
     ? 'İPTAL EDİLMİŞ FATURA' 
     : (isSales ? 'İRSALİYELİ e-ARŞİV FATURA' : 'İRSALİYELİ ALIŞ FATURASI');
+
+  const compName = companySettings?.companyName || 'ProERP Ayakkabı';
+  const compTitle = companySettings?.companyTitle || companySettings?.companyName || 'PROERP AYAKKABI SAN. VE TİC. LTD. ŞTİ.';
+  const compLogo = companySettings?.logo;
+  const compAddress = companySettings?.address || 'Organize Sanayi Bölgesi 12. Cadde No: 45 / Başakşehir / İSTANBUL';
+  const compTaxOffice = companySettings?.taxOffice || 'İkitelli V.D.';
+  const compTaxNumber = companySettings?.taxNumber || '7340592811';
+  const compTradeReg = companySettings?.tradeRegistryNo || '948123-5';
+  const compPhone = companySettings?.phone || '(0212) 555 01 99';
+  const compEmail = companySettings?.email || 'muhasebe@proerp.com';
+  const compWebsite = companySettings?.website || 'www.proerp.com.tr';
+  const compBank = companySettings?.bankName || 'T.C. Ziraat Bankası - İkitelli Şubesi';
+  const compIban = companySettings?.iban || 'TR33 0001 0002 0003 0004 0005 01';
 
   return (
     <div className="space-y-3.5 font-sans text-xs text-slate-900">
@@ -1227,18 +1303,24 @@ function CompactDeliveryTemplate({
         
         {/* Sol Sütun: Firma Bilgileri */}
         <div className="col-span-4 flex items-center gap-3">
-          <div className="w-12 h-12 bg-emerald-950 rounded-lg flex items-center justify-center text-white font-black text-2xl tracking-tighter italic border border-emerald-900 shadow-xs">
-            P
-          </div>
-          <div>
-            <div className="font-black text-sm tracking-tight text-emerald-950 leading-tight">
-              PROERP AYAKKABI
+          {compLogo ? (
+            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-0.5 border border-emerald-300 shrink-0 overflow-hidden shadow-xs">
+              <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
             </div>
-            <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">
-              SAN. VE TİC. LTD. ŞTİ.
+          ) : (
+            <div className="w-12 h-12 bg-emerald-950 rounded-lg flex items-center justify-center text-white font-black text-2xl tracking-tighter italic border border-emerald-900 shrink-0 shadow-xs">
+              {compName.charAt(0)}
             </div>
-            <div className="text-[9px] text-slate-500 font-mono mt-0.5">
-              VKN: 7340592811 | İkitelli V.D.
+          )}
+          <div className="min-w-0">
+            <div className="font-black text-sm tracking-tight text-emerald-950 leading-tight uppercase truncate">
+              {compName}
+            </div>
+            <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider line-clamp-1">
+              {compTitle}
+            </div>
+            <div className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">
+              VKN: {compTaxNumber} | {compTaxOffice}
             </div>
           </div>
         </div>
@@ -1317,16 +1399,16 @@ function CompactDeliveryTemplate({
           <div className="bg-slate-900 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-1">
             SATICI BİLGİLERİ
           </div>
-          <div className="font-black text-slate-900 text-xs">
-            PROERP AYAKKABI SAN. VE TİC. LTD. ŞTİ.
+          <div className="font-black text-slate-900 text-xs uppercase">
+            {compTitle}
           </div>
           <div className="text-slate-600">
-            Organize Sanayi Bölgesi 12. Cadde No: 45 / Başakşehir / İSTANBUL
+            {compAddress}
           </div>
           <div className="pt-1 text-slate-700 font-mono text-[10px] space-y-0.5">
-            <div><span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> İkitelli V.D. | <span className="font-sans font-bold text-slate-600">VKN:</span> 7340592811</div>
-            <div><span className="font-sans font-bold text-slate-600">Mersis:</span> 0734059281100001 | <span className="font-sans font-bold text-slate-600">Tic. Sicil:</span> 948123-5</div>
-            <div><span className="font-sans font-bold text-slate-600">Tel:</span> (0212) 555 01 99 | <span className="font-sans font-bold text-slate-600">E-Posta:</span> muhasebe@proerp.com</div>
+            <div><span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> {compTaxOffice} | <span className="font-sans font-bold text-slate-600">VKN:</span> {compTaxNumber}</div>
+            <div><span className="font-sans font-bold text-slate-600">Tic. Sicil:</span> {compTradeReg}</div>
+            <div><span className="font-sans font-bold text-slate-600">Tel:</span> {compPhone} | <span className="font-sans font-bold text-slate-600">E-Posta:</span> {compEmail}</div>
           </div>
         </div>
 
@@ -1499,7 +1581,7 @@ function CompactDeliveryTemplate({
             )}
             <div className="text-[9px] text-slate-600">
               <span className="font-bold text-slate-800">Banka IBAN: </span>
-              Ziraat Bankası - İkitelli OSB Şubesi | TR33 0001 0002 0003 0004 0005 01 (TRY)
+              {compBank} | {compIban} (TRY)
             </div>
           </div>
 

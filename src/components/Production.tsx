@@ -43,6 +43,8 @@ import {
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { Factory } from 'lucide-react';
+import PageHeader from './PageHeader';
 import { erpService, PRODUCTION_STAGES_CONFIG } from '../services/erpService';
 import Modal from './Modal';
 import { BarcodeSvg } from './BarcodeSvg';
@@ -706,44 +708,41 @@ export default function Production() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <Hammer className="w-8 h-8 text-indigo-600" />
-            ÜRETİM PLANLAMA & PROSES TAKİBİ
-          </h1>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-1">
-            Siparişten İmalata • Otomatik Reçete & MRP • 8 Kademeli Barkodlu Proses İstasyonu
-          </p>
-        </div>
+      <PageHeader
+        title="Üretim Planlama & Proses Takibi"
+        subtitle="Siparişten imalata, otomatik ürün reçeteleri (BoM), MRP ve 8 kademeli barkodlu istasyonlar"
+        badge="Üretim Takibi"
+        icon={Factory}
+        iconColor="amber"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => handleCalculateMRP()}
+              disabled={isMrpCalculating}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5 text-indigo-600", isMrpCalculating && "animate-spin")} />
+              <span>{isMrpCalculating ? "Hesaplanıyor..." : "MRP İhtiyaç Hesapla"}</span>
+            </button>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => handleCalculateMRP()}
-            disabled={isMrpCalculating}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-slate-50 transition-all shadow-xs"
-          >
-            <RefreshCw className={cn("w-4 h-4 text-indigo-600", isMrpCalculating && "animate-spin")} />
-            {isMrpCalculating ? "Hesaplanıyor..." : "MRP İhtiyaç Hesapla"}
-          </button>
+            <button
+              onClick={() => setIsRecipeModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-xs cursor-pointer"
+            >
+              <Settings2 className="w-3.5 h-3.5 text-slate-500" />
+              <span>Reçeteler (BoM)</span>
+            </button>
 
-          <button
-            onClick={() => setIsRecipeModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-slate-50 transition-all shadow-xs"
-          >
-            <Settings2 className="w-4 h-4 text-slate-500" />
-            Reçeteler (BoM)
-          </button>
-
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
-          >
-            <Plus className="w-4 h-4" />
-            Yeni İş Emri
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Yeni İş Emri</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* Quick Stat Highlights */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">

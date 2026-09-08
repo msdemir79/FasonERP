@@ -14,6 +14,8 @@ import {
   Pie, 
   Cell 
 } from 'recharts';
+import { LayoutDashboard } from 'lucide-react';
+import PageHeader from './PageHeader';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -279,244 +281,220 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const recentLogs = useMemo(() => [...inventoryLogs].reverse().slice(0, 4), [inventoryLogs]);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-4 pb-8">
       
-      {/* 1. ÜST HERO BAŞLIK & HIZLI MODÜL GEÇİŞ ÇUBUĞU */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 p-6 md:p-8 rounded-3xl text-white shadow-xl shadow-slate-950/20 relative overflow-hidden border border-slate-800/80">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 bottom-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 space-y-2">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> CANLI ENTEGRE ERP PANELİ
-            </span>
-            <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" />
-              {new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
+      {/* 1. ÜST ERGONOMİK BAŞLIK & HIZLI MODÜL GEÇİŞ ÇUBUĞU */}
+      <PageHeader
+        title="Fabrika & Operasyon Kontrol Paneli"
+        subtitle="Bordro tahakkuku, yevmiye fişleri, likidite durumu, üretim bantları ve sipariş takibi"
+        badge="Canlı Entegre"
+        icon={LayoutDashboard}
+        iconColor="indigo"
+        actions={
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            <button 
+              onClick={() => handleNav('hr')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer active:scale-98"
+              title="İnsan Kaynakları & Bordro Yönetimi"
+            >
+              <UserCheck className="w-3.5 h-3.5" /> İK & Bordro
+            </button>
+            <button 
+              onClick={() => handleNav('accounting')}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Genel Muhasebe & Yevmiye Fişleri"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-emerald-600" /> Muhasebe
+            </button>
+            <button 
+              onClick={() => handleNav('finance')}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Kasa, Banka & Çek Portföyü"
+            >
+              <Landmark className="w-3.5 h-3.5 text-amber-600" /> Finans
+            </button>
+            <button 
+              onClick={() => handleNav('production')}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Üretim Planlama & İş Emirleri"
+            >
+              <Factory className="w-3.5 h-3.5 text-blue-600" /> Üretim
+            </button>
           </div>
+        }
+      />
 
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            PRO ERP Ayakkabı Sanayi Fabrika Kontrol Merkezi
-          </h1>
-          <p className="text-slate-300 text-xs max-w-2xl font-medium leading-relaxed">
-            İnsan kaynakları & bordro tahakkuku, genel muhasebe TDHP fişleri, kasa/banka likiditesi, üretim bantları ve asortili ayakkabı siparişleri tek merkezden anlık kontrol altında.
-          </p>
-        </div>
-
-        {/* Hızlı Modül Butonları */}
-        <div className="relative z-10 flex flex-wrap items-center gap-2">
-          <button 
-            onClick={() => handleNav('hr')}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/30 cursor-pointer active:scale-95"
-            title="İnsan Kaynakları & Bordro Yönetimi"
-          >
-            <UserCheck className="w-4 h-4" /> İK & Bordro
-          </button>
-          <button 
-            onClick={() => handleNav('accounting')}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-            title="Genel Muhasebe & Yevmiye Fişleri"
-          >
-            <BookOpen className="w-4 h-4 text-emerald-400" /> Muhasebe
-          </button>
-          <button 
-            onClick={() => handleNav('finance')}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-            title="Kasa, Banka & Çek Portföyü"
-          >
-            <Landmark className="w-4 h-4 text-amber-400" /> Finans & Çek
-          </button>
-          <button 
-            onClick={() => handleNav('production')}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-            title="Üretim Planlama & İş Emirleri"
-          >
-            <Factory className="w-4 h-4 text-blue-400" /> Üretim
-          </button>
-        </div>
-      </div>
-
-      {/* 2. EN TEPE 5 BÜYÜK STRATEJİK KPI KARTI (TÜM ANA DİREKLER) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      {/* 2. EN TEPE 5 STRATEJİK KPI KARTI */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         
         {/* 1. Finans & Likit Varlık */}
-        <motion.div 
-          whileHover={{ y: -2 }}
+        <div 
           onClick={() => handleNav('finance')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs cursor-pointer hover:border-indigo-300 transition-all group"
+          className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs cursor-pointer hover:border-indigo-300 transition-all group"
         >
-          <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Likit Kasa & Banka</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[11px] font-medium text-slate-500">Likit Kasa & Banka</span>
+            <div className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
               <Landmark className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl font-black text-slate-900 font-mono tracking-tight">
+          <div className="text-base font-bold text-slate-900 font-mono tracking-tight">
             ₺{stats.totalLiquidAssets.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="flex items-center justify-between mt-2 text-[11px] font-semibold text-slate-500 border-t border-slate-100 pt-1.5">
+          <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500 border-t border-slate-100 pt-1">
             <span>Kasa: ₺{stats.cashBalance.toLocaleString('tr-TR')}</span>
-            <span className="text-indigo-600 font-bold">Banka: ₺{stats.bankBalance.toLocaleString('tr-TR')}</span>
+            <span className="text-indigo-600 font-semibold">Banka: ₺{stats.bankBalance.toLocaleString('tr-TR')}</span>
           </div>
-        </motion.div>
+        </div>
 
-        {/* 2. İK & Personel Maaş Tahakkuku (YENİ MODÜL!) */}
-        <motion.div 
-          whileHover={{ y: -2 }}
+        {/* 2. İK & Personel */}
+        <div 
           onClick={() => handleNav('hr')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs cursor-pointer hover:border-indigo-300 transition-all group"
+          className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs cursor-pointer hover:border-indigo-300 transition-all group"
         >
-          <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Personel & Bordro</span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[11px] font-medium text-slate-500">Personel & Bordro</span>
+            <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
               <UserCheck className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl font-black text-indigo-700 font-mono tracking-tight">
-            {stats.activeEmployeesCount} <span className="text-xs font-bold text-slate-400">Aktif Personel</span>
+          <div className="text-base font-bold text-indigo-700 font-mono tracking-tight">
+            {stats.activeEmployeesCount} <span className="text-xs font-normal text-slate-500">Personel</span>
           </div>
-          <div className="flex items-center justify-between mt-2 text-[11px] font-semibold text-slate-500 border-t border-slate-100 pt-1.5">
-            <span>Net Maaş: ₺{stats.totalNetPayroll.toLocaleString('tr-TR')}</span>
-            {stats.pendingAdvancesCount > 0 && (
-              <span className="text-amber-600 font-bold">{stats.pendingAdvancesCount} Avans Bekliyor</span>
+          <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500 border-t border-slate-100 pt-1">
+            <span>Net: ₺{stats.totalNetPayroll.toLocaleString('tr-TR')}</span>
+            {stats.pendingAdvancesCount > 0 ? (
+              <span className="text-amber-600 font-semibold">{stats.pendingAdvancesCount} Avans</span>
+            ) : (
+              <span className="text-slate-400">Avans Yok</span>
             )}
           </div>
-        </motion.div>
+        </div>
 
         {/* 3. Fabrika Üretim Bandı */}
-        <motion.div 
-          whileHover={{ y: -2 }}
+        <div 
           onClick={() => handleNav('production')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs cursor-pointer hover:border-blue-300 transition-all group"
+          className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs cursor-pointer hover:border-blue-300 transition-all group"
         >
-          <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Üretim Çift Sayısı</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[11px] font-medium text-slate-500">Üretim Hacmi</span>
+            <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
               <Factory className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl font-black text-blue-700 font-mono tracking-tight">
-            {stats.totalProducedQty} <span className="text-xs font-bold text-slate-400">Çift Tamam</span>
+          <div className="text-base font-bold text-blue-700 font-mono tracking-tight">
+            {stats.totalProducedQty} <span className="text-xs font-normal text-slate-500">Çift</span>
           </div>
-          <div className="flex items-center justify-between mt-2 text-[11px] font-semibold text-slate-500 border-t border-slate-100 pt-1.5">
-            <span className="text-blue-600 font-bold">{stats.totalInProductionQty} Çift Bantta</span>
+          <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500 border-t border-slate-100 pt-1">
+            <span className="text-blue-600 font-semibold">{stats.totalInProductionQty} Bantta</span>
             <span>{stats.activeWorkOrdersCount} İş Emri</span>
           </div>
-        </motion.div>
+        </div>
 
         {/* 4. Sipariş & Sevkiyat */}
-        <motion.div 
-          whileHover={{ y: -2 }}
+        <div 
           onClick={() => handleNav('orders')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs cursor-pointer hover:border-purple-300 transition-all group"
+          className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs cursor-pointer hover:border-purple-300 transition-all group"
         >
-          <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Sipariş & Sevk</span>
-            <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[11px] font-medium text-slate-500">Sipariş & Sevk</span>
+            <div className="w-6 h-6 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
               <ShoppingCart className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl font-black text-purple-700 font-mono tracking-tight">
-            {stats.totalShippedQty} / {stats.totalOrderQty} <span className="text-xs font-bold text-slate-400">Çift</span>
+          <div className="text-base font-bold text-purple-700 font-mono tracking-tight">
+            {stats.totalShippedQty} / {stats.totalOrderQty} <span className="text-xs font-normal text-slate-500">Çift</span>
           </div>
-          <div className="flex items-center gap-2 mt-2 border-t border-slate-100 pt-1.5">
+          <div className="flex items-center gap-2 mt-1 border-t border-slate-100 pt-1">
             <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-purple-600 rounded-full" 
                 style={{ width: `${stats.totalOrderQty > 0 ? (stats.totalShippedQty / stats.totalOrderQty) * 100 : 0}%` }}
               />
             </div>
-            <span className="text-[10px] font-bold text-purple-700">
-              %{stats.totalOrderQty > 0 ? Math.round((stats.totalShippedQty / stats.totalOrderQty) * 100) : 0} Sevk
+            <span className="text-[10px] font-semibold text-purple-700">
+              %{stats.totalOrderQty > 0 ? Math.round((stats.totalShippedQty / stats.totalOrderQty) * 100) : 0}
             </span>
           </div>
-        </motion.div>
+        </div>
 
-        {/* 5. Genel Muhasebe & KDV Durumu (YENİ MODÜL!) */}
-        <motion.div 
-          whileHover={{ y: -2 }}
+        {/* 5. Genel Muhasebe & KDV */}
+        <div 
           onClick={() => handleNav('accounting')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs cursor-pointer hover:border-emerald-300 transition-all group"
+          className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs cursor-pointer hover:border-emerald-300 transition-all group col-span-2 sm:col-span-1"
         >
-          <div className="flex items-center justify-between text-slate-400 mb-1.5">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Muhasebe & KDV</span>
-            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[11px] font-medium text-slate-500">Muhasebe & KDV</span>
+            <div className="w-6 h-6 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
               <BookOpen className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl font-black text-slate-900 font-mono tracking-tight">
-            {stats.totalJournals} <span className="text-xs font-bold text-slate-400">Yevmiye Fişi</span>
+          <div className="text-base font-bold text-slate-900 font-mono tracking-tight">
+            {stats.totalJournals} <span className="text-xs font-normal text-slate-500">Yevmiye</span>
           </div>
-          <div className="flex items-center justify-between mt-2 text-[11px] font-semibold text-slate-500 border-t border-slate-100 pt-1.5">
+          <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500 border-t border-slate-100 pt-1">
             {stats.netKdvDifference > 0 ? (
-              <span className="text-rose-600 font-bold">₺{stats.netKdvDifference.toLocaleString('tr-TR')} Ödenecek KDV</span>
+              <span className="text-rose-600 font-semibold">₺{stats.netKdvDifference.toLocaleString('tr-TR')} Ödenecek</span>
             ) : (
-              <span className="text-emerald-600 font-bold">₺{Math.abs(stats.netKdvDifference).toLocaleString('tr-TR')} Devreden KDV</span>
+              <span className="text-emerald-600 font-semibold">₺{Math.abs(stats.netKdvDifference).toLocaleString('tr-TR')} Devreden</span>
             )}
           </div>
-        </motion.div>
+        </div>
 
       </div>
 
-      {/* 3. YENİ MODÜLLER OPERASYON MERKEZİ (DÖRT ÖZEL MODÜL KARTI) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+      {/* 3. DÖRT ÖZEL MODÜL OPERASYON KARTI */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
         
-        {/* MODÜL 1: İNSAN KAYNAKLARI & BORDRO YÖNETİMİ */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+        {/* MODÜL 1: İNSAN KAYNAKLARI & BORDRO */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs flex flex-col justify-between space-y-3 hover:border-slate-300 transition-colors">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-                  <UserCheck className="w-4 h-4" />
+                <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
+                  <UserCheck className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">İnsan Kaynakları & Bordro</h3>
-                  <span className="text-[10px] text-slate-400 font-semibold">Puantaj, Avans & Tahakkuk</span>
+                  <h3 className="text-xs font-bold text-slate-900">İnsan Kaynakları & Bordro</h3>
+                  <span className="text-[10px] text-slate-400 font-normal">Puantaj & Tahakkuk</span>
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
                 {stats.activeEmployeesCount} Personel
               </span>
             </div>
 
-            <div className="space-y-2.5 pt-3 text-xs">
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">SGK'lı / Günlük Yevmiyeli:</span>
-                <span className="font-bold text-slate-900">
-                  <span className="text-emerald-700">{stats.sgkEmployees} SGK'lı</span> / <span className="text-amber-700">{stats.dailyEmployees} Yevmiye</span>
+            <div className="space-y-1.5 pt-2 text-xs">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">SGK / Yevmiye:</span>
+                <span className="font-semibold text-slate-800 text-[11px]">
+                  <span className="text-emerald-700">{stats.sgkEmployees} SGK</span> / <span className="text-amber-700">{stats.dailyEmployees} Yevmiye</span>
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">Net Maaş Hak Edişi:</span>
-                <span className="font-mono font-bold text-indigo-700">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">Net Maaş:</span>
+                <span className="font-mono font-semibold text-indigo-700 text-[11px]">
                   ₺{stats.totalNetPayroll.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">İşveren Toplam Maliyeti:</span>
-                <span className="font-mono font-semibold text-slate-700">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">İşveren Maliyeti:</span>
+                <span className="font-mono font-medium text-slate-700 text-[11px]">
                   ₺{stats.totalEmployerCost.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
               
-              {/* Onay Bekleyenler Rozetleri */}
-              <div className="bg-slate-50 p-2.5 rounded-xl space-y-1.5 mt-2 border border-slate-100">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600 flex items-center gap-1">
-                    <DollarSign className="w-3 h-3 text-amber-600" /> Bekleyen Avans Talepleri:
-                  </span>
-                  <span className={cn("font-bold font-mono", stats.pendingAdvancesCount > 0 ? "text-amber-700" : "text-slate-400")}>
-                    {stats.pendingAdvancesCount > 0 ? `${stats.pendingAdvancesCount} Adet (₺${stats.pendingAdvanceTotal.toLocaleString('tr-TR')})` : '0 Adet'}
+              <div className="bg-slate-50 p-2 rounded-lg space-y-1 mt-1 border border-slate-100 text-[10px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Bekleyen Avans:</span>
+                  <span className={cn("font-semibold font-mono", stats.pendingAdvancesCount > 0 ? "text-amber-700" : "text-slate-400")}>
+                    {stats.pendingAdvancesCount > 0 ? `${stats.pendingAdvancesCount} Adet (₺${stats.pendingAdvanceTotal.toLocaleString('tr-TR')})` : '0'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600 flex items-center gap-1">
-                    <CalendarClock className="w-3 h-3 text-blue-600" /> Bekleyen İzin Onayları:
-                  </span>
-                  <span className={cn("font-bold", stats.pendingLeavesCount > 0 ? "text-blue-700" : "text-slate-400")}>
-                    {stats.pendingLeavesCount > 0 ? `${stats.pendingLeavesCount} Bekliyor` : '0 Bekliyor'}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">İzin Onayları:</span>
+                  <span className={cn("font-semibold", stats.pendingLeavesCount > 0 ? "text-blue-700" : "text-slate-400")}>
+                    {stats.pendingLeavesCount > 0 ? `${stats.pendingLeavesCount} Bekliyor` : '0'}
                   </span>
                 </div>
               </div>
@@ -525,60 +503,59 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
           <button 
             onClick={() => handleNav('hr')}
-            className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
           >
-            <span>İK & Bordro Paneline Git</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>İK Paneline Git</span>
+            <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
-        {/* MODÜL 2: FİNANS, KASA & ÇEK PORTFÖYÜ */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+        {/* MODÜL 2: FİNANS & LİKİDİTE */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs flex flex-col justify-between space-y-3 hover:border-slate-300 transition-colors">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-                  <Landmark className="w-4 h-4" />
+                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                  <Landmark className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">Finans & Likidite</h3>
-                  <span className="text-[10px] text-slate-400 font-semibold">Kasa, Bankalar & Portföy Çekleri</span>
+                  <h3 className="text-xs font-bold text-slate-900">Finans & Likidite</h3>
+                  <span className="text-[10px] text-slate-400 font-normal">Kasa, Banka & Çekler</span>
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Likit Durum
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                Likit
               </span>
             </div>
 
-            <div className="space-y-2.5 pt-3 text-xs">
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">Merkez & Şube Kasaları:</span>
-                <span className="font-mono font-bold text-slate-900">
+            <div className="space-y-1.5 pt-2 text-xs">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">Kasa Bakiyesi:</span>
+                <span className="font-mono font-semibold text-slate-900 text-[11px]">
                   ₺{stats.cashBalance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">Banka Hesap Bakiyeleri:</span>
-                <span className="font-mono font-bold text-emerald-700">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">Banka Bakiyesi:</span>
+                <span className="font-mono font-semibold text-emerald-700 text-[11px]">
                   ₺{stats.bankBalance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">Portföydeki Müşteri Çekleri:</span>
-                <span className="font-mono font-bold text-indigo-700">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">Müşteri Çekleri:</span>
+                <span className="font-mono font-semibold text-indigo-700 text-[11px]">
                   ₺{stats.customerChecksTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
 
-              {/* Çek Portföyü Özeti */}
-              <div className="bg-slate-50 p-2.5 rounded-xl space-y-1.5 mt-2 border border-slate-100">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600">Tahsil Bekleyen Müşteri Çeki:</span>
-                  <span className="font-bold text-indigo-700 font-mono">{stats.customerChecksCount} Adet</span>
+              <div className="bg-slate-50 p-2 rounded-lg space-y-1 mt-1 border border-slate-100 text-[10px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Portföydeki Çek:</span>
+                  <span className="font-semibold text-indigo-700 font-mono">{stats.customerChecksCount} Adet</span>
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600">Verilen Tedarikçi Çekleri:</span>
-                  <span className="font-bold text-rose-700 font-mono">₺{stats.issuedChecksTotal.toLocaleString('tr-TR')}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Verilen Çekler:</span>
+                  <span className="font-semibold text-rose-700 font-mono">₺{stats.issuedChecksTotal.toLocaleString('tr-TR')}</span>
                 </div>
               </div>
             </div>
@@ -586,63 +563,62 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
           <button 
             onClick={() => handleNav('finance')}
-            className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
           >
-            <span>Finans & Tahsilatı Aç</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>Finans Paneline Git</span>
+            <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
-        {/* MODÜL 3: GENEL MUHASEBE & TDHP YEVMİYE */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+        {/* MODÜL 3: GENEL MUHASEBE & TDHP */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs flex flex-col justify-between space-y-3 hover:border-slate-300 transition-colors">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
-                  <BookOpen className="w-4 h-4" />
+                <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+                  <BookOpen className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">Genel Muhasebe & TDHP</h3>
-                  <span className="text-[10px] text-slate-400 font-semibold">Yevmiye, Mizan & KDV</span>
+                  <h3 className="text-xs font-bold text-slate-900">Genel Muhasebe</h3>
+                  <span className="text-[10px] text-slate-400 font-normal">TDHP & Mizan</span>
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
                 {stats.totalJournals} Fiş
               </span>
             </div>
 
-            <div className="space-y-2.5 pt-3 text-xs">
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">191 İndirilecek KDV:</span>
-                <span className="font-mono font-bold text-slate-800">
+            <div className="space-y-1.5 pt-2 text-xs">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">191 İnd. KDV:</span>
+                <span className="font-mono font-medium text-slate-800 text-[11px]">
                   ₺{stats.kdv191Debit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">391 Hesaplanan KDV:</span>
-                <span className="font-mono font-bold text-slate-800">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">391 Hes. KDV:</span>
+                <span className="font-mono font-medium text-slate-800 text-[11px]">
                   ₺{stats.kdv391Credit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">Net KDV Tahakkuku:</span>
-                <span className={cn("font-mono font-bold", stats.netKdvDifference > 0 ? "text-rose-600" : "text-emerald-600")}>
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">Net KDV:</span>
+                <span className={cn("font-mono font-semibold text-[11px]", stats.netKdvDifference > 0 ? "text-rose-600" : "text-emerald-600")}>
                   {stats.netKdvDifference > 0 ? `+₺${stats.netKdvDifference.toLocaleString('tr-TR')} (Ödenecek)` : `-₺${Math.abs(stats.netKdvDifference).toLocaleString('tr-TR')} (Devreden)`}
                 </span>
               </div>
 
-              {/* Fiş Uyarı Kutusu */}
-              <div className="bg-slate-50 p-2.5 rounded-xl space-y-1.5 mt-2 border border-slate-100">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600">Dengesiz Yevmiye Fişi:</span>
-                  <span className={cn("font-bold", stats.unbalancedJournals > 0 ? "text-rose-600" : "text-emerald-700")}>
-                    {stats.unbalancedJournals > 0 ? `${stats.unbalancedJournals} Hatalı Fiş!` : 'Tüm Fişler Dengeli ✓'}
+              <div className="bg-slate-50 p-2 rounded-lg space-y-1 mt-1 border border-slate-100 text-[10px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Dengesiz Fiş:</span>
+                  <span className={cn("font-semibold", stats.unbalancedJournals > 0 ? "text-rose-600" : "text-emerald-700")}>
+                    {stats.unbalancedJournals > 0 ? `${stats.unbalancedJournals} Hatalı` : 'Dengeli ✓'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600">Fiş Kesilmeyen Bordro:</span>
-                  <span className={cn("font-bold", stats.unaccountedPayrollsCount > 0 ? "text-amber-700" : "text-emerald-700")}>
-                    {stats.unaccountedPayrollsCount > 0 ? `${stats.unaccountedPayrollsCount} Bordro Bekliyor` : 'Bordrolar İşlendi ✓'}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Bekleyen Bordro:</span>
+                  <span className={cn("font-semibold", stats.unaccountedPayrollsCount > 0 ? "text-amber-700" : "text-emerald-700")}>
+                    {stats.unaccountedPayrollsCount > 0 ? `${stats.unaccountedPayrollsCount} Bekliyor` : 'İşlendi ✓'}
                   </span>
                 </div>
               </div>
@@ -651,73 +627,70 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
           <button 
             onClick={() => handleNav('accounting')}
-            className="w-full py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
           >
-            <span>Yevmiye Defteri & Mizana Git</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>Yevmiye Defteri</span>
+            <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
         {/* MODÜL 4: FATURALAR & İRSALİYELER */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs flex flex-col justify-between space-y-3 hover:border-slate-300 transition-colors">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
-                  <Receipt className="w-4 h-4" />
+                <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600">
+                  <Receipt className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">Faturalar & İrsaliyeler</h3>
-                  <span className="text-[10px] text-slate-400 font-semibold">Alacak/Borç & Sevk İrsaliyeleri</span>
+                  <h3 className="text-xs font-bold text-slate-900">Faturalar & İrsaliyeler</h3>
+                  <span className="text-[10px] text-slate-400 font-normal">Ticari Sevk ve Fatura</span>
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                Ticari Akış
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold bg-purple-50 text-purple-700 border border-purple-200/60">
+                Ticari
               </span>
             </div>
 
-            <div className="space-y-2.5 pt-3 text-xs">
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">Açık Satış Faturaları (Alacak):</span>
-                <span className="font-mono font-bold text-emerald-700">
+            <div className="space-y-1.5 pt-2 text-xs">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">Açık Satış (Alacak):</span>
+                <span className="font-mono font-semibold text-emerald-700 text-[11px]">
                   ₺{stats.openSalesTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-600">Açık Alış Faturaları (Borç):</span>
-                <span className="font-mono font-bold text-rose-700">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-[11px]">Açık Alış (Borç):</span>
+                <span className="font-mono font-semibold text-rose-700 text-[11px]">
                   ₺{stats.openPurchaseTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
 
-              {/* İrsaliye Kritik Uyarı Kutusu */}
-              <div className="bg-slate-50 p-2.5 rounded-xl space-y-1.5 mt-2 border border-slate-100">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600 flex items-center gap-1">
-                    <Truck className="w-3 h-3 text-indigo-600" /> Fatura Bekleyen İrsaliyeler:
-                  </span>
-                  <span className={cn("font-bold font-mono", stats.uninvoicedWaybillsCount > 0 ? "text-amber-700" : "text-emerald-700")}>
-                    {stats.uninvoicedWaybillsCount > 0 ? `${stats.uninvoicedWaybillsCount} Açık Sevk İrsaliyesi` : 'Tümü Faturalandı ✓'}
+              <div className="bg-slate-50 p-2 rounded-lg space-y-1 mt-1 border border-slate-100 text-[10px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Açık İrsaliyeler:</span>
+                  <span className={cn("font-semibold font-mono", stats.uninvoicedWaybillsCount > 0 ? "text-amber-700" : "text-emerald-700")}>
+                    {stats.uninvoicedWaybillsCount > 0 ? `${stats.uninvoicedWaybillsCount} Açık Sevk` : 'Faturalandı ✓'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500 text-[10px]">Mevzuat:</span>
-                  <span className="text-slate-400 text-[10px] italic">Maks. 7 gün faturalama süresi</span>
+                <div className="flex items-center justify-between text-slate-400 text-[9px]">
+                  <span>Mevzuat Kuralı:</span>
+                  <span>Maks. 7 gün faturalama</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             <button 
               onClick={() => handleNav('invoices')}
-              className="py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl transition-colors text-center cursor-pointer"
+              className="py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs rounded-lg transition-colors text-center cursor-pointer"
             >
               Faturalar
             </button>
             <button 
               onClick={() => handleNav('waybills')}
-              className="py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors text-center cursor-pointer"
+              className="py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition-colors text-center cursor-pointer"
             >
               İrsaliyeler
             </button>
@@ -726,126 +699,126 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       </div>
 
-      {/* 4. FABRİKA ÜRETİM HATLARI CANLI PİPELİNE */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+      {/* 4. FABRİKA ÜRETİM HATLARI CANLI AKIŞ */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
           <div>
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-500" /> Ayakkabı İmalat Hatları & Bant Doluluğu
+            <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-amber-500" /> İmalat Hatları & Canlı Bant Akışı
             </h3>
-            <p className="text-[11px] text-slate-400 font-semibold">Deri kesiminden saya dikimi, taban montajı ve kutulama aşamalarına canlı iş emri akışı</p>
+            <p className="text-[11px] text-slate-400 font-normal">Deri kesiminden saya dikimi, taban montajı ve kutulama istasyonları</p>
           </div>
           <button 
             onClick={() => handleNav('production')}
-            className="text-xs font-black text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+            className="text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
           >
-            <span>{stats.activeWorkOrdersCount} Aktif İş Emri</span>
-            <ChevronRight className="w-3.5 h-3.5" />
+            <span>{stats.activeWorkOrdersCount} İş Emri</span>
+            <ChevronRight className="w-3 h-3" />
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           {/* 1. Kesim */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-            <div className="flex items-center justify-between text-xs font-black text-slate-700 uppercase">
-              <span className="flex items-center gap-1.5"><Scissors className="w-3.5 h-3.5 text-amber-600" /> 1. Kesim Hattı</span>
-              <span className="font-mono text-indigo-600">{stats.stageCounts.kesim} Emir</span>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/70 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span className="flex items-center gap-1 text-[11px]"><Scissors className="w-3 h-3 text-amber-600" /> 1. Kesim Hattı</span>
+              <span className="font-mono text-indigo-600 text-xs font-bold">{stats.stageCounts.kesim}</span>
             </div>
-            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, stats.stageCounts.kesim * 25)}%` }} />
             </div>
-            <p className="text-[10px] text-slate-500 font-bold">Deri, Astar & Tela Bıçak Kesim</p>
+            <p className="text-[10px] text-slate-500 font-medium">Deri, Astar & Tela Kesim</p>
           </div>
 
           {/* 2. Saya Dikim */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-            <div className="flex items-center justify-between text-xs font-black text-slate-700 uppercase">
-              <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-blue-600" /> 2. Saya Dikim</span>
-              <span className="font-mono text-indigo-600">{stats.stageCounts.dikim} Emir</span>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/70 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span className="flex items-center gap-1 text-[11px]"><Layers className="w-3 h-3 text-blue-600" /> 2. Saya Dikim</span>
+              <span className="font-mono text-indigo-600 text-xs font-bold">{stats.stageCounts.dikim}</span>
             </div>
-            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, stats.stageCounts.dikim * 25)}%` }} />
             </div>
-            <p className="text-[10px] text-slate-500 font-bold">Saya Dikiş, Biyeler & Aksesuar</p>
+            <p className="text-[10px] text-slate-500 font-medium">Saya Dikiş & Biyeler</p>
           </div>
 
           {/* 3. Montaj / Taban */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-            <div className="flex items-center justify-between text-xs font-black text-slate-700 uppercase">
-              <span className="flex items-center gap-1.5"><Factory className="w-3.5 h-3.5 text-purple-600" /> 3. Montaj / Kalıp</span>
-              <span className="font-mono text-indigo-600">{stats.stageCounts.montaj} Emir</span>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/70 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span className="flex items-center gap-1 text-[11px]"><Factory className="w-3 h-3 text-purple-600" /> 3. Montaj / Kalıp</span>
+              <span className="font-mono text-indigo-600 text-xs font-bold">{stats.stageCounts.montaj}</span>
             </div>
-            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div className="h-full bg-purple-500 rounded-full" style={{ width: `${Math.min(100, stats.stageCounts.montaj * 25)}%` }} />
             </div>
-            <p className="text-[10px] text-slate-500 font-bold">Kalıba Çekim & Taban Presleme</p>
+            <p className="text-[10px] text-slate-500 font-medium">Kalıp Çekim & Taban Pres</p>
           </div>
 
           {/* 4. Finisaj / Kutu */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-            <div className="flex items-center justify-between text-xs font-black text-slate-700 uppercase">
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> 4. Finisaj & Paket</span>
-              <span className="font-mono text-indigo-600">{stats.stageCounts.finisaj} Emir</span>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/70 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span className="flex items-center gap-1 text-[11px]"><CheckCircle2 className="w-3 h-3 text-emerald-600" /> 4. Finisaj & Paket</span>
+              <span className="font-mono text-indigo-600 text-xs font-bold">{stats.stageCounts.finisaj}</span>
             </div>
-            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, stats.stageCounts.finisaj * 25)}%` }} />
             </div>
-            <p className="text-[10px] text-slate-500 font-bold">Temizleme, Boyama & Asortili Kutu</p>
+            <p className="text-[10px] text-slate-500 font-medium">Temizleme & Asortili Kutu</p>
           </div>
         </div>
       </div>
 
-      {/* 5. GÖRSEL GRAFİKLER (FİNANSAL AKIŞ & DEPO STOK DAĞILIMI) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* 5. GÖRSEL GRAFİKLER */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Sol 2 Kolon: Finansal Akış */}
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <div>
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Haftalık Nakit Akışı (Gelir / Gider)</h3>
-              <p className="text-[11px] text-slate-400 font-semibold">Cari tahsilatlar ve hammadde/gider harcamaları dengesi</p>
+              <h3 className="text-xs font-bold text-slate-900">Haftalık Nakit Akışı (Gelir / Gider)</h3>
+              <p className="text-[11px] text-slate-400 font-normal">Cari tahsilatlar ve hammadde/gider dengesi</p>
             </div>
-            <div className="flex items-center gap-3 text-xs font-bold">
+            <div className="flex items-center gap-3 text-[11px] font-medium">
               <span className="flex items-center gap-1.5 text-indigo-600">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" /> Gelir (₺)
+                <span className="w-2 h-2 rounded-full bg-indigo-600" /> Gelir
               </span>
               <span className="flex items-center gap-1.5 text-slate-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-300" /> Gider (₺)
+                <span className="w-2 h-2 rounded-full bg-slate-300" /> Gider
               </span>
             </div>
           </div>
 
-          <div className="h-[260px] w-full pt-2">
+          <div className="h-[200px] w-full pt-1">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={cashFlowChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={cashFlowChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
                 <Tooltip 
                   cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px', fontWeight: 'bold' }}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600 }}
                 />
-                <Bar dataKey="gelir" fill="#4f46e5" radius={[6, 6, 0, 0]} maxBarSize={32} />
-                <Bar dataKey="gider" fill="#cbd5e1" radius={[6, 6, 0, 0]} maxBarSize={32} />
+                <Bar dataKey="gelir" fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={24} />
+                <Bar dataKey="gider" fill="#cbd5e1" radius={[4, 4, 0, 0]} maxBarSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Sağ 1 Kolon: Depo Stok Dağılımı */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4 flex flex-col justify-between">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Depo Kategori Dağılımı</h3>
-            <p className="text-[11px] text-slate-400 font-semibold">Mamul ayakkabı, taban, deri ve aksesuar</p>
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 space-y-3 flex flex-col justify-between">
+          <div className="border-b border-slate-100 pb-2">
+            <h3 className="text-xs font-bold text-slate-900">Depo Kategori Dağılımı</h3>
+            <p className="text-[11px] text-slate-400 font-normal">Mamul, taban, deri ve aksesuar kalemleri</p>
           </div>
 
-          <div className="h-[170px] w-full flex items-center justify-center">
+          <div className="h-[130px] w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={stockDonutData}
-                  innerRadius={46}
-                  outerRadius={70}
-                  paddingAngle={4}
+                  innerRadius={36}
+                  outerRadius={56}
+                  paddingAngle={3}
                   dataKey="value"
                 >
                   {stockDonutData.map((entry, index) => (
@@ -853,68 +826,68 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 'bold' }}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '11px' }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="space-y-1.5 pt-2 border-t border-slate-100">
+          <div className="space-y-1 pt-2 border-t border-slate-100">
             {stockDonutData.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between text-xs font-bold">
-                <span className="flex items-center gap-2 text-slate-600">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+              <div key={idx} className="flex items-center justify-between text-[11px]">
+                <span className="flex items-center gap-1.5 text-slate-600">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
                   {item.name}
                 </span>
-                <span className="font-mono text-slate-900 font-black">{item.value} Kalem</span>
+                <span className="font-mono text-slate-900 font-semibold">{item.value} Kalem</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* 6. EN ALTTRAKİ CANLI HAREKET LOGLARI (SİPARİŞLER VE STOK) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 6. CANLI HAREKET LOGLARI */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         
-        {/* Son Alınan Müşteri Siparişleri */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        {/* Son Siparişler */}
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <div>
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4 text-indigo-600" /> Son Alınan Siparişler
+              <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <ShoppingCart className="w-3.5 h-3.5 text-indigo-600" /> Son Alınan Siparişler
               </h3>
-              <p className="text-[11px] text-slate-400 font-semibold">Müşteri sipariş kayıtları ve tutarları</p>
+              <p className="text-[10px] text-slate-400">Müşteri sipariş kayıtları</p>
             </div>
             <button 
               onClick={() => handleNav('orders')}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+              className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5 cursor-pointer"
             >
-              Tümü <ChevronRight className="w-3.5 h-3.5" />
+              Tümü <ChevronRight className="w-3 h-3" />
             </button>
           </div>
 
           <div className="divide-y divide-slate-100">
             {recentOrders.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-xs font-bold">Henüz sipariş kaydı bulunmuyor.</div>
+              <div className="py-4 text-center text-slate-400 text-xs">Henüz sipariş kaydı bulunmuyor.</div>
             ) : (
               recentOrders.map((order) => {
                 const contact = contacts.find(c => c.id === order.contactId);
                 return (
-                  <div key={order.id} className="py-2.5 flex items-center justify-between hover:bg-slate-50 rounded-xl px-2 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-xs uppercase">
+                  <div key={order.id} className="py-2 flex items-center justify-between hover:bg-slate-50/80 rounded-lg px-1.5 transition-colors">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-[11px] uppercase">
                         {contact?.name?.substring(0, 2) || 'SP'}
                       </div>
                       <div>
-                        <div className="text-xs font-black text-slate-900">{order.orderNumber}</div>
-                        <div className="text-[11px] font-bold text-slate-500">{contact?.name || 'Müşteri'}</div>
+                        <div className="text-xs font-semibold text-slate-900">{order.orderNumber}</div>
+                        <div className="text-[10px] text-slate-500">{contact?.name || 'Müşteri'}</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-black text-slate-900 font-mono">
+                      <div className="text-xs font-bold text-slate-900 font-mono">
                         ₺{order.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                       </div>
-                      <div className="text-[10px] font-semibold text-slate-400">
+                      <div className="text-[10px] text-slate-400">
                         {new Date(order.date).toLocaleDateString('tr-TR')}
                       </div>
                     </div>
@@ -926,51 +899,51 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         </div>
 
         {/* Canlı Stok Hareketleri */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <div>
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <Activity className="w-4 h-4 text-emerald-600" /> Depo & Stok Giriş / Çıkışları
+              <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-emerald-600" /> Depo & Stok Hareketleri
               </h3>
-              <p className="text-[11px] text-slate-400 font-semibold">Deri girişi, taban çıkışı ve mamul depo logları</p>
+              <p className="text-[10px] text-slate-400">Deri girişi, taban çıkışı ve mamul logları</p>
             </div>
             <button 
               onClick={() => handleNav('inventory')}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+              className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5 cursor-pointer"
             >
-              Tümü <ChevronRight className="w-3.5 h-3.5" />
+              Tümü <ChevronRight className="w-3 h-3" />
             </button>
           </div>
 
           <div className="divide-y divide-slate-100">
             {recentLogs.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-xs font-bold">Henüz stok hareketi bulunmuyor.</div>
+              <div className="py-4 text-center text-slate-400 text-xs">Henüz stok hareketi bulunmuyor.</div>
             ) : (
               recentLogs.map((log) => {
                 const prod = products.find(p => p.id === log.productId);
                 const isIncoming = log.type === 'in';
                 return (
-                  <div key={log.id} className="py-2.5 flex items-center justify-between hover:bg-slate-50 rounded-xl px-2 transition-colors">
-                    <div className="flex items-center gap-3">
+                  <div key={log.id} className="py-2 flex items-center justify-between hover:bg-slate-50/80 rounded-lg px-1.5 transition-colors">
+                    <div className="flex items-center gap-2.5">
                       <div className={cn(
-                        "w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs",
+                        "w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs",
                         isIncoming ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
                       )}>
-                        {isIncoming ? <ArrowDownRight className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                        {isIncoming ? <ArrowDownRight className="w-3.5 h-3.5" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
                       </div>
                       <div>
-                        <div className="text-xs font-black text-slate-900 uppercase truncate max-w-[180px]">{prod?.name || 'Stok Kalemi'}</div>
-                        <div className="text-[10px] font-semibold text-slate-400 truncate max-w-[180px]">{log.description || (isIncoming ? 'Depo Girişi' : 'Üretim/Sevkiyat Çıkışı')}</div>
+                        <div className="text-xs font-semibold text-slate-900 uppercase truncate max-w-[180px]">{prod?.name || 'Stok Kalemi'}</div>
+                        <div className="text-[10px] text-slate-400 truncate max-w-[180px]">{log.description || (isIncoming ? 'Depo Girişi' : 'Çıkış')}</div>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className={cn(
-                        "text-xs font-black font-mono",
+                        "text-xs font-bold font-mono",
                         isIncoming ? "text-emerald-700" : "text-rose-700"
                       )}>
                         {isIncoming ? '+' : '-'}{log.quantity} {prod?.unit || 'Adet'}
                       </div>
-                      <div className="text-[10px] font-semibold text-slate-400">
+                      <div className="text-[10px] text-slate-400">
                         {new Date(log.date).toLocaleDateString('tr-TR')}
                       </div>
                     </div>

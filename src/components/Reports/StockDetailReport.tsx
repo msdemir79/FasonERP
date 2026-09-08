@@ -83,6 +83,7 @@ const getProductCategoryType = (p: Product): StockCategoryType => {
 };
 
 export default function StockDetailReport() {
+  const systemSettings = useLiveQuery(() => db.settings.get('global_settings'));
   const products = useLiveQuery(() => db.products.toArray());
   const templates = useLiveQuery(() => db.assortmentTemplates.toArray());
 
@@ -455,10 +456,13 @@ export default function StockDetailReport() {
         
         <!-- Header -->
         <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end;">
-          <div>
-            <div style="font-size: 10px; font-weight: 800; color: #4f46e5; letter-spacing: 0.1em; text-transform: uppercase;">PROERP ENVANTER & ASORTİ ANALİZİ</div>
-            <h1 style="font-size: 19px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin: 2px 0 0 0;">Stok Detay & Envanter Raporu</h1>
-            <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;"><b>Kriter:</b> ${classificationLabel}</p>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            ${systemSettings?.company?.logo ? `<img src="${systemSettings.company.logo}" style="height: 40px; max-width: 100px; object-fit: contain;" />` : ''}
+            <div>
+              <div style="font-size: 10px; font-weight: 800; color: #4f46e5; letter-spacing: 0.1em; text-transform: uppercase;">${systemSettings?.company?.companyTitle || systemSettings?.company?.companyName || 'STOK ENVANTERİ & ASORTİ ANALİZİ'}</div>
+              <h1 style="font-size: 19px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin: 2px 0 0 0;">Stok Detay & Envanter Raporu</h1>
+              <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;"><b>Kriter:</b> ${classificationLabel}</p>
+            </div>
           </div>
           <div style="text-align: right;">
             <div style="font-size: 10px; font-weight: 700; color: #64748b;">Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')} ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>

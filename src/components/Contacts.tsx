@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../db';
 import type { Contact, EntityType } from '../types';
+import PageHeader from './PageHeader';
 import { 
   Users, 
   UserPlus, 
@@ -239,47 +240,40 @@ export default function Contacts() {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Header & Fast Actions */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight uppercase">
-              Cari Hesaplar & Finansal Yönetim
-            </h2>
-            <span className="bg-indigo-100 text-indigo-800 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-              {metrics.total} Cari
-            </span>
+      <PageHeader
+        title="Cari Hesaplar & Finansal Yönetim"
+        subtitle="Müşteri ve tedarikçi kartları, borç/alacak bakiyeleri, ekstreler ve risk analizleri"
+        badge={`${metrics.total} Cari Kart`}
+        icon={Users}
+        iconColor="indigo"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsReportModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-500" />
+              <span>Bakiye Raporu</span>
+            </button>
+
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <span>Excel / CSV</span>
+            </button>
+
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Yeni Cari Kaydı</span>
+            </button>
           </div>
-          <p className="text-slate-500 text-sm font-medium mt-0.5">
-            Müşteri ve tedarikçi kartları, borç/alacak bakiyeleri, hesap ekstreleri ve tahsilat/ödeme hareketleri.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => setIsReportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
-          >
-            <Printer className="w-4 h-4 text-slate-600" />
-            Genel Bakiye Raporu
-          </button>
-
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
-          >
-            <Download className="w-4 h-4 text-slate-600" />
-            Excel / CSV
-          </button>
-
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md hover:shadow-indigo-200"
-          >
-            <UserPlus className="w-4 h-4" />
-            Yeni Cari Kaydı
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Financial KPI Summary Ribbon */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

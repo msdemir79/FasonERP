@@ -19,6 +19,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import PageHeader from '../PageHeader';
 import HRReport from './HRReport';
 import ProductionReport from './ProductionReport';
 import FinanceReport from './FinanceReport';
@@ -90,20 +91,13 @@ export default function ReportsHub() {
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-200">
       
       {/* Top Header */}
-      <div className="border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-indigo-600 mb-1">
-            <BarChart3 className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-wider">Yönetim Karar Destek & Analiz</span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-            RAPORLAR & ANALİZ MERKEZİ
-          </h1>
-          <p className="text-slate-500 text-xs mt-0.5">
-            İnsan kaynakları bordrosundan imalat hattına, kasa-banka likiditesinden TDHP mizanına fabrikanın tüm icmalleri
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Raporlar & Analiz Merkezi"
+        subtitle="İnsan kaynakları bordrosundan imalat hattına, kasa-banka likiditesinden TDHP mizanına fabrikanın tüm icmalleri"
+        badge="Raporlama"
+        icon={BarChart3}
+        iconColor="indigo"
+      />
 
       {/* Ana Modül Sekmeleri Barı */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200">

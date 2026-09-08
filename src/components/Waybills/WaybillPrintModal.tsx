@@ -35,6 +35,7 @@ interface WaybillPrintModalProps {
 
 export function WaybillPrintModal({ isOpen, onClose, waybillId }: WaybillPrintModalProps) {
   const [waybillData, setWaybillData] = useState<any>(null);
+  const [companySettings, setCompanySettings] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<WaybillTemplateType>('gib_standard');
   const printContentRef = useRef<HTMLDivElement>(null);
@@ -44,8 +45,14 @@ export function WaybillPrintModal({ isOpen, onClose, waybillId }: WaybillPrintMo
       if (!isOpen || !waybillId) return;
       setLoading(true);
       try {
-        const data = await erpService.getWaybill(waybillId);
+        const [data, sysSettings] = await Promise.all([
+          erpService.getWaybill(waybillId),
+          erpService.getSystemSettings()
+        ]);
         setWaybillData(data);
+        if (sysSettings?.company) {
+          setCompanySettings(sysSettings.company);
+        }
       } catch (err) {
         console.error('İrsaliye verisi yüklenemedi:', err);
       } finally {
@@ -232,13 +239,13 @@ export function WaybillPrintModal({ isOpen, onClose, waybillId }: WaybillPrintMo
 
               {/* TEMPLATE RENDERER */}
               {activeTemplate === 'gib_standard' && (
-                <GibStandardWaybillTemplate waybillData={waybillData} />
+                <GibStandardWaybillTemplate waybillData={waybillData} companySettings={companySettings} />
               )}
               {activeTemplate === 'gib_corporate' && (
-                <GibCorporateWaybillTemplate waybillData={waybillData} />
+                <GibCorporateWaybillTemplate waybillData={waybillData} companySettings={companySettings} />
               )}
               {activeTemplate === 'gib_dispatch_checklist' && (
-                <GibDispatchChecklistTemplate waybillData={waybillData} />
+                <GibDispatchChecklistTemplate waybillData={waybillData} companySettings={companySettings} />
               )}
             </div>
           )}
@@ -251,7 +258,7 @@ export function WaybillPrintModal({ isOpen, onClose, waybillId }: WaybillPrintMo
 // =========================================================================================
 // 1. GİB RESMİ STANDART e-İRSALİYE ŞABLONU (VUK 509 Tebliği Uyumlu)
 // =========================================================================================
-function GibStandardWaybillTemplate({ waybillData }: { waybillData: any }) {
+function GibStandardWaybillTemplate({ waybillData, companySettings }: { waybillData: any; companySettings?: any }) {
   const isSales = waybillData.type === 'sales';
   const contact = waybillData.contact;
   const items = waybillData.items || [];
@@ -266,6 +273,16 @@ function GibStandardWaybillTemplate({ waybillData }: { waybillData: any }) {
   const totalQuantity = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
   const totalAmount = waybillData.grandTotal || 0;
 
+  const compName = companySettings?.companyName || 'ProERP Ayakkabı';
+  const compTitle = companySettings?.companyTitle || companySettings?.companyName || 'PROERP AYAKKABI SAN. VE TİC. LTD. ŞTİ.';
+  const compLogo = companySettings?.logo;
+  const compAddress = companySettings?.address || 'İkitelli OSB Mah. Aykosan Sanayi Sitesi 4. Ada A Blok No: 12 Başakşehir / İSTANBUL';
+  const compTaxOffice = companySettings?.taxOffice || 'İkitelli VD';
+  const compTaxNumber = companySettings?.taxNumber || '7320489123';
+  const compTradeReg = companySettings?.tradeRegistryNo || '489123';
+  const compPhone = companySettings?.phone || '+90 212 671 00 00';
+  const compEmail = companySettings?.email || 'sevkiyat@proerp.com.tr';
+
   return (
     <div className="space-y-4">
       {/* 1. Header: Logo, Resmi GİB Hilal-Yıldız ve Resmi Belge Kutusu */}
@@ -275,31 +292,35 @@ function GibStandardWaybillTemplate({ waybillData }: { waybillData: any }) {
           {/* Sol: Firma Bilgileri */}
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-black flex items-center justify-center text-sm">
-                P
-              </div>
+              {compLogo ? (
+                <div className="w-10 h-10 rounded-lg bg-white border border-slate-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                  <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-black flex items-center justify-center text-sm shrink-0">
+                  {compName.charAt(0)}
+                </div>
+              )}
               <div>
                 <h1 className="text-base font-black text-slate-900 tracking-tight leading-none uppercase">
-                  PROERP AYAKKABI SAN. VE TİC. LTD. ŞTİ.
+                  {compTitle}
                 </h1>
                 <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                  Ayakkabı, Taban ve Deri Ürünleri Üretim & Lojistik Merkezi
+                  Üretim & Lojistik Merkezi
                 </p>
               </div>
             </div>
             
             <div className="text-[10px] text-slate-700 leading-tight pt-1">
-              <p className="font-semibold">İkitelli OSB Mah. Aykosan Sanayi Sitesi 4. Ada A Blok No: 12 Başakşehir / İSTANBUL</p>
+              <p className="font-semibold">{compAddress}</p>
               <div className="flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[9px] text-slate-600 mt-0.5">
-                <span>Tel: +90 212 671 00 00</span>
-                <span>Faks: +90 212 671 00 01</span>
-                <span>E-Posta: sevkiyat@proerp.com.tr</span>
+                <span>Tel: {compPhone}</span>
+                <span>E-Posta: {compEmail}</span>
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[9px] font-bold text-slate-800 mt-0.5">
-                <span>VD: İkitelli VD</span>
-                <span>VKN: 7320489123</span>
-                <span>Mersis: 0732048912300001</span>
-                <span>Tic. Sicil No: 489123</span>
+                <span>VD: {compTaxOffice}</span>
+                <span>VKN: {compTaxNumber}</span>
+                <span>Tic. Sicil No: {compTradeReg}</span>
               </div>
             </div>
           </div>
@@ -648,7 +669,7 @@ function GibStandardWaybillTemplate({ waybillData }: { waybillData: any }) {
 // =========================================================================================
 // 2. GİB KURUMSAL LACİVERT e-İRSALİYE ŞABLONU (Yönetici & Prestij Standardı)
 // =========================================================================================
-function GibCorporateWaybillTemplate({ waybillData }: { waybillData: any }) {
+function GibCorporateWaybillTemplate({ waybillData, companySettings }: { waybillData: any; companySettings?: any }) {
   const isSales = waybillData.type === 'sales';
   const contact = waybillData.contact;
   const items = waybillData.items || [];
@@ -659,17 +680,30 @@ function GibCorporateWaybillTemplate({ waybillData }: { waybillData: any }) {
   const totalQuantity = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
   const totalAmount = waybillData.grandTotal || 0;
 
+  const compName = companySettings?.companyName || 'ProERP Ayakkabı';
+  const compTitle = companySettings?.companyTitle || companySettings?.companyName || 'PROERP LOJİSTİK VE ÜRETİM A.Ş.';
+  const compLogo = companySettings?.logo;
+  const compAddress = companySettings?.address || 'İkitelli OSB Aykosan San. Sit. No:12 Başakşehir / İST';
+  const compTaxOffice = companySettings?.taxOffice || 'İkitelli VD';
+  const compTaxNumber = companySettings?.taxNumber || '7320489123';
+
   return (
     <div className="space-y-4 font-sans">
       {/* Lacivert Başlık Şeridi */}
       <div className="bg-slate-900 text-white rounded-xl p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-black text-xl italic">
-            P
-          </div>
+          {compLogo ? (
+            <div className="w-10 h-10 bg-white rounded-lg p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+              <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-black text-xl italic shrink-0">
+              {compName.charAt(0)}
+            </div>
+          )}
           <div>
             <h1 className="text-base font-black tracking-tight uppercase leading-none">
-              PROERP LOJİSTİK VE ÜRETİM A.Ş.
+              {compTitle}
             </h1>
             <p className="text-[10px] text-indigo-200 mt-1">
               Kurumsal Sevkiyat & Lojistik İrsaliyesi • VUK 509 Mevzuatı
@@ -692,9 +726,9 @@ function GibCorporateWaybillTemplate({ waybillData }: { waybillData: any }) {
         {/* Gönderen */}
         <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
           <span className="font-bold text-slate-400 text-[9px] uppercase tracking-wider block">Sevkiyat Çıkış (Gönderen)</span>
-          <p className="font-black text-slate-800">ProERP İkitelli Merkez Fabrika Depo</p>
-          <p className="text-slate-500 text-[9px]">İkitelli OSB Aykosan San. Sit. No:12 Başakşehir / İST</p>
-          <p className="font-mono text-[9px] font-bold text-slate-600">VKN: 7320489123 • İkitelli VD</p>
+          <p className="font-black text-slate-800 uppercase">{compName} Merkez Depo</p>
+          <p className="text-slate-500 text-[9px]">{compAddress}</p>
+          <p className="font-mono text-[9px] font-bold text-slate-600">VKN: {compTaxNumber} • {compTaxOffice}</p>
         </div>
 
         {/* Alıcı */}
@@ -781,17 +815,18 @@ function GibCorporateWaybillTemplate({ waybillData }: { waybillData: any }) {
 // =========================================================================================
 // 3. GİB DEPO & SEVKİYAT ÇETELİSİ (Barkodlu Çeki Listesi Standardı)
 // =========================================================================================
-function GibDispatchChecklistTemplate({ waybillData }: { waybillData: any }) {
+function GibDispatchChecklistTemplate({ waybillData, companySettings }: { waybillData: any; companySettings?: any }) {
   const contact = waybillData.contact;
   const items = waybillData.items || [];
   const waybillDateStr = waybillData.date ? new Date(waybillData.date).toLocaleDateString('tr-TR') : '-';
   const totalQuantity = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
+  const compName = companySettings?.companyName || 'ProERP';
 
   return (
     <div className="space-y-4 font-mono text-[10px]">
       <div className="border-2 border-slate-800 p-3 rounded-lg flex justify-between items-center bg-slate-50">
         <div>
-          <h2 className="text-sm font-black uppercase">PROERP SEVKİYAT VE YÜKLEME ÇEKİ LİSTESİ</h2>
+          <h2 className="text-sm font-black uppercase">{compName.toUpperCase()} SEVKİYAT VE YÜKLEME ÇEKİ LİSTESİ</h2>
           <p className="text-[9px] text-slate-600">Bağlı İrsaliye No: {waybillData.waybillNumber} • Sipariş No: {waybillData.orderNumber || '-'}</p>
         </div>
         <div className="text-right">

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import type { Employee, PayrollRecord, SgkStatus } from '../../types';
 import { hrService } from '../../services/hrService';
+import { erpService } from '../../services/erpService';
 import { exportPayrollToExcel, exportPayrollToCsv } from '../../lib/exportService';
 import PayrollSlipModal from './PayrollSlipModal';
 
@@ -127,7 +128,7 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
   };
 
   // Export handlers
-  const handleExport = (format: 'xls' | 'csv' = 'xls', filterScope: 'filtered' | 'all' = 'filtered') => {
+  const handleExport = async (format: 'xls' | 'csv' = 'xls', filterScope: 'filtered' | 'all' = 'filtered') => {
     const listToExport = filterScope === 'all' 
       ? payrolls 
       : (sgkFilter === 'all' ? payrolls : payrolls.filter(p => p.sgkStatus === sgkFilter));
@@ -142,7 +143,9 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
       : (sgkFilter === 'sgk_li' ? 'SGK\'lı Personel Bordrosu' : sgkFilter === 'sgk_siz' ? 'Yevmiyeli Personel Bordrosu' : 'Tüm Personeller');
 
     if (format === 'xls') {
-      exportPayrollToExcel(selectedMonth, selectedYear, listToExport, employees, { filterTitle: filterScopeTitle });
+      const sysSettings = await erpService.getSystemSettings();
+      const companyName = sysSettings?.company?.companyTitle || sysSettings?.company?.companyName;
+      exportPayrollToExcel(selectedMonth, selectedYear, listToExport, employees, { filterTitle: filterScopeTitle, companyName });
       setMessage({ type: 'success', text: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} bordro icmali Excel (.xls) formatında başarıyla dışa aktarıldı (${listToExport.length} kayıt).` });
     } else {
       exportPayrollToCsv(selectedMonth, selectedYear, listToExport, employees);

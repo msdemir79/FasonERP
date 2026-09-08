@@ -43,6 +43,7 @@ import Modal from './Modal';
 import { erpService } from '../services/erpService';
 import BarcodePrintModal from './BarcodePrintModal';
 import { resizeAndOptimizeImage } from '../utils/imageUtils';
+import PageHeader from './PageHeader';
 import { StockCategoryType, Product, AssortmentTemplate, BarcodeVariant } from '../types';
 
 // Category Definitions & Configurations
@@ -756,55 +757,48 @@ export default function Inventory() {
   return (
     <div className="space-y-6 pb-12">
       {/* Header & Primary Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
-              <Boxes className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">Stok & Malzeme Envanteri</h1>
-              <p className="text-xs font-semibold text-slate-400">
-                Mamul ayakkabı, bedenli yarı mamul (taban/mostra/fuspet), hammadde ve sarf malzeme kartları
-              </p>
-            </div>
+      <PageHeader
+        title="Stok & Malzeme Envanteri"
+        subtitle="Mamul ayakkabı, bedenli yarı mamul (taban/mostra/fuspet), hammadde ve sarf malzeme kartları"
+        badge="Stok Yönetimi"
+        icon={Package}
+        iconColor="indigo"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/reports?tab=stock"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg text-xs font-semibold text-indigo-700 transition-colors"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Stok Raporu</span>
+            </Link>
+
+            <button
+              onClick={() => setIsTemplateModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+            >
+              <Ruler className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Asorti Şablonları</span>
+            </button>
+
+            <button
+              onClick={() => setIsSettingsModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+            >
+              <Settings className="w-3.5 h-3.5 text-slate-500" />
+              <span>Barkod Ayarları</span>
+            </button>
+
+            <button
+              onClick={() => handleOpenAddModal()}
+              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg font-semibold text-xs transition-colors shadow-xs cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Yeni Stok Kartı</span>
+            </button>
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            to="/reports?tab=stock"
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-xl text-xs font-bold text-indigo-700 transition-all shadow-sm"
-          >
-            <BarChart3 className="w-4 h-4 text-indigo-600" />
-            <span>Stok & Maliyet Raporu</span>
-          </Link>
-
-          <button
-            onClick={() => setIsTemplateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all shadow-sm"
-          >
-            <Ruler className="w-4 h-4 text-indigo-500" />
-            <span>Asorti Şablonları</span>
-          </button>
-
-          <button
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all shadow-sm"
-          >
-            <Settings className="w-4 h-4 text-slate-500" />
-            <span>Barkod Yapılandırması</span>
-          </button>
-
-          <button
-            onClick={() => handleOpenAddModal()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Yeni Stok Kartı</span>
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Category Filter Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

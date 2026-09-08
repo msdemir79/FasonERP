@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { erpService } from '../../services/erpService';
 import { 
   Calendar, 
   ChevronLeft, 
@@ -111,7 +112,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
   }, []);
 
   // Handle Export to Excel or CSV
-  const handleExport = (format: 'xls' | 'csv' = 'xls', scope: 'filtered' | 'selected' | 'all' = 'filtered') => {
+  const handleExport = async (format: 'xls' | 'csv' = 'xls', scope: 'filtered' | 'selected' | 'all' = 'filtered') => {
     let targetEmployees: Employee[] = [];
     let scopeTitle = '';
 
@@ -134,7 +135,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
     }
 
     if (format === 'xls') {
-      exportAttendanceToExcel(selectedMonth, selectedYear, targetEmployees, records, { filterTitle: scopeTitle });
+      const sysSettings = await erpService.getSystemSettings();
+      const companyName = sysSettings?.company?.companyTitle || sysSettings?.company?.companyName;
+      exportAttendanceToExcel(selectedMonth, selectedYear, targetEmployees, records, { filterTitle: scopeTitle, companyName });
       showToast(`${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} puantaj çizelgesi Excel (.xls) formatında dışa aktarıldı (${targetEmployees.length} personel).`);
     } else {
       exportAttendanceToCsv(selectedMonth, selectedYear, targetEmployees, records);

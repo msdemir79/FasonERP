@@ -26,6 +26,7 @@ import ProductionSettings from './ProductionSettings';
 import FinanceSettings from './FinanceSettings';
 import HRSettings from './HRSettings';
 import CompanySettings from './CompanySettings';
+import PageHeader from '../PageHeader';
 import type { AppSettings } from '../../types';
 
 export default function SettingsHub() {
@@ -133,29 +134,19 @@ export default function SettingsHub() {
   return (
     <div className="space-y-6">
       {/* PAGE HEADER */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-md">
-            <Sliders className="w-6 h-6 text-indigo-400" />
+      <PageHeader
+        title="Sistem & Modül Ayarları"
+        subtitle="Tüm operasyonel modüllerin parametrelerini, şablonlarını ve kurallarını tek bir merkezden yönetin"
+        badge="Sistem Yapılandırması"
+        icon={SettingsIcon}
+        iconColor="indigo"
+        actions={
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Veritabanı Aktif</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">Sistem & Modül Ayarları</h1>
-              <span className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black rounded-lg">
-                YAPILANDIRMA
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Tüm operasyonel modüllerin parametrelerini, şablonlarını ve kurallarını tek bir merkezden yönetin.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Veritabanı Senkronize & Aktif</span>
-        </div>
-      </div>
+        }
+      />
 
       {/* MODULE TABS NAVIGATION */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200">

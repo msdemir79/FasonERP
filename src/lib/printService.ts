@@ -405,8 +405,11 @@ export function printTabularReport(
   subtitle: string,
   headers: string[],
   rows: (string | number)[][],
-  stats?: { label: string; value: string | number }[]
+  stats?: { label: string; value: string | number }[],
+  options?: { companyName?: string; logo?: string }
 ) {
+  const companyTitle = options?.companyName ? options.companyName.toUpperCase() : 'KURUMSAL SİSTEM RAPORU';
+
   const statsHtml = stats && stats.length > 0 ? `
     <div style="display: grid; grid-template-columns: repeat(${Math.min(stats.length, 4)}, 1fr); gap: 10px; margin-bottom: 20px;">
       ${stats.map(s => `
@@ -421,10 +424,13 @@ export function printTabularReport(
   const tableHtml = `
     <div style="padding: 10px; background: white;">
       <div style="border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end;">
-        <div>
-          <div style="font-size: 10px; font-weight: 800; color: #6366f1; letter-spacing: 0.1em; text-transform: uppercase;">ProERP SİSTEM RAPORU</div>
-          <h1 style="font-size: 20px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-top: 2px;">${reportTitle}</h1>
-          <p style="font-size: 11px; color: #64748b; margin-top: 2px;">${subtitle}</p>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          ${options?.logo ? `<img src="${options.logo}" style="height: 40px; max-width: 120px; object-fit: contain;" />` : ''}
+          <div>
+            <div style="font-size: 10px; font-weight: 800; color: #6366f1; letter-spacing: 0.1em; text-transform: uppercase;">${companyTitle}</div>
+            <h1 style="font-size: 20px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-top: 2px;">${reportTitle}</h1>
+            <p style="font-size: 11px; color: #64748b; margin-top: 2px;">${subtitle}</p>
+          </div>
         </div>
         <div style="text-align: right;">
           <div style="font-size: 10px; font-weight: 700; color: #64748b;">Tarih: ${new Date().toLocaleDateString('tr-TR')} ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>
@@ -454,7 +460,7 @@ export function printTabularReport(
       </table>
 
       <div style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 8px; font-size: 9px; color: #94a3b8; display: flex; justify-content: space-between;">
-        <span>ProERP Ayakkabı & Üretim Yönetim Sistemi</span>
+        <span>${companyTitle}</span>
         <span>Sayfa 1 / 1</span>
       </div>
     </div>

@@ -28,6 +28,8 @@ import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { accountingService, compareAccountCodes, type MizanRow } from '../services/accountingService';
 import type { Account, JournalEntry, Contact, Invoice, CollectionReceipt } from '../types';
+import { Calculator } from 'lucide-react';
+import PageHeader from './PageHeader';
 import JournalEntryModal from './Accounting/JournalEntryModal';
 import JournalEntryPrintModal from './Accounting/JournalEntryPrintModal';
 import AddAccountModal from './Accounting/AddAccountModal';
@@ -168,43 +170,43 @@ export default function Accounting() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Genel Muhasebe (TDHP)</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Tek Düzen Hesap Planına uygun yevmiye defteri, mizan raporu, defter-i kebir ve mali tablolar
-          </p>
-        </div>
+      <PageHeader
+        title="Genel Muhasebe (TDHP)"
+        subtitle="Tek Düzen Hesap Planına uygun yevmiye defteri, mizan raporu, defter-i kebir ve mali tablolar"
+        badge="Muhasebe & Defter"
+        icon={Calculator}
+        iconColor="amber"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {unaccountedInvoicesCount > 0 && (
+              <button
+                onClick={handleAutoAccountInvoices}
+                disabled={integrating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${integrating ? 'animate-spin' : ''}`} />
+                <span>{unaccountedInvoicesCount} Faturayı Muhasebeleştir</span>
+              </button>
+            )}
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {unaccountedInvoicesCount > 0 && (
             <button
-              onClick={handleAutoAccountInvoices}
-              disabled={integrating}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 shadow-sm transition-colors disabled:opacity-50"
+              onClick={() => setIsAccountModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${integrating ? 'animate-spin' : ''}`} />
-              {unaccountedInvoicesCount} Faturayı Muhasebeleştir
+              <Plus className="w-3.5 h-3.5 text-slate-500" />
+              <span>Yeni Alt Hesap</span>
             </button>
-          )}
 
-          <button
-            onClick={() => setIsAccountModalOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 shadow-sm transition-colors"
-          >
-            <Plus className="w-4 h-4 text-gray-500" />
-            Yeni Alt Hesap Aç
-          </button>
-
-          <button
-            onClick={() => setIsEntryModalOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Yeni Yevmiye Fişi
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => setIsEntryModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Yeni Yevmiye Fişi</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

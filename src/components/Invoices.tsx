@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { InvoicePrintModal } from './Invoices/InvoicePrintModal';
+import PageHeader from './PageHeader';
 
 export default function Invoices() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -180,42 +181,41 @@ export default function Invoices() {
       )}
 
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-            <Receipt className="w-8 h-8 text-indigo-600" />
-            FATURA YÖNETİMİ
-          </h1>
-          <p className="text-slate-400 text-sm font-medium mt-1 uppercase tracking-widest text-[10px]">
-            Satış & Alış Faturaları, e-Arşiv / e-Fatura ve Kısmi Sipariş Faturalandırma
-          </p>
-        </div>
+      <PageHeader
+        title="Fatura Yönetimi & e-Dönüşüm"
+        subtitle="Satış ve alış faturaları, e-Arşiv / e-Fatura entegrasyonu ve sipariş faturalandırma"
+        badge="Faturalar"
+        icon={Receipt}
+        iconColor="purple"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsResetModalOpen(true)}
+              className="bg-white border border-rose-200 hover:bg-rose-50 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              title="Tüm faturaları ve stok hareketlerini sıfırla"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+              <span className="hidden sm:inline">Sıfırla</span>
+            </button>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsResetModalOpen(true)}
-            className="bg-white border border-rose-200 hover:bg-rose-50 text-rose-700 px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-xs"
-            title="Tüm faturaları ve stok hareketlerini sıfırla"
-          >
-            <RotateCcw className="w-4 h-4 text-rose-600" />
-            <span className="hidden sm:inline">Hareketleri Sıfırla</span>
-          </button>
-          <button
-            onClick={() => openCreateModal('purchase')}
-            className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-sm"
-          >
-            <ArrowDownLeft className="w-4 h-4 text-amber-400" />
-            Yeni Alış Faturası
-          </button>
-          <button
-            onClick={() => openCreateModal('sales')}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-md shadow-indigo-200"
-          >
-            <Plus className="w-4 h-4" />
-            Yeni Satış Faturası
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => openCreateModal('purchase')}
+              className="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <ArrowDownLeft className="w-3.5 h-3.5 text-amber-400" />
+              <span>Gelen Alış Faturası</span>
+            </button>
+
+            <button
+              onClick={() => openCreateModal('sales')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Yeni Satış Faturası</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

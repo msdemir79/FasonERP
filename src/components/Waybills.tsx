@@ -50,6 +50,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WaybillPrintModal } from './Waybills/WaybillPrintModal';
+import PageHeader from './PageHeader';
 
 export default function Waybills() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -192,44 +193,41 @@ export default function Waybills() {
       )}
 
       {/* HEADER & TOP ACTIONS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Truck className="w-7 h-7 text-indigo-600" />
-            İrsaliye & Sevkiyat Yönetimi
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            GİB e-İrsaliye ve VUK 509 Tebliği uyumlu sevk irsaliyeleri, araç yükleme çeteleleri ve sipariş sevk takibi.
-          </p>
-        </div>
+      <PageHeader
+        title="İrsaliye & Sevkiyat Yönetimi"
+        subtitle="GİB e-İrsaliye uyumlu sevk irsaliyeleri, yükleme çeteleleri ve sevkiyat takibi"
+        badge="İrsaliyeler"
+        icon={Truck}
+        iconColor="blue"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsResetModalOpen(true)}
+              className="bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-600 hover:text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+              title="İrsaliyeleri ve sevkiyat durumlarını sıfırla"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Sıfırla</span>
+            </button>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setIsResetModalOpen(true)}
-            className="bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-600 hover:text-rose-700 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-2xs"
-            title="İrsaliyeleri ve sevkiyat durumlarını sıfırla"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span className="hidden md:inline">İrsaliyeleri Sıfırla</span>
-          </button>
+            <button
+              onClick={() => openCreateModal('purchase')}
+              className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Gelen İrsaliye</span>
+            </button>
 
-          <button
-            onClick={() => openCreateModal('purchase')}
-            className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-2xs"
-          >
-            <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
-            <span>Alış / Gelen İrsaliye</span>
-          </button>
-
-          <button
-            onClick={() => openCreateModal('sales')}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Yeni Sevk İrsaliyesi</span>
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => openCreateModal('sales')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Yeni Sevk İrsaliyesi</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* KPI SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

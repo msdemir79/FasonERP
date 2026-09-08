@@ -63,8 +63,10 @@ export function exportAttendanceToExcel(
   records: AttendanceRecord[],
   options?: {
     filterTitle?: string;
+    companyName?: string;
   }
 ) {
+  const companyName = options?.companyName ? options.companyName.toUpperCase() : 'FİRMA';
   const daysInMonth = new Date(year, month, 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const monthName = MONTH_NAMES[month - 1] || `${month}. Ay`;
@@ -224,7 +226,7 @@ export function exportAttendanceToExcel(
           <!-- Title Banner -->
           <tr>
             <td colspan="${totalCols}" style="background-color: #1e1b4b; color: #ffffff; font-size: 16px; font-weight: 900; text-align: left; padding: 12px 10px;">
-              PROERP SİSTEMİ - AYLIK PERSONEL PUANTAJ VE DEVAM ÇİZELGESİ
+              ${options?.companyName ? options.companyName.toUpperCase() : 'FİRMA'} - AYLIK PERSONEL PUANTAJ VE DEVAM ÇİZELGESİ
             </td>
           </tr>
           <tr>

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { Employee } from '../../types';
 import { hrService } from '../../services/hrService';
+import PageHeader from '../PageHeader';
 import EmployeeListTab from './EmployeeListTab';
 import AttendanceTab from './AttendanceTab';
 import LeaveTab from './LeaveTab';
@@ -55,42 +56,35 @@ export default function HRManagement() {
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-200">
       
       {/* Top Banner / Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div className="flex items-center gap-2 text-indigo-600 mb-1">
-            <Users className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-wider">İnsan Kaynakları ve Personel Yönetimi</span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-            İK, Puantaj & Bordro Sistemi
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Personel devam takibi, 1-31 puantaj matrisi, izin yönetimi, SGK'lı & SGK'sız yevmiye/maaş hesaplamaları ve muhasebe fişleri
-          </p>
-        </div>
+      <PageHeader
+        title="İnsan Kaynakları & Bordro Sistemi"
+        subtitle="Personel puantajı, izin yönetimi, SGK'lı/yevmiyeli bordro ve muhasebe fişleri"
+        badge="İK Yönetimi"
+        icon={UserCheck}
+        iconColor="indigo"
+        actions={
+          <div className="flex items-center gap-2 text-xs">
+            <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/80 text-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Toplam</span>
+              <span className="text-sm font-black text-slate-800">{activeEmployees.length}</span>
+            </div>
 
-        {/* Quick KPI Stat Chips */}
-        <div className="flex items-center gap-3">
-          <div className="bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-xs text-center">
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Toplam Çalışan</p>
-            <p className="text-lg font-black text-slate-800">{activeEmployees.length}</p>
-          </div>
+            <div className="bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-200/80 text-center">
+              <span className="text-[10px] font-bold text-emerald-600 uppercase flex items-center justify-center gap-1">
+                <ShieldCheck className="w-3 h-3" /> SGK'lı
+              </span>
+              <span className="text-sm font-black text-emerald-800">{sgkLiCount}</span>
+            </div>
 
-          <div className="bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-200 shadow-xs text-center">
-            <p className="text-[10px] font-bold text-emerald-600 uppercase flex items-center justify-center gap-1">
-              <ShieldCheck className="w-3 h-3" /> SGK'lı
-            </p>
-            <p className="text-lg font-black text-emerald-800">{sgkLiCount}</p>
+            <div className="bg-amber-50/80 px-3 py-1.5 rounded-lg border border-amber-200/80 text-center">
+              <span className="text-[10px] font-bold text-amber-600 uppercase flex items-center justify-center gap-1">
+                <ShieldAlert className="w-3 h-3" /> Yevmiyeli
+              </span>
+              <span className="text-sm font-black text-amber-800">{sgkSizCount}</span>
+            </div>
           </div>
-
-          <div className="bg-amber-50 px-4 py-2.5 rounded-xl border border-amber-200 shadow-xs text-center">
-            <p className="text-[10px] font-bold text-amber-600 uppercase flex items-center justify-center gap-1">
-              <ShieldAlert className="w-3 h-3" /> SGK'sız / Yevmiyeli
-            </p>
-            <p className="text-lg font-black text-amber-800">{sgkSizCount}</p>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Main Tab Navigation */}
       <div className="flex border-b border-slate-200 bg-white rounded-t-xl px-4 shadow-xs">
