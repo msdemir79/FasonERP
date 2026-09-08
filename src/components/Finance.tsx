@@ -24,11 +24,16 @@ import {
   HelpCircle,
   TrendingUp,
   CreditCard,
-  X
+  X,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { db } from '../db';
 import { financeService } from '../services/financeService';
 import { accountingService } from '../services/accountingService';
+import EditCashBoxModal from './Finance/EditCashBoxModal';
+import EditBankAccountModal from './Finance/EditBankAccountModal';
+import DeleteFinanceModal from './Finance/DeleteFinanceModal';
 import type { 
   CollectionReceipt, 
   CashBox, 
@@ -59,6 +64,14 @@ export default function Finance() {
   const [isBankAccountModalOpen, setIsBankAccountModalOpen] = useState(false);
   const [isCheckModalOpen, setIsCheckModalOpen] = useState(false);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<CollectionReceipt | null>(null);
+
+  // Düzenleme ve Silme Modal Durumları (Kasa & Banka)
+  const [editingCashBox, setEditingCashBox] = useState<CashBox | null>(null);
+  const [editingBankAccount, setEditingBankAccount] = useState<BankAccount | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: 'cash' | 'bank';
+    target: CashBox | BankAccount;
+  } | null>(null);
 
   // Check Action Modal
   const [selectedCheckForAction, setSelectedCheckForAction] = useState<CheckNote | null>(null);
@@ -326,6 +339,16 @@ export default function Finance() {
       setNewBankBalance('0');
     } catch (err: any) {
       alert(`Banka hesabı ekleme hatası: ${err.message}`);
+    }
+  };
+
+  // Handle Delete Cash Box or Bank Account
+  const handleConfirmDelete = async (force: boolean) => {
+    if (!deleteTarget?.target.id) return;
+    if (deleteTarget.type === 'cash') {
+      await financeService.deleteCashBox(deleteTarget.target.id, force);
+    } else {
+      await financeService.deleteBankAccount(deleteTarget.target.id, force);
     }
   };
 
@@ -673,29 +696,55 @@ export default function Finance() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {cashBoxes.map((box) => (
-              <div key={box.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded">
-                    {box.code}
-                  </span>
-                  <span className="text-xs text-gray-500 font-mono">TDHP: {box.accountCode}</span>
+              <div key={box.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded">
+                      {box.code}
+                    </span>
+                    <span className="text-xs text-gray-500 font-mono">TDHP: {box.accountCode}</span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">{box.name}</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Sorumlu: {box.responsiblePerson || 'Belirtilmedi'}</p>
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Mevcut Bakiye</span>
+                    <span className="text-xl font-bold text-emerald-600">
+                      ₺{box.balance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  {box.notes && (
+                    <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded">{box.notes}</p>
+                  )}
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">{box.name}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Sorumlu: {box.responsiblePerson || 'Belirtilmedi'}</p>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCashBox(box)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors cursor-pointer"
+                      title="Kasa kartı ve bakiyesini düzenle"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
+                      Düzenle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget({ type: 'cash', target: box })}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                      title="Kasayı sil"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      Sil
+                    </button>
+                  </div>
+                  <span className="text-[11px] text-gray-400 font-mono">ID: #{box.id}</span>
                 </div>
-
-                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs text-gray-500">Mevcut Bakiye</span>
-                  <span className="text-xl font-bold text-emerald-600">
-                    ₺{box.balance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-
-                {box.notes && (
-                  <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded">{box.notes}</p>
-                )}
               </div>
             ))}
           </div>
@@ -718,27 +767,53 @@ export default function Finance() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {bankAccounts.map((acc) => (
-              <div key={acc.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-sm text-gray-900 flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-blue-600" />
-                    {acc.bankName}
-                  </span>
-                  <span className="text-xs text-gray-500 font-mono">TDHP: {acc.accountCode}</span>
+              <div key={acc.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm text-gray-900 flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-blue-600" />
+                      {acc.bankName}
+                    </span>
+                    <span className="text-xs text-gray-500 font-mono">TDHP: {acc.accountCode}</span>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500">{acc.branchName || 'Merkez'} - {acc.accountNumber || ''}</p>
+                    <p className="font-mono text-xs font-medium text-gray-700 mt-1 bg-gray-50 p-2 rounded border border-gray-100 select-all">
+                      {acc.iban}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Mevduat Bakiyesi</span>
+                    <span className="text-xl font-bold text-blue-600">
+                      ₺{acc.balance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="text-xs text-gray-500">{acc.branchName} - {acc.accountNumber || ''}</p>
-                  <p className="font-mono text-xs font-medium text-gray-700 mt-1 bg-gray-50 p-2 rounded border border-gray-100 select-all">
-                    {acc.iban}
-                  </p>
-                </div>
-
-                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs text-gray-500">Mevduat Bakiyesi</span>
-                  <span className="text-xl font-bold text-blue-600">
-                    ₺{acc.balance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                  </span>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditingBankAccount(acc)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors cursor-pointer"
+                      title="Banka hesabı ve bakiyesini düzenle"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
+                      Düzenle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget({ type: 'bank', target: acc })}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                      title="Banka hesabını sil"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      Sil
+                    </button>
+                  </div>
+                  <span className="text-[11px] text-gray-400 font-mono">ID: #{acc.id}</span>
                 </div>
               </div>
             ))}
@@ -1615,6 +1690,36 @@ export default function Finance() {
           </div>
         </div>
       )}
+
+      {/* MODAL: Kasa Düzenleme */}
+      <EditCashBoxModal
+        isOpen={!!editingCashBox}
+        onClose={() => setEditingCashBox(null)}
+        cashBox={editingCashBox}
+      />
+
+      {/* MODAL: Banka Hesabı Düzenleme */}
+      <EditBankAccountModal
+        isOpen={!!editingBankAccount}
+        onClose={() => setEditingBankAccount(null)}
+        bankAccount={editingBankAccount}
+      />
+
+      {/* MODAL: Kasa / Banka Silme Onayı */}
+      <DeleteFinanceModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        type={deleteTarget?.type || 'cash'}
+        target={deleteTarget?.target || null}
+        receiptCount={
+          deleteTarget
+            ? deleteTarget.type === 'cash'
+              ? receipts.filter(r => r.cashBoxId === deleteTarget.target.id).length
+              : receipts.filter(r => r.bankAccountId === deleteTarget.target.id).length
+            : 0
+        }
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

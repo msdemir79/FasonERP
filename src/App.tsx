@@ -11,6 +11,7 @@ import Waybills from './components/Waybills';
 import Accounting from './components/Accounting';
 import Finance from './components/Finance';
 import Contacts from './components/Contacts';
+import HRManagement from './components/HR';
 import StockSummaryReport from './components/Reports/StockSummaryReport';
 import StockDetailReport from './components/Reports/StockDetailReport';
 import StockMovementReport from './components/Reports/StockMovementReport';
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="invoices" element={<Invoices />} />
           <Route path="finance" element={<Finance />} />
           <Route path="accounting" element={<Accounting />} />
+          <Route path="hr" element={<HRManagement />} />
           <Route path="contacts" element={<Contacts />} />
         </Route>
       </Routes>

@@ -542,3 +542,170 @@ export interface CollectionReceipt {
   createdAt: Date;
 }
 
+// ==================== İNSAN KAYNAKLARI (HR) & BORDRO ====================
+
+export type SgkStatus = 'sgk_li' | 'sgk_siz';
+export type SalaryType = 'monthly_net' | 'monthly_gross' | 'daily' | 'hourly';
+export type EmployeeDepartment = 
+  | 'KESİM' 
+  | 'SAYA' 
+  | 'MONTA' 
+  | 'FİNİSAJ' 
+  | 'KALİTE & PAKET' 
+  | 'DEPO & SEVKİYAT' 
+  | 'MUHASEBE & FİNANS' 
+  | 'YÖNETİM & İDARİ' 
+  | 'DİĞER';
+
+export interface Employee {
+  id?: number;
+  employeeCode: string;             // PER-001
+  name: string;                     // Ad Soyad
+  tcNo?: string;                    // T.C. Kimlik No
+  phone?: string;                   // Telefon
+  email?: string;                   // E-posta
+  department: EmployeeDepartment;   // Çalıştığı departman
+  position: string;                 // Görev/Ünvan (örn: Saya Ustası, Monta Operatörü, Muhasebeci)
+  hireDate: Date;                   // İşe giriş tarihi
+  terminationDate?: Date;           // İşten çıkış tarihi
+  status: 'active' | 'passive';     // Çalışma durumu
+  
+  // Ücret ve Sigorta Yapılandırması
+  sgkStatus: SgkStatus;             // 'sgk_li' (Sigortalı) | 'sgk_siz' (Sigortasız / Yevmiyeli / Harici)
+  salaryType: SalaryType;           // 'monthly_net' | 'monthly_gross' | 'daily' | 'hourly'
+  baseSalary: number;               // Taban Maaş / Günlük Yevmiye Tutarı (₺)
+  agreedNetSalary?: number;         // Anlaşılan Net Ücret (₺)
+  paymentMethod: 'bank' | 'cash';   // Banka IBAN veya Nakit (Elden)
+  bankName?: string;
+  iban?: string;
+
+  // İzin Hak Ediş
+  entitledAnnualLeave?: number;     // Yıllık Hak Edilen İzin (varsayılan 14 gün)
+  usedAnnualLeave?: number;         // Kullanılan İzin
+  
+  // Personel Ek Bilgileri
+  bloodGroup?: string;              // Kan Grubu
+  emergencyContact?: string;        // Acil Durum Kişisi ve Tel
+  address?: string;
+  notes?: string;
+  createdAt: Date;
+}
+
+export type AttendanceStatus = 
+  | 'present'       // Geldi (N - Normal Çalışma)
+  | 'absent'        // Devamsız (D - Gelmedi / Mazeretsiz)
+  | 'weekly_rest'   // Hafta Tatili (H - Pazar)
+  | 'paid_leave'    // Ücretli / Yıllık İzin (İ)
+  | 'unpaid_leave'  // Ücretsiz İzin (Ü)
+  | 'sick_leave'    // Sağlık Raporu (S)
+  | 'public_holiday'// Resmi Tatil (R)
+  | 'half_day';     // Yarım Gün
+
+export interface AttendanceRecord {
+  id?: number;
+  employeeId: number;
+  date: string;                     // YYYY-MM-DD
+  month: number;                    // 1-12
+  year: number;                     // 2026
+  status: AttendanceStatus;
+  checkInTime?: string;             // 08:30
+  checkOutTime?: string;            // 18:30
+  normalHours: number;              // 8
+  overtimeHours: number;            // 2 (Fazla mesai saati)
+  notes?: string;
+}
+
+export type LeaveType = 
+  | 'annual'        // Yıllık Ücretli İzin
+  | 'excuse'        // Mazeret İzni
+  | 'unpaid'        // Ücretsiz İzin
+  | 'sick'          // Sağlık / Rapor
+  | 'marriage'      // Evlilik İzni
+  | 'maternity'     // Doğum İzni
+  | 'bereavement';  // Vefat İzni
+
+export interface LeaveRequest {
+  id?: number;
+  employeeId: number;
+  employeeName: string;
+  leaveType: LeaveType;
+  startDate: string;                // YYYY-MM-DD
+  endDate: string;                  // YYYY-MM-DD
+  days: number;                     // Gün sayısı
+  status: 'pending' | 'approved' | 'rejected';
+  reason?: string;
+  approvedBy?: string;
+  createdAt: Date;
+}
+
+export interface AdvanceRequest {
+  id?: number;
+  employeeId: number;
+  employeeName: string;
+  date: Date;
+  amount: number;
+  description?: string;
+  month: number;                    // Hangi ayın maaşından kesilecek
+  year: number;
+  status: 'pending' | 'paid' | 'rejected';
+  isDeducted: boolean;              // Bordroda mahsup edildi mi
+  createdAt: Date;
+}
+
+export interface PayrollRecord {
+  id?: number;
+  employeeId: number;
+  employeeName: string;
+  employeeCode: string;
+  department: string;
+  month: number;                    // 1-12
+  year: number;                     // 2026
+  sgkStatus: SgkStatus;             // 'sgk_li' | 'sgk_siz'
+  salaryType: SalaryType;
+  
+  // Puantaj Özeti
+  daysWorked: number;               // Fiili Çalışılan Gün (Örn: 26)
+  weeklyRestDays: number;           // Hafta Tatili (Örn: 4)
+  paidLeaveDays: number;            // Ücretli İzin Gün (Örn: 2)
+  unpaidLeaveDays: number;          // Ücretsiz İzin Gün (Örn: 0)
+  absentDays: number;               // Devamsız Gün (Örn: 0)
+  totalDays: number;                // 30 gün üzerinden
+  overtimeHours: number;            // Toplam Fazla Mesai Saati
+  
+  // Kazançlar
+  baseSalary: number;               // Taban Brüt veya Anlaşılan Tutar
+  basePay: number;                  // Günlük/Aylık Normal Çalışma Karşılığı
+  overtimePay: number;              // Fazla Mesai Ücreti
+  bonusPay: number;                 // Prim / İkramiye / Yol / Yemek
+  totalGrossPay: number;            // Toplam Brüt / Hak Ediş
+  
+  // Kesintiler (SGK'lı Personel İçin)
+  employeeSgkShare: number;         // SGK İşçi Payı (%14)
+  employeeUnemploymentShare: number;// İşsizlik İşçi Payı (%1)
+  incomeTax: number;                // Gelir Vergisi (Asgari ücret muafiyeti düşülmüş)
+  stampTax: number;                 // Damga Vergisi (Asgari ücret muafiyeti düşülmüş)
+  totalLegalDeductions: number;     // Yasal Kesintiler Toplamı
+  
+  // Şirket İçi Kesintiler (Her ikisi için)
+  advanceDeduction: number;          // Avans Kesintisi
+  otherDeductions: number;          // Diğer Kesintiler / Ceza
+  
+  // Net Ödenecek
+  netSalary: number;                // Personele Ödenecek Net Tutar
+  
+  // İşveren Maliyeti (SGK'lı İçin)
+  employerSgkShare: number;         // SGK İşveren Payı (%15.5)
+  employerUnemploymentShare: number;// İşveren İşsizlik Payı (%2)
+  totalEmployerCost: number;        // İşverene Toplam Maliyet
+  
+  // Ödeme & Muhasebe Durumu
+  paymentStatus: 'unpaid' | 'paid';
+  paidDate?: Date;
+  paidFromType?: 'cash' | 'bank';
+  paidFromId?: number;
+  isAccounted?: boolean;            // Yevmiye fişine aktarıldı mı
+  journalEntryId?: number;
+  notes?: string;
+  createdAt: Date;
+}
+

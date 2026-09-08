@@ -15,7 +15,8 @@ import {
   Receipt,
   Truck,
   Landmark,
-  BookOpen
+  BookOpen,
+  UserCheck
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -46,6 +47,7 @@ const navigation = [
   { name: 'Faturalar', href: '/invoices', icon: Receipt },
   { name: 'Finans & Tahsilat', href: '/finance', icon: Landmark },
   { name: 'Genel Muhasebe', href: '/accounting', icon: BookOpen },
+  { name: 'İnsan Kaynakları (İK)', href: '/hr', icon: UserCheck },
   { name: 'Üretim Planlama', href: '/production', icon: Hammer },
   { name: 'Cari Hesaplar', href: '/contacts', icon: Users },
 ];

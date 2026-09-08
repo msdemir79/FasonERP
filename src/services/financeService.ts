@@ -445,5 +445,99 @@ export const financeService = {
         endorsedToContactName: endorsedName
       });
     });
+  },
+
+  // --- Kasa (CashBox) Düzenleme ve Silme İşlemleri ---
+  async updateCashBox(id: number, data: Partial<CashBox>, syncAccount = true) {
+    const existing = await db.cashBoxes.get(id);
+    if (!existing) throw new Error('Kasa bulunamadı.');
+
+    const result = await db.cashBoxes.update(id, {
+      ...data,
+      balance: data.balance !== undefined ? Number(data.balance) : existing.balance
+    });
+
+    // TDHP Kasa Hesabı Senkronizasyonu
+    if (syncAccount && (data.name || data.code || data.accountCode)) {
+      try {
+        const targetAccCode = data.accountCode || existing.accountCode;
+        const oldAccCode = existing.accountCode;
+        const newDisplayName = `${data.code || existing.code} - ${data.name || existing.name}`;
+
+        const account = await db.accounts.where('code').equals(oldAccCode).first();
+        if (account && account.id) {
+          await db.accounts.update(account.id, {
+            name: newDisplayName,
+            code: targetAccCode,
+            currency: data.currency || existing.currency
+          });
+        }
+      } catch (err) {
+        console.error('Kasa hesabı TDHP senkronizasyon hatası:', err);
+      }
+    }
+
+    return result;
+  },
+
+  async deleteCashBox(id: number, force = false) {
+    const existing = await db.cashBoxes.get(id);
+    if (!existing) throw new Error('Kasa bulunamadı.');
+
+    // Bu kasaya bağlı tahsilat/tediye makbuzu var mı kontrol et
+    const receiptCount = await db.collectionReceipts.where('cashBoxId').equals(id).count();
+    if (receiptCount > 0 && !force) {
+      throw new Error(`Bu kasaya bağlı ${receiptCount} adet makbuz kaydı bulunmaktadır. Silmek için onay vermeniz gerekmektedir.`);
+    }
+
+    // Eğer force ise veya makbuz yoksa sil
+    return await db.cashBoxes.delete(id);
+  },
+
+  // --- Banka Hesabı (BankAccount) Düzenleme ve Silme İşlemleri ---
+  async updateBankAccount(id: number, data: Partial<BankAccount>, syncAccount = true) {
+    const existing = await db.bankAccounts.get(id);
+    if (!existing) throw new Error('Banka hesabı bulunamadı.');
+
+    const result = await db.bankAccounts.update(id, {
+      ...data,
+      balance: data.balance !== undefined ? Number(data.balance) : existing.balance
+    });
+
+    // TDHP Banka Hesabı Senkronizasyonu
+    if (syncAccount && (data.bankName || data.branchName || data.iban || data.accountCode)) {
+      try {
+        const targetAccCode = data.accountCode || existing.accountCode;
+        const oldAccCode = existing.accountCode;
+        const newDisplayName = `${data.bankName || existing.bankName} (${data.branchName || existing.branchName || 'Merkez'})`;
+
+        const account = await db.accounts.where('code').equals(oldAccCode).first();
+        if (account && account.id) {
+          await db.accounts.update(account.id, {
+            name: newDisplayName,
+            code: targetAccCode,
+            currency: data.currency || existing.currency,
+            description: `Banka Hesabı - IBAN: ${data.iban || existing.iban}`
+          });
+        }
+      } catch (err) {
+        console.error('Banka hesabı TDHP senkronizasyon hatası:', err);
+      }
+    }
+
+    return result;
+  },
+
+  async deleteBankAccount(id: number, force = false) {
+    const existing = await db.bankAccounts.get(id);
+    if (!existing) throw new Error('Banka hesabı bulunamadı.');
+
+    // Bu banka hesabına bağlı tahsilat/tediye makbuzu var mı kontrol et
+    const receiptCount = await db.collectionReceipts.where('bankAccountId').equals(id).count();
+    if (receiptCount > 0 && !force) {
+      throw new Error(`Bu banka hesabına bağlı ${receiptCount} adet makbuz kaydı bulunmaktadır. Silmek için onay vermeniz gerekmektedir.`);
+    }
+
+    return await db.bankAccounts.delete(id);
   }
 };

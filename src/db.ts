@@ -19,7 +19,12 @@ import type {
   CashBox,
   BankAccount,
   CheckNote,
-  CollectionReceipt
+  CollectionReceipt,
+  Employee,
+  AttendanceRecord,
+  LeaveRequest,
+  PayrollRecord,
+  AdvanceRequest
 } from './types';
 import { INITIAL_TDHP_ACCOUNTS, INITIAL_CASH_BOXES, INITIAL_BANK_ACCOUNTS } from './data/tdhpAccounts';
 
@@ -44,10 +49,15 @@ export class ProERPDatabase extends Dexie {
   bankAccounts!: Table<BankAccount>;
   checks!: Table<CheckNote>;
   collectionReceipts!: Table<CollectionReceipt>;
+  employees!: Table<Employee>;
+  attendanceRecords!: Table<AttendanceRecord>;
+  leaveRequests!: Table<LeaveRequest>;
+  payrollRecords!: Table<PayrollRecord>;
+  advanceRequests!: Table<AdvanceRequest>;
 
   constructor() {
     super('ProERPDatabase');
-    this.version(11).stores({
+    this.version(13).stores({
       contacts: '++id, name, type, accountCode',
       products: '++id, code, name, isRawMaterial, assortmentTemplateId, categoryType, accountingCode',
       recipes: '++id, productId, targetColor',
@@ -67,7 +77,12 @@ export class ProERPDatabase extends Dexie {
       cashBoxes: '++id, code, name, accountCode, currency',
       bankAccounts: '++id, bankName, iban, accountCode, currency',
       checks: '++id, type, portfolioNumber, contactId, dueDate, status',
-      collectionReceipts: '++id, receiptNumber, type, date, contactId, instrument, isAccounted'
+      collectionReceipts: '++id, receiptNumber, type, date, contactId, instrument, isAccounted',
+      employees: '++id, employeeCode, name, tcNo, department, position, status, sgkStatus, hireDate',
+      attendanceRecords: '++id, employeeId, date, month, year, status, [employeeId+date]',
+      leaveRequests: '++id, employeeId, leaveType, startDate, endDate, status, createdAt',
+      payrollRecords: '++id, employeeId, month, year, sgkStatus, isAccounted, paymentStatus',
+      advanceRequests: '++id, employeeId, date, month, year, status, isDeducted'
     });
   }
 }
@@ -250,6 +265,154 @@ export async function seedDatabase() {
               { size: "34", quantity: 1 },
               { size: "35", quantity: 1 }
             ]
+          }
+        ]);
+      }
+
+      // 6. Seed HR Employees if none exist
+      const empCount = await db.employees.count();
+      if (empCount === 0) {
+        const emp1 = await db.employees.add({
+          employeeCode: 'PER-001',
+          name: 'Mehmet Demir',
+          tcNo: '28471930214',
+          phone: '0532 555 10 20',
+          email: 'mehmet.demir@proerp.com',
+          department: 'KESİM',
+          position: 'Kesimhane Şefi / Usta',
+          hireDate: new Date('2023-01-15'),
+          status: 'active',
+          sgkStatus: 'sgk_li',
+          salaryType: 'monthly_net',
+          baseSalary: 38500,
+          agreedNetSalary: 38500,
+          paymentMethod: 'bank',
+          bankName: 'Garanti BBVA',
+          iban: 'TR44 0006 2000 1234 5678 9012 34',
+          entitledAnnualLeave: 14,
+          usedAnnualLeave: 3,
+          bloodGroup: 'A Rh+',
+          emergencyContact: 'Eşi Ayşe Demir (0533 111 22 33)',
+          notes: 'Deri kesim kalıp tecrübesi 12 yıl.',
+          createdAt: new Date()
+        });
+
+        const emp2 = await db.employees.add({
+          employeeCode: 'PER-002',
+          name: 'Fatma Yılmaz',
+          tcNo: '19384729102',
+          phone: '0544 444 33 22',
+          email: 'fatma.yilmaz@proerp.com',
+          department: 'SAYA',
+          position: 'Saya Dikim & Çatım Ustası',
+          hireDate: new Date('2023-06-01'),
+          status: 'active',
+          sgkStatus: 'sgk_li',
+          salaryType: 'monthly_net',
+          baseSalary: 32000,
+          agreedNetSalary: 32000,
+          paymentMethod: 'bank',
+          bankName: 'İş Bankası',
+          iban: 'TR55 0006 4000 9876 5432 1098 76',
+          entitledAnnualLeave: 14,
+          usedAnnualLeave: 5,
+          bloodGroup: '0 Rh+',
+          emergencyContact: 'Kardeşi Selim Yılmaz (0542 333 44 55)',
+          notes: 'Saya overlok ve çift iğne uzmanı.',
+          createdAt: new Date()
+        });
+
+        const emp3 = await db.employees.add({
+          employeeCode: 'PER-003',
+          name: 'Ali Kaya',
+          tcNo: '48291039482',
+          phone: '0555 777 88 99',
+          department: 'MONTA',
+          position: 'Monta & Kalıplama Ustası (Harici/Yevmiyeli)',
+          hireDate: new Date('2024-03-10'),
+          status: 'active',
+          sgkStatus: 'sgk_siz',
+          salaryType: 'daily',
+          baseSalary: 1600,
+          agreedNetSalary: 1600,
+          paymentMethod: 'cash',
+          entitledAnnualLeave: 0,
+          usedAnnualLeave: 0,
+          bloodGroup: 'B Rh+',
+          emergencyContact: 'Oğlu Murat Kaya (0551 222 33 44)',
+          notes: 'Günlük yevmiyeli harici monta ustası (SGK muafiyeti/yevmiyeli).',
+          createdAt: new Date()
+        });
+
+        const emp4 = await db.employees.add({
+          employeeCode: 'PER-004',
+          name: 'Hasan Çelik',
+          tcNo: '37281920391',
+          phone: '0530 888 99 00',
+          department: 'FİNİSAJ',
+          position: 'Finisaj & Paketleme Elemanı',
+          hireDate: new Date('2024-07-15'),
+          status: 'active',
+          sgkStatus: 'sgk_siz',
+          salaryType: 'daily',
+          baseSalary: 1400,
+          agreedNetSalary: 1400,
+          paymentMethod: 'cash',
+          entitledAnnualLeave: 0,
+          usedAnnualLeave: 0,
+          bloodGroup: 'A Rh-',
+          notes: 'Sezonluk paketleme personeli.',
+          createdAt: new Date()
+        });
+
+        const emp5 = await db.employees.add({
+          employeeCode: 'PER-005',
+          name: 'Zeynep Aydın',
+          tcNo: '58291029384',
+          phone: '0536 123 45 67',
+          email: 'zeynep.aydin@proerp.com',
+          department: 'MUHASEBE & FİNANS',
+          position: 'İK & Ön Muhasebe Uzmanı',
+          hireDate: new Date('2022-09-01'),
+          status: 'active',
+          sgkStatus: 'sgk_li',
+          salaryType: 'monthly_net',
+          baseSalary: 42000,
+          agreedNetSalary: 42000,
+          paymentMethod: 'bank',
+          bankName: 'Akbank',
+          iban: 'TR33 0004 6000 5555 6666 7777 88',
+          entitledAnnualLeave: 14,
+          usedAnnualLeave: 2,
+          bloodGroup: 'AB Rh+',
+          notes: 'Personel özlük işleri ve genel muhasebe sorumlusu.',
+          createdAt: new Date()
+        });
+
+        // Seed initial leave request
+        await db.leaveRequests.bulkAdd([
+          {
+            employeeId: emp2 as number,
+            employeeName: 'Fatma Yılmaz',
+            leaveType: 'annual',
+            startDate: '2026-09-10',
+            endDate: '2026-09-12',
+            days: 3,
+            status: 'approved',
+            reason: 'Yıllık izin kullanımı',
+            approvedBy: 'Yönetim',
+            createdAt: new Date()
+          },
+          {
+            employeeId: emp1 as number,
+            employeeName: 'Mehmet Demir',
+            leaveType: 'excuse',
+            startDate: '2026-09-15',
+            endDate: '2026-09-15',
+            days: 1,
+            status: 'pending',
+            reason: 'Resmi daire işleri mazeret izni',
+            createdAt: new Date()
           }
         ]);
       }
