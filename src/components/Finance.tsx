@@ -26,14 +26,18 @@ import {
   CreditCard,
   X,
   Edit3,
-  Trash2
+  Trash2,
+  BarChart3,
+  ExternalLink
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { financeService } from '../services/financeService';
 import { accountingService } from '../services/accountingService';
 import EditCashBoxModal from './Finance/EditCashBoxModal';
 import EditBankAccountModal from './Finance/EditBankAccountModal';
 import DeleteFinanceModal from './Finance/DeleteFinanceModal';
+import FinanceReport from './Reports/FinanceReport';
 import type { 
   CollectionReceipt, 
   CashBox, 
@@ -46,7 +50,7 @@ import type {
 } from '../types';
 
 export default function Finance() {
-  const [activeTab, setActiveTab] = useState<'receipts' | 'cash' | 'bank' | 'checks'>('receipts');
+  const [activeTab, setActiveTab] = useState<'receipts' | 'cash' | 'bank' | 'checks' | 'reports'>('receipts');
   
   // Queries
   const receipts = useLiveQuery(() => db.collectionReceipts.orderBy('date').reverse().toArray()) || [];
@@ -553,6 +557,28 @@ export default function Finance() {
             {checks.length}
           </span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('reports')}
+          className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+            activeTab === 'reports'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4 text-emerald-600" />
+          Finans & Likidite Raporu
+        </button>
+
+        <div className="ml-auto flex items-center pr-2">
+          <Link
+            to="/reports?tab=finance"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+          >
+            <span>Raporlar Merkezi</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
 
       {/* TAB CONTENT: Receipts */}
@@ -945,6 +971,11 @@ export default function Finance() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB CONTENT: Reports */}
+      {activeTab === 'reports' && (
+        <FinanceReport />
       )}
 
       {/* MODAL: Yeni Tahsilat / Tediye Makbuzu */}

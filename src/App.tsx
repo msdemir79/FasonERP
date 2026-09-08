@@ -12,6 +12,7 @@ import Accounting from './components/Accounting';
 import Finance from './components/Finance';
 import Contacts from './components/Contacts';
 import HRManagement from './components/HR';
+import ReportsHub from './components/Reports';
 import StockSummaryReport from './components/Reports/StockSummaryReport';
 import StockDetailReport from './components/Reports/StockDetailReport';
 import StockMovementReport from './components/Reports/StockMovementReport';
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="inventory" element={<Inventory />} />
           <Route path="inventory/templates" element={<Templates />} />
           
+          <Route path="reports" element={<ReportsHub />} />
           <Route path="reports/summary" element={<StockSummaryReport />} />
           <Route path="reports/detail" element={<StockDetailReport />} />
           <Route path="reports/movements" element={<StockMovementReport />} />

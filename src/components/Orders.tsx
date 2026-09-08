@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { db } from '../db';
 import { 
   ShoppingCart, 
@@ -24,11 +24,13 @@ import {
   Truck,
   Layers,
   Boxes,
-  Factory
+  Factory,
+  BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import Modal from './Modal';
+import ProductSelectorModal from './Orders/ProductSelectorModal';
 import { erpService } from '../services/erpService';
 import type { Order, OrderItem, OrderStatus, OrderType } from '../types';
 
@@ -52,11 +54,6 @@ export default function Orders() {
   
   // Product Selector Modal State
   const [isProductSelectorOpen, setIsProductSelectorOpen] = React.useState(false);
-  const [modalSearchTerm, setModalSearchTerm] = React.useState('');
-  const [selectedProduct, setSelectedProduct] = React.useState<any>(null);
-  const [selectedColor, setSelectedColor] = React.useState('');
-  const [modalBoxCount, setModalBoxCount] = React.useState(1);
-  const [modalQuantity, setModalQuantity] = React.useState(1);
   
   // Form State
   const [orderItems, setOrderItems] = React.useState<any[]>([]);
@@ -157,49 +154,76 @@ export default function Orders() {
   }, [orders, contacts, searchTerm, activeTab, statusFilter, getOrderProgressStats]);
 
   const totals = React.useMemo(() => {
-    const subtotal = orderItems.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
-    const taxTotal = orderItems.reduce((acc, item) => acc + (item.unitPrice * item.quantity * (item.taxRate / 100)), 0);
+    const subtotal = orderItems.reduce((acc, item) => {
+      const unit = Number(item.unitPrice) || 0;
+      const qty = Number(item.quantity) || 0;
+      const disc = Number(item.discountRate) || 0;
+      const lineNet = unit * qty * (1 - disc / 100);
+      return acc + lineNet;
+    }, 0);
+
+    const taxTotal = orderItems.reduce((acc, item) => {
+      const unit = Number(item.unitPrice) || 0;
+      const qty = Number(item.quantity) || 0;
+      const disc = Number(item.discountRate) || 0;
+      const tax = Number(item.taxRate) || 0;
+      const lineNet = unit * qty * (1 - disc / 100);
+      return acc + (lineNet * (tax / 100));
+    }, 0);
+
     const grandTotal = subtotal + taxTotal;
     return { subtotal, taxTotal, grandTotal };
   }, [orderItems]);
 
   const openProductSelector = () => {
     setIsProductSelectorOpen(true);
-    setSelectedProduct(null);
-    setSelectedColor('');
-    setModalBoxCount(1);
-    setModalQuantity(1);
-    setModalSearchTerm('');
   };
 
-  const handleModalAdd = () => {
-    if (!selectedProduct) return;
-    
-    const template = selectedProduct.assortmentTemplateId ? templates?.find(t => t.id === selectedProduct.assortmentTemplateId) : null;
-    const pairsPerBox = template ? template.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
-    
-    const qty = selectedProduct.isFootwear && selectedProduct.assortmentTemplateId 
-      ? modalBoxCount * pairsPerBox 
-      : modalQuantity;
+  const handleAddItemFromModal = (newItem: {
+    productId: number;
+    name: string;
+    code: string;
+    color?: string;
+    size?: string;
+    isFootwear?: boolean;
+    assortmentTemplateId?: number;
+    pairsPerBox?: number;
+    boxCount?: number;
+    quantity: number;
+    unitPrice: number;
+    taxRate: number;
+    discountRate: number;
+    total: number;
+    unit?: string;
+    moldCode?: string;
+    matrixBreakdown?: { [size: string]: number };
+    notes?: string;
+  }) => {
+    // Check if identical item (same productId and same color) exists
+    const existingIndex = orderItems.findIndex(
+      oi => oi.productId === newItem.productId && (oi.color || '').trim().toLowerCase() === (newItem.color || '').trim().toLowerCase()
+    );
 
-    const newItem = {
-      productId: selectedProduct.id!,
-      name: selectedProduct.name,
-      code: selectedProduct.code,
-      color: selectedColor,
-      isFootwear: selectedProduct.isFootwear,
-      assortmentTemplateId: selectedProduct.assortmentTemplateId,
-      pairsPerBox,
-      boxCount: selectedProduct.isFootwear && selectedProduct.assortmentTemplateId ? modalBoxCount : 0,
-      quantity: qty,
-      unitPrice: activeTab === 'sales' ? selectedProduct.sellingPrice : selectedProduct.buyingPrice,
-      taxRate: 20,
-      discountRate: 0,
-      total: (activeTab === 'sales' ? selectedProduct.sellingPrice : selectedProduct.buyingPrice) * qty
-    };
+    if (existingIndex >= 0) {
+      const newItems = [...orderItems];
+      const existing = newItems[existingIndex];
+      const updatedQty = Number(existing.quantity || 0) + Number(newItem.quantity || 0);
+      const updatedBoxes = existing.boxCount && newItem.boxCount ? existing.boxCount + newItem.boxCount : newItem.boxCount;
+      const disc = Number(newItem.discountRate) || 0;
+      const lineNet = (newItem.unitPrice || 0) * updatedQty * (1 - disc / 100);
+      const lineTax = lineNet * ((newItem.taxRate || 0) / 100);
 
-    setOrderItems([...orderItems, newItem]);
-    setIsProductSelectorOpen(false);
+      newItems[existingIndex] = {
+        ...existing,
+        ...newItem,
+        quantity: updatedQty,
+        boxCount: updatedBoxes,
+        total: lineNet + lineTax
+      };
+      setOrderItems(newItems);
+    } else {
+      setOrderItems(prev => [...prev, newItem]);
+    }
   };
 
   const removeOrderItem = (index: number) => {
@@ -210,9 +234,19 @@ export default function Orders() {
     const newItems = [...orderItems];
     const item = { ...newItems[index], [field]: value };
     
-    if (field === 'boxCount' && item.isFootwear && item.pairsPerBox) {
-      item.quantity = value * item.pairsPerBox;
+    if (field === 'boxCount' && item.isFootwear && item.pairsPerBox && item.pairsPerBox > 0) {
+      item.quantity = Math.max(1, Number(value)) * item.pairsPerBox;
+    } else if (field === 'quantity' && item.isFootwear && item.pairsPerBox && item.pairsPerBox > 0) {
+      item.boxCount = Math.max(1, Math.floor(Number(value) / item.pairsPerBox));
     }
+    
+    const unit = Number(item.unitPrice) || 0;
+    const qty = Number(item.quantity) || 0;
+    const disc = Number(item.discountRate) || 0;
+    const tax = Number(item.taxRate) || 0;
+    const lineNet = unit * qty * (1 - disc / 100);
+    const lineTax = lineNet * (tax / 100);
+    item.total = lineNet + lineTax;
     
     newItems[index] = item;
     setOrderItems(newItems);
@@ -344,6 +378,13 @@ export default function Orders() {
               Alış Siparişleri
             </button>
           </div>
+          <Link
+            to="/reports?tab=orders"
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-xl text-xs font-bold text-indigo-700 transition-all shadow-sm"
+          >
+            <BarChart3 className="w-4 h-4 text-indigo-600" />
+            <span>Sipariş & Sevkiyat Raporu</span>
+          </Link>
           <button 
             onClick={() => setIsAddModalOpen(true)}
             className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 hover:bg-slate-900 transition-all shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer"
@@ -952,10 +993,24 @@ export default function Orders() {
               </div>
 
               {/* Summary */}
-              <div className="p-3 bg-indigo-600 rounded-xl text-white space-y-1">
-                <div className="flex justify-between text-xs font-bold">
-                  <span>Genel Toplam:</span>
-                  <span className="font-mono text-sm">{totals.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</span>
+              <div className="p-3.5 bg-slate-900 rounded-2xl text-white space-y-1.5 shadow-md">
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>Ara Toplam:</span>
+                  <span className="font-mono font-bold text-slate-200">
+                    {totals.subtotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>Hesaplanan KDV:</span>
+                  <span className="font-mono font-bold text-slate-200">
+                    {totals.taxTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </span>
+                </div>
+                <div className="pt-1.5 border-t border-slate-800 flex justify-between items-center">
+                  <span className="text-xs font-black uppercase text-indigo-300">Genel Toplam:</span>
+                  <span className="font-mono text-base font-black text-emerald-400">
+                    {totals.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </span>
                 </div>
               </div>
             </div>
@@ -963,74 +1018,131 @@ export default function Orders() {
             {/* Right Items List */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                  <Package className="w-4 h-4 text-indigo-600" /> Sipariş Kalemleri ({orderItems.length})
-                </h4>
+                <div>
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <Package className="w-4 h-4 text-indigo-600" /> Sipariş Kalemleri ({orderItems.length})
+                  </h4>
+                  <p className="text-[10px] text-slate-400">Eklenen ürünlerin miktar, renk, iskonto ve birim fiyatlarını düzenleyebilirsiniz.</p>
+                </div>
                 <button 
                   type="button"
                   onClick={openProductSelector}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-indigo-700 cursor-pointer"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" /> Ürün Ekle
+                  <Plus className="w-4 h-4" /> Ürün & Stok Ekle
                 </button>
               </div>
 
-              <div className="border border-slate-200 rounded-2xl overflow-hidden min-h-[260px] max-h-[350px] overflow-y-auto">
+              <div className="border border-slate-200 rounded-2xl overflow-hidden min-h-[260px] max-h-[380px] overflow-y-auto bg-white shadow-2xs">
                 <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                  <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200 sticky top-0 z-10">
                     <tr>
-                      <th className="p-3">Ürün & Renk</th>
-                      <th className="p-3 text-center">Miktar</th>
-                      <th className="p-3 text-right">Birim Fiyat</th>
-                      <th className="p-3 text-right">Toplam</th>
-                      <th className="p-3 text-center">Sil</th>
+                      <th className="p-3">Ürün & Renk / Detay</th>
+                      <th className="p-3 text-center w-28">Miktar</th>
+                      <th className="p-3 text-right w-28">Birim Fiyat</th>
+                      <th className="p-3 text-center w-16">İsk. %</th>
+                      <th className="p-3 text-right w-28">Toplam</th>
+                      <th className="p-3 text-center w-10">Sil</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
                     {orderItems.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-12 text-center text-slate-400">
-                          Henüz ürün eklenmedi. "Ürün Ekle" butonuna tıklayınız.
+                        <td colSpan={6} className="p-12 text-center text-slate-400 space-y-2">
+                          <Package className="w-8 h-8 mx-auto opacity-30 text-indigo-600" />
+                          <div className="text-xs font-bold text-slate-600">Henüz sipariş kalemi eklenmedi.</div>
+                          <div className="text-[11px] text-slate-400">Ürün, renk, koli veya miktar seçmek için "Ürün & Stok Ekle" butonuna tıklayınız.</div>
                         </td>
                       </tr>
                     ) : (
-                      orderItems.map((item, index) => (
-                        <tr key={index} className="hover:bg-slate-50">
-                          <td className="p-3">
-                            <div className="font-bold text-slate-800 uppercase">{item.code}</div>
-                            <div className="text-[10px] text-slate-400">{item.name}</div>
-                            {item.color && (
-                              <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded uppercase">
-                                {item.color}
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-3 text-center">
-                            <input 
-                              type="number" 
-                              min="1" 
-                              value={item.quantity} 
-                              onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                              className="w-16 p-1 text-center font-bold border border-slate-200 rounded-lg text-xs"
-                            />
-                          </td>
-                          <td className="p-3 text-right font-mono font-bold">
-                            {item.unitPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                          </td>
-                          <td className="p-3 text-right font-mono font-black text-indigo-600">
-                            {(item.quantity * item.unitPrice).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                          </td>
-                          <td className="p-3 text-center">
-                            <button 
-                              type="button" 
-                              onClick={() => removeOrderItem(index)}
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                      orderItems.map((item, index) => {
+                        const lineNet = (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0) * (1 - (Number(item.discountRate) || 0) / 100);
+                        const lineTax = lineNet * ((Number(item.taxRate) || 0) / 100);
+                        const lineTotal = lineNet + lineTax;
+
+                        return (
+                          <tr key={index} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-3">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono font-black text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-[11px] uppercase">
+                                  {item.code}
+                                </span>
+                                {item.moldCode && (
+                                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1 py-0.5 rounded">
+                                    Kalıp: {item.moldCode}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="font-bold text-xs text-slate-800 mt-1 uppercase">{item.name}</div>
+                              
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                {item.color && (
+                                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md uppercase">
+                                    Renk: {item.color}
+                                  </span>
+                                )}
+                                {item.boxCount && item.pairsPerBox ? (
+                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-md">
+                                    {item.boxCount} Koli ({item.pairsPerBox} Çift/Koli)
+                                  </span>
+                                ) : null}
+                                {item.notes && (
+                                  <span className="text-[10px] text-slate-500 italic">
+                                    Not: {item.notes}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <input 
+                                  type="number" 
+                                  min="1" 
+                                  value={item.quantity} 
+                                  onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
+                                  className="w-16 p-1 text-center font-black font-mono border border-slate-200 rounded-lg text-xs bg-white text-slate-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                  {item.unit || 'Çift'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-3 text-right">
+                              <input 
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={item.unitPrice}
+                                onChange={(e) => updateItem(index, 'unitPrice', Number(e.target.value))}
+                                className="w-20 p-1 text-right font-mono font-bold border border-slate-200 rounded-lg text-xs bg-white text-slate-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                              />
+                            </td>
+                            <td className="p-3 text-center">
+                              <input 
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={item.discountRate || 0}
+                                onChange={(e) => updateItem(index, 'discountRate', Number(e.target.value))}
+                                className="w-12 p-1 text-center font-mono font-bold border border-slate-200 rounded-lg text-xs bg-white text-slate-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                              />
+                            </td>
+                            <td className="p-3 text-right font-mono font-black text-indigo-700">
+                              {lineTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                            </td>
+                            <td className="p-3 text-center">
+                              <button 
+                                type="button" 
+                                onClick={() => removeOrderItem(index)}
+                                className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                                title="Kalemi Sil"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -1046,7 +1158,7 @@ export default function Orders() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase shadow-md cursor-pointer"
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md cursor-pointer"
                 >
                   Siparişi Kaydet
                 </button>
@@ -1056,123 +1168,15 @@ export default function Orders() {
         </form>
       </Modal>
 
-      {/* Product Selector Sub-Modal (Size 2XL) */}
-      <Modal 
-        isOpen={isProductSelectorOpen} 
-        onClose={() => setIsProductSelectorOpen(false)} 
-        title="Siparişe Eklenecek Ürünü Seçin" 
-        size="2xl"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* List */}
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Ürün adı veya kodu ile ara..."
-                value={modalSearchTerm}
-                onChange={(e) => setModalSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none"
-              />
-            </div>
-            <div className="overflow-y-auto max-h-[380px] space-y-1.5 pr-1">
-              {products?.filter(p => !p.isRawMaterial && (p.name.toLowerCase().includes(modalSearchTerm.toLowerCase()) || p.code.toLowerCase().includes(modalSearchTerm.toLowerCase()))).map(p => (
-                <button 
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedProduct(p);
-                    setSelectedColor(p.colors?.[0] || '');
-                    setModalBoxCount(1);
-                    setModalQuantity(1);
-                  }}
-                  className={cn(
-                    "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between cursor-pointer",
-                    selectedProduct?.id === p.id 
-                      ? "bg-indigo-600 border-indigo-600 text-white shadow-md" 
-                      : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                  )}
-                >
-                  <div>
-                    <div className={cn("text-[10px] font-black uppercase", selectedProduct?.id === p.id ? "text-indigo-100" : "text-slate-400")}>
-                      {p.code}
-                    </div>
-                    <div className="text-xs font-bold uppercase">{p.name}</div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 opacity-60" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Configuration */}
-          <div className="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-            {selectedProduct ? (
-              <div className="space-y-4">
-                <div>
-                  <div className="text-xs font-black uppercase text-slate-900">{selectedProduct.name}</div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase">{selectedProduct.code} • {selectedProduct.brand}</div>
-                </div>
-
-                {selectedProduct.colors && selectedProduct.colors.length > 0 && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Renk Seçimi</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedProduct.colors.map((color: string) => (
-                        <button 
-                          key={color}
-                          type="button"
-                          onClick={() => setSelectedColor(color)}
-                          className={cn(
-                            "px-3 py-1.5 rounded-lg text-xs font-black uppercase border transition-all cursor-pointer",
-                            selectedColor === color 
-                              ? "bg-slate-900 border-slate-900 text-white" 
-                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
-                          )}
-                        >
-                          {color}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Miktar (Çift / Adet)</label>
-                  <input 
-                    type="number"
-                    min="1"
-                    value={modalQuantity}
-                    onChange={(e) => setModalQuantity(Math.max(1, Number(e.target.value)))}
-                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-sm font-black text-slate-900 outline-none"
-                  />
-                </div>
-
-                <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Birim Fiyat:</span>
-                  <span className="text-sm font-black text-slate-900 font-mono">
-                    {(activeTab === 'sales' ? selectedProduct.sellingPrice : selectedProduct.buyingPrice).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </span>
-                </div>
-
-                <button 
-                  type="button"
-                  onClick={handleModalAdd}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-colors shadow-md cursor-pointer"
-                >
-                  Sepete Ekle
-                </button>
-              </div>
-            ) : (
-              <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-slate-300">
-                <Package className="w-10 h-10 opacity-30 mb-2" />
-                <p className="text-xs font-bold uppercase text-center">Lütfen soldaki listeden bir ürün seçiniz</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </Modal>
+      {/* Advanced Product & Variant Selection Modal */}
+      <ProductSelectorModal
+        isOpen={isProductSelectorOpen}
+        onClose={() => setIsProductSelectorOpen(false)}
+        onAddItem={handleAddItemFromModal}
+        orderType={activeTab}
+        products={products || []}
+        templates={templates || []}
+      />
     </div>
   );
 }

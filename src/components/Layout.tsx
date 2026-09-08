@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -16,7 +16,8 @@ import {
   Truck,
   Landmark,
   BookOpen,
-  UserCheck
+  UserCheck,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -32,14 +33,17 @@ const navigation = [
     ]
   },
   {
-    name: 'Raporlar',
+    name: 'Raporlar & Analiz',
     href: '/reports',
-    icon: Activity,
+    icon: BarChart3,
     subItems: [
-      { name: 'Stok Özet Raporu', href: '/reports/summary' },
-      { name: 'Stok Detay Raporu', href: '/reports/detail' },
-      { name: 'Stok Hareket Raporu', href: '/reports/movements' },
-      { name: 'Kırık Beden Raporu', href: '/reports/broken' },
+      { name: 'Raporlar Merkezi', href: '/reports' },
+      { name: 'İK & Bordro İcmali', href: '/reports?tab=hr' },
+      { name: 'Üretim & İmalat', href: '/reports?tab=production' },
+      { name: 'Sipariş & Sevkiyat', href: '/reports?tab=orders' },
+      { name: 'Finans & Likidite', href: '/reports?tab=finance' },
+      { name: 'Muhasebe (Mizan/KDV)', href: '/reports?tab=accounting' },
+      { name: 'Stok & Malzeme', href: '/reports?tab=stock' },
     ]
   },
   { name: 'Sipariş Yönetimi', href: '/orders', icon: ShoppingCart },
@@ -53,8 +57,10 @@ const navigation = [
 ];
 
 export default function Layout() {
+  const location = useLocation();
+  const currentPathWithSearch = location.pathname + location.search;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [expandedMenus, setExpandedMenus] = React.useState<string[]>(['Stok Yönetimi', 'Raporlar']);
+  const [expandedMenus, setExpandedMenus] = React.useState<string[]>(['Stok Yönetimi', 'Raporlar & Analiz']);
 
   const toggleMenu = (name: string) => {
     setExpandedMenus(prev => 
@@ -106,21 +112,23 @@ export default function Layout() {
 
               {item.subItems && expandedMenus.includes(item.name) && (
                 <div className="pl-11 space-y-1 py-1">
-                  {item.subItems.map((sub) => (
-                    <NavLink
-                      key={sub.name}
-                      to={sub.href}
-                      end={sub.href === '/inventory'} // Important for nested base routes
-                      className={({ isActive }) =>
-                        cn(
-                          "block py-2 text-[9px] uppercase font-bold tracking-widest transition-colors",
-                          isActive ? "text-indigo-400" : "text-slate-500 hover:text-slate-300"
-                        )
-                      }
-                    >
-                      {sub.name}
-                    </NavLink>
-                  ))}
+                  {item.subItems.map((sub) => {
+                    const isSubActive = sub.href.includes('?') 
+                      ? currentPathWithSearch === sub.href
+                      : (location.pathname === sub.href && !location.search);
+                    return (
+                      <NavLink
+                        key={sub.name}
+                        to={sub.href}
+                        className={cn(
+                          "block py-1.5 text-[9px] uppercase font-bold tracking-widest transition-colors",
+                          isSubActive ? "text-indigo-400 font-black" : "text-slate-500 hover:text-slate-300"
+                        )}
+                      >
+                        {sub.name}
+                      </NavLink>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -196,22 +204,24 @@ export default function Layout() {
 
               {item.subItems && expandedMenus.includes(item.name) && (
                 <div className="pl-11 space-y-1 py-1">
-                  {item.subItems.map((sub) => (
-                    <NavLink
-                      key={sub.name}
-                      to={sub.href}
-                      end={sub.href === '/inventory'}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        cn(
-                          "block py-2 text-[9px] uppercase font-bold tracking-widest transition-colors",
-                          isActive ? "text-indigo-400" : "text-slate-500 hover:text-slate-300"
-                        )
-                      }
-                    >
-                      {sub.name}
-                    </NavLink>
-                  ))}
+                  {item.subItems.map((sub) => {
+                    const isSubActive = sub.href.includes('?') 
+                      ? currentPathWithSearch === sub.href
+                      : (location.pathname === sub.href && !location.search);
+                    return (
+                      <NavLink
+                        key={sub.name}
+                        to={sub.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={cn(
+                          "block py-1.5 text-[9px] uppercase font-bold tracking-widest transition-colors",
+                          isSubActive ? "text-indigo-400 font-black" : "text-slate-500 hover:text-slate-300"
+                        )}
+                      >
+                        {sub.name}
+                      </NavLink>
+                    );
+                  })}
                 </div>
               )}
             </div>

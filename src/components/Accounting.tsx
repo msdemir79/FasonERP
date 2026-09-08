@@ -21,8 +21,10 @@ import {
   Calendar,
   Building2,
   DollarSign,
-  Edit3
+  Edit3,
+  ExternalLink
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { accountingService, compareAccountCodes, type MizanRow } from '../services/accountingService';
 import type { Account, JournalEntry, Contact, Invoice, CollectionReceipt } from '../types';
@@ -32,9 +34,10 @@ import AddAccountModal from './Accounting/AddAccountModal';
 import EditAccountModal from './Accounting/EditAccountModal';
 import MizanPrintModal from './Accounting/MizanPrintModal';
 import KebirPrintModal from './Accounting/KebirPrintModal';
+import AccountingReport from './Reports/AccountingReport';
 
 export default function Accounting() {
-  const [activeTab, setActiveTab] = useState<'entries' | 'chart' | 'mizan' | 'kebir' | 'financial' | 'integration'>('entries');
+  const [activeTab, setActiveTab] = useState<'entries' | 'chart' | 'mizan' | 'kebir' | 'financial' | 'integration' | 'reports'>('entries');
 
   // Live queries
   const rawAccounts = useLiveQuery(() => db.accounts.toArray()) || [];
@@ -340,6 +343,28 @@ export default function Accounting() {
             </span>
           )}
         </button>
+
+        <button
+          onClick={() => setActiveTab('reports')}
+          className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex items-center gap-2 ${
+            activeTab === 'reports'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4 text-emerald-600" />
+          Muhasebe Analiz & Raporlar
+        </button>
+
+        <div className="ml-auto flex items-center pr-2">
+          <Link
+            to="/reports?tab=accounting"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors whitespace-nowrap"
+          >
+            <span>Raporlar Merkezi</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
 
       {/* TAB 1: Yevmiye Defteri (Journal Entries) */}
@@ -989,6 +1014,11 @@ export default function Accounting() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB 7: Accounting Analysis & Reports */}
+      {activeTab === 'reports' && (
+        <AccountingReport />
       )}
 
       {/* MODAL: Yeni Yevmiye Fişi */}

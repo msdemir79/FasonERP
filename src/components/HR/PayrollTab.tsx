@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   DollarSign, 
   Calendar, 
@@ -13,10 +13,15 @@ import {
   AlertCircle,
   Building2,
   TrendingUp,
-  Download
+  Download,
+  FileSpreadsheet,
+  FileDown,
+  ChevronDown,
+  Filter
 } from 'lucide-react';
 import type { Employee, PayrollRecord, SgkStatus } from '../../types';
 import { hrService } from '../../services/hrService';
+import { exportPayrollToExcel, exportPayrollToCsv } from '../../lib/exportService';
 import PayrollSlipModal from './PayrollSlipModal';
 
 interface PayrollTabProps {
@@ -36,9 +41,25 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
   const [payrolls, setPayrolls] = useState<PayrollRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [sgkFilter, setSgkFilter] = useState<'all' | 'sgk_li' | 'sgk_siz'>('all');
   const [accountingPayrollId, setAccountingPayrollId] = useState<number | null>(null);
   const [selectedPayrollForSlip, setSelectedPayrollForSlip] = useState<PayrollRecord | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setIsExportMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const loadPayrolls = async () => {
     try {
@@ -105,6 +126,34 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
     }
   };
 
+  // Export handlers
+  const handleExport = (format: 'xls' | 'csv' = 'xls', filterScope: 'filtered' | 'all' = 'filtered') => {
+    const listToExport = filterScope === 'all' 
+      ? payrolls 
+      : (sgkFilter === 'all' ? payrolls : payrolls.filter(p => p.sgkStatus === sgkFilter));
+
+    if (listToExport.length === 0) {
+      setMessage({ type: 'error', text: 'Dışa aktarılacak bordro kaydı bulunamadı. Lütfen önce bordroları hesaplayınız.' });
+      return;
+    }
+
+    const filterScopeTitle = filterScope === 'all' 
+      ? 'Tüm Personeller' 
+      : (sgkFilter === 'sgk_li' ? 'SGK\'lı Personel Bordrosu' : sgkFilter === 'sgk_siz' ? 'Yevmiyeli Personel Bordrosu' : 'Tüm Personeller');
+
+    if (format === 'xls') {
+      exportPayrollToExcel(selectedMonth, selectedYear, listToExport, employees, { filterTitle: filterScopeTitle });
+      setMessage({ type: 'success', text: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} bordro icmali Excel (.xls) formatında başarıyla dışa aktarıldı (${listToExport.length} kayıt).` });
+    } else {
+      exportPayrollToCsv(selectedMonth, selectedYear, listToExport, employees);
+      setMessage({ type: 'success', text: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} bordro verileri CSV formatında dışa aktarıldı (${listToExport.length} kayıt).` });
+    }
+    setIsExportMenuOpen(false);
+  };
+
+  // Filtered Payrolls
+  const filteredPayrolls = payrolls.filter(p => sgkFilter === 'all' || p.sgkStatus === sgkFilter);
+
   // Aggregations: SGK'lı vs SGK'sız
   const sgkLiRecords = payrolls.filter(p => p.sgkStatus === 'sgk_li');
   const sgkSizRecords = payrolls.filter(p => p.sgkStatus === 'sgk_siz');
@@ -123,11 +172,12 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
   return (
     <div className="space-y-6">
       {/* Top Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-2">
           <button
             onClick={prevMonth}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
+            title="Önceki Ay"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -139,20 +189,117 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
           </div>
           <button
             onClick={nextMonth}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
+            title="Sonraki Ay"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Filter & Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2.5 text-xs w-full lg:w-auto">
+          {/* SGK Status Filter */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-lg">
+            <button
+              onClick={() => setSgkFilter('all')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
+                sgkFilter === 'all' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Tümü ({payrolls.length})
+            </button>
+            <button
+              onClick={() => setSgkFilter('sgk_li')}
+              className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                sgkFilter === 'sgk_li' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Shield className="w-3 h-3 text-emerald-600" />
+              SGK'lı ({sgkLiRecords.length})
+            </button>
+            <button
+              onClick={() => setSgkFilter('sgk_siz')}
+              className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                sgkFilter === 'sgk_siz' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <DollarSign className="w-3 h-3 text-amber-600" />
+              Yevmiyeli ({sgkSizRecords.length})
+            </button>
+          </div>
+
+          {/* Excel Export Button with Dropdown */}
+          <div className="relative" ref={exportMenuRef}>
+            <div className="flex items-center">
+              <button
+                onClick={() => handleExport('xls', 'filtered')}
+                disabled={payrolls.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-l-lg font-bold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                title={`${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} bordro icmalini Excel (.xls) olarak indir`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Bordroyu Excel'e Aktar</span>
+              </button>
+              <button
+                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                disabled={payrolls.length === 0}
+                className="px-1.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-r-lg border-l border-emerald-600 transition-colors cursor-pointer disabled:opacity-50"
+                title="Dışa aktarma seçenekleri"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Dropdown Options */}
+            {isExportMenuOpen && (
+              <div className="absolute right-0 mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95">
+                <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                  Bordro Dışa Aktarma Seçenekleri
+                </div>
+
+                <button
+                  onClick={() => handleExport('xls', 'filtered')}
+                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 text-slate-800 transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-slate-900">Excel İcmal Tablosu (.xls)</div>
+                    <div className="text-[10px] text-slate-500">Biçimlendirilmiş, tüm yasal kesintiler ve toplamlar</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleExport('csv', 'filtered')}
+                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 text-slate-800 transition-colors cursor-pointer"
+                >
+                  <FileDown className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-slate-900">CSV Tablosu (.csv)</div>
+                    <div className="text-[10px] text-slate-500">Standart UTF-8 BOM virgüllü veri seti</div>
+                  </div>
+                </button>
+
+                {sgkFilter !== 'all' && (
+                  <button
+                    onClick={() => handleExport('xls', 'all')}
+                    className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer border-t border-slate-100 font-semibold"
+                  >
+                    <Shield className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span>Tüm Personelleri Dahil Et ({payrolls.length})</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Recalculate Button */}
           <button
             onClick={handleRecalculate}
             disabled={calculating}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm shadow-indigo-200 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs shadow-indigo-200 transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <Sparkles className="w-4 h-4" />
-            {calculating ? 'Hesaplanıyor...' : 'Bordroları Yeniden Hesapla'}
+            <Sparkles className="w-3.5 h-3.5" />
+            {calculating ? 'Hesaplanıyor...' : 'Yeniden Hesapla'}
           </button>
         </div>
       </div>
@@ -267,11 +414,37 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
 
       {/* Detailed Payroll Records Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+        <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-indigo-600" />
-            Personel Bordro & Hakediş Listesi ({MONTH_NAMES[selectedMonth - 1]} {selectedYear})
-          </h3>
+            <h3 className="font-bold text-sm text-slate-800">
+              Personel Bordro & Hakediş Listesi ({MONTH_NAMES[selectedMonth - 1]} {selectedYear})
+            </h3>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
+              {filteredPayrolls.length} Kayıt
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleExport('xls', 'filtered')}
+              disabled={filteredPayrolls.length === 0}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors disabled:opacity-40 cursor-pointer"
+              title="Listeyi Excel olarak indir"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Excel (.xls)</span>
+            </button>
+            <button
+              onClick={() => handleExport('csv', 'filtered')}
+              disabled={filteredPayrolls.length === 0}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors disabled:opacity-40 cursor-pointer"
+              title="Listeyi CSV olarak indir"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span>CSV</span>
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -292,14 +465,16 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {payrolls.length === 0 ? (
+              {filteredPayrolls.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="p-8 text-center text-slate-400">
-                    Henüz bordro hesabı yapılmadı. Yukarıdaki "Bordroları Yeniden Hesapla" butonuna tıklayınız.
+                    {payrolls.length === 0 
+                      ? 'Henüz bordro hesabı yapılmadı. Yukarıdaki "Bordroları Yeniden Hesapla" butonuna tıklayınız.'
+                      : 'Seçili filtreye uygun bordro kaydı bulunamadı.'}
                   </td>
                 </tr>
               ) : (
-                payrolls.map((rec) => {
+                filteredPayrolls.map((rec) => {
                   const emp = employees.find(e => e.id === rec.employeeId);
                   const isSgk = rec.sgkStatus === 'sgk_li';
 

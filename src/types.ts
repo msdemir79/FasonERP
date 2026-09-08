@@ -709,3 +709,13 @@ export interface PayrollRecord {
   createdAt: Date;
 }
 
+export interface AttendancePeriodLock {
+  id?: number;
+  month: number;                     // 1-12
+  year: number;                      // e.g. 2026
+  isLocked: boolean;
+  lockedAt?: Date;
+  lockedBy?: string;
+  notes?: string;
+}
+

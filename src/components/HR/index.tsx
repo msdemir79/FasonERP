@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Users, 
   Calendar, 
@@ -11,7 +12,9 @@ import {
   Briefcase,
   TrendingUp,
   Building2,
-  Sparkles
+  Sparkles,
+  BarChart3,
+  ExternalLink
 } from 'lucide-react';
 import type { Employee } from '../../types';
 import { hrService } from '../../services/hrService';
@@ -20,9 +23,10 @@ import AttendanceTab from './AttendanceTab';
 import LeaveTab from './LeaveTab';
 import PayrollTab from './PayrollTab';
 import AdvanceTab from './AdvanceTab';
+import HRReport from '../Reports/HRReport';
 
 export default function HRManagement() {
-  const [activeTab, setActiveTab] = useState<'employees' | 'attendance' | 'leaves' | 'payroll' | 'advances'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'attendance' | 'leaves' | 'payroll' | 'advances' | 'reports'>('employees');
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -149,6 +153,28 @@ export default function HRManagement() {
           <CreditCard className="w-4 h-4" />
           Avans Takibi
         </button>
+
+        <button
+          onClick={() => setActiveTab('reports')}
+          className={`py-3.5 px-5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
+            activeTab === 'reports'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4 text-indigo-600" />
+          İK & Bordro Raporu
+        </button>
+
+        <div className="ml-auto flex items-center pr-2">
+          <Link
+            to="/reports?tab=hr"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+          >
+            <span>Raporlar Merkezi</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
 
       {/* Tab Panels */}
@@ -171,6 +197,10 @@ export default function HRManagement() {
 
         {activeTab === 'advances' && (
           <AdvanceTab employees={employees} onAdvancesUpdated={loadEmployees} />
+        )}
+
+        {activeTab === 'reports' && (
+          <HRReport />
         )}
       </div>
     </div>

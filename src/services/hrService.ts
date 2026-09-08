@@ -7,7 +7,8 @@ import type {
   LeaveType, 
   PayrollRecord, 
   AdvanceRequest,
-  SgkStatus
+  SgkStatus,
+  AttendancePeriodLock
 } from '../types';
 import { accountingService } from './accountingService';
 
@@ -59,7 +60,59 @@ export const hrService = {
     await db.employees.delete(id);
   },
 
-  // ==================== PUANTAJ VE DEVAM TAKİBİ ====================
+  // ==================== PUANTAJ VE DÖNEM KİLİTLEME ====================
+  async getPeriodLock(month: number, year: number): Promise<AttendancePeriodLock | undefined> {
+    const numMonth = Number(month);
+    const numYear = Number(year);
+    return await db.periodLocks
+      .filter(l => Number(l.month) === numMonth && Number(l.year) === numYear)
+      .first();
+  },
+
+  async isPeriodLocked(month: number, year: number): Promise<boolean> {
+    const lock = await this.getPeriodLock(month, year);
+    return !!lock?.isLocked;
+  },
+
+  async setPeriodLock(
+    month: number, 
+    year: number, 
+    isLocked: boolean, 
+    lockedBy = 'İK Yöneticisi', 
+    notes?: string
+  ): Promise<AttendancePeriodLock> {
+    const numMonth = Number(month);
+    const numYear = Number(year);
+    const existing = await this.getPeriodLock(numMonth, numYear);
+
+    if (existing && existing.id) {
+      await db.periodLocks.update(existing.id, {
+        isLocked,
+        lockedAt: isLocked ? new Date() : undefined,
+        lockedBy: isLocked ? lockedBy : undefined,
+        notes: notes ?? existing.notes
+      });
+      return {
+        ...existing,
+        isLocked,
+        lockedAt: isLocked ? new Date() : undefined,
+        lockedBy: isLocked ? lockedBy : undefined,
+        notes: notes ?? existing.notes
+      };
+    } else {
+      const newLock: AttendancePeriodLock = {
+        month: numMonth,
+        year: numYear,
+        isLocked,
+        lockedAt: isLocked ? new Date() : undefined,
+        lockedBy: isLocked ? lockedBy : undefined,
+        notes
+      };
+      const id = await db.periodLocks.add(newLock);
+      return { ...newLock, id: id as number };
+    }
+  },
+
   async getAttendanceForMonth(month: number, year: number): Promise<AttendanceRecord[]> {
     const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
     return await db.attendanceRecords
@@ -78,6 +131,10 @@ export const hrService = {
     const [yearStr, monthStr] = record.date.split('-');
     const year = parseInt(yearStr, 10);
     const month = parseInt(monthStr, 10);
+
+    if (await this.isPeriodLocked(month, year)) {
+      throw new Error(`${month}/${year} dönemi kilitlenmiştir. Puantaj kaydı üzerinde değişiklik yapılamaz.`);
+    }
 
     const existing = await db.attendanceRecords
       .where('[employeeId+date]')
@@ -109,6 +166,10 @@ export const hrService = {
 
   // Bir ay için tüm aktif personelin puantajını otomatik oluştur / doldur (Hızlı toplu işlem)
   async autoPopulateMonthAttendance(month: number, year: number, overwriteExisting = true): Promise<void> {
+    if (await this.isPeriodLocked(month, year)) {
+      throw new Error(`${month}/${year} dönemi kilitlenmiştir. Otomatik puantaj doldurma işlemi yapılamaz.`);
+    }
+
     const employees = await db.employees.where('status').equals('active').toArray();
     const daysInMonth = new Date(year, month, 0).getDate();
     
@@ -198,6 +259,10 @@ export const hrService = {
     targetStatus: AttendanceStatus,
     respectSunday = true
   ): Promise<void> {
+    if (await this.isPeriodLocked(month, year)) {
+      throw new Error(`${month}/${year} dönemi kilitlenmiştir. Toplu puantaj güncellemesi yapılamaz.`);
+    }
+
     const daysInMonth = new Date(year, month, 0).getDate();
 
     // Mevcut kayıtları çek
@@ -257,6 +322,10 @@ export const hrService = {
 
   // Ay için puantaj kayıtlarını temizle
   async bulkClearMonthAttendance(month: number, year: number, employeeIds?: number[]): Promise<void> {
+    if (await this.isPeriodLocked(month, year)) {
+      throw new Error(`${month}/${year} dönemi kilitlenmiştir. Puantaj kayıtları silinemez.`);
+    }
+
     const records = await db.attendanceRecords
       .where('year')
       .equals(year)
@@ -310,7 +379,7 @@ export const hrService = {
       }
     }
 
-    // Puantaj tablosuna otomatik yansıt
+    // Puantaj tablosuna otomatik yansıt (Kilitli olmayan dönemler için)
     const start = new Date(leave.startDate);
     const end = new Date(leave.endDate);
 
@@ -318,6 +387,12 @@ export const hrService = {
       const dateStr = d.toISOString().split('T')[0];
       const month = d.getMonth() + 1;
       const year = d.getFullYear();
+
+      // Kilitli dönem kontrolü
+      if (await this.isPeriodLocked(month, year)) {
+        continue;
+      }
+
       const status: AttendanceStatus = leave.leaveType === 'unpaid' ? 'unpaid_leave' : 
                                       leave.leaveType === 'sick' ? 'sick_leave' : 'paid_leave';
 

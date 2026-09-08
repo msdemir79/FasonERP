@@ -22,9 +22,10 @@ import type {
   CollectionReceipt,
   Employee,
   AttendanceRecord,
-  LeaveRequest,
-  PayrollRecord,
-  AdvanceRequest
+  LeaveRequest, 
+  PayrollRecord, 
+  AdvanceRequest,
+  AttendancePeriodLock
 } from './types';
 import { INITIAL_TDHP_ACCOUNTS, INITIAL_CASH_BOXES, INITIAL_BANK_ACCOUNTS } from './data/tdhpAccounts';
 
@@ -54,6 +55,7 @@ export class ProERPDatabase extends Dexie {
   leaveRequests!: Table<LeaveRequest>;
   payrollRecords!: Table<PayrollRecord>;
   advanceRequests!: Table<AdvanceRequest>;
+  periodLocks!: Table<AttendancePeriodLock>;
 
   constructor() {
     super('ProERPDatabase');
@@ -83,6 +85,10 @@ export class ProERPDatabase extends Dexie {
       leaveRequests: '++id, employeeId, leaveType, startDate, endDate, status, createdAt',
       payrollRecords: '++id, employeeId, month, year, sgkStatus, isAccounted, paymentStatus',
       advanceRequests: '++id, employeeId, date, month, year, status, isDeducted'
+    });
+
+    this.version(14).stores({
+      periodLocks: '++id, [month+year], month, year, isLocked'
     });
   }
 }

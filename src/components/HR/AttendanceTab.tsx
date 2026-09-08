@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, 
   ChevronLeft, 
@@ -19,10 +19,18 @@ import {
   RotateCcw,
   X,
   UserCheck,
-  Users
+  Users,
+  FileSpreadsheet,
+  FileDown,
+  Download,
+  ChevronDown,
+  Lock,
+  Unlock,
+  ShieldCheck
 } from 'lucide-react';
-import type { Employee, AttendanceRecord, AttendanceStatus, SgkStatus } from '../../types';
+import type { Employee, AttendanceRecord, AttendanceStatus, SgkStatus, AttendancePeriodLock } from '../../types';
 import { hrService } from '../../services/hrService';
+import { exportAttendanceToExcel, exportAttendanceToCsv } from '../../lib/exportService';
 
 interface AttendanceTabProps {
   employees: Employee[];
@@ -50,6 +58,11 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); // 1-12
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [periodLock, setPeriodLock] = useState<AttendancePeriodLock | null>(null);
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+  const [lockNotes, setLockNotes] = useState('');
+  const [lockOperatorName, setLockOperatorName] = useState('İK Yöneticisi');
+  const [isLocking, setIsLocking] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   
@@ -78,13 +91,73 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
   const [editStatus, setEditStatus] = useState<AttendanceStatus>('present');
   const [editOvertime, setEditOvertime] = useState<number>(0);
   const [isPopulating, setIsPopulating] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
-  // Load attendance records
+  // Is current period locked
+  const isLocked = Boolean(periodLock?.isLocked);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setIsExportMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Handle Export to Excel or CSV
+  const handleExport = (format: 'xls' | 'csv' = 'xls', scope: 'filtered' | 'selected' | 'all' = 'filtered') => {
+    let targetEmployees: Employee[] = [];
+    let scopeTitle = '';
+
+    if (scope === 'selected' && selectedEmpIds.length > 0) {
+      targetEmployees = employees.filter(e => selectedEmpIds.includes(e.id!));
+      scopeTitle = `${targetEmployees.length} Seçili Personel`;
+    } else if (scope === 'all') {
+      targetEmployees = employees;
+      scopeTitle = `Tüm Personel (${employees.length} Kişi)`;
+    } else {
+      targetEmployees = filteredEmployees;
+      scopeTitle = sgkFilter !== 'all' 
+        ? (sgkFilter === 'sgk_li' ? 'SGK\'lı Personeller' : 'Yevmiyeli Personeller') 
+        : `Tüm Personel (${employees.length} Kişi)`;
+    }
+
+    if (targetEmployees.length === 0) {
+      showToast('Dışa aktarılacak personel kaydı bulunamadı.');
+      return;
+    }
+
+    if (format === 'xls') {
+      exportAttendanceToExcel(selectedMonth, selectedYear, targetEmployees, records, { filterTitle: scopeTitle });
+      showToast(`${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} puantaj çizelgesi Excel (.xls) formatında dışa aktarıldı (${targetEmployees.length} personel).`);
+    } else {
+      exportAttendanceToCsv(selectedMonth, selectedYear, targetEmployees, records);
+      showToast(`${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} puantaj verileri CSV formatında dışa aktarıldı (${targetEmployees.length} personel).`);
+    }
+    setIsExportMenuOpen(false);
+  };
+
+  // Load attendance records and lock status
   const loadAttendance = async () => {
     try {
       setLoading(true);
-      const data = await hrService.getAttendanceForMonth(selectedMonth, selectedYear);
-      setRecords(data);
+      const [attendanceData, lockData] = await Promise.all([
+        hrService.getAttendanceForMonth(selectedMonth, selectedYear),
+        hrService.getPeriodLock(selectedMonth, selectedYear)
+      ]);
+      setRecords(attendanceData);
+      setPeriodLock(lockData || null);
+      if (lockData?.notes) {
+        setLockNotes(lockData.notes);
+      } else {
+        setLockNotes('');
+      }
     } catch (err) {
       console.error('Puantaj yükleme hatası:', err);
     } finally {
@@ -95,6 +168,33 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
   useEffect(() => {
     loadAttendance();
   }, [selectedMonth, selectedYear]);
+
+  // Handle Lock / Unlock Period
+  const handleToggleLock = async (targetLocked: boolean) => {
+    try {
+      setIsLocking(true);
+      const updated = await hrService.setPeriodLock(
+        selectedMonth,
+        selectedYear,
+        targetLocked,
+        lockOperatorName || 'İK Yöneticisi',
+        lockNotes
+      );
+      setPeriodLock(updated);
+      setIsLockModalOpen(false);
+      if (targetLocked) {
+        showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlendi. Puantaj kayıtları üzerinde değişiklik yapılamaz.`);
+      } else {
+        showToast(`🔓 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönem kilidi açıldı. Puantaj düzenlemelerine izin verildi.`);
+      }
+      onAttendanceChanged?.();
+    } catch (err: any) {
+      console.error('Dönem kilitleme hatası:', err);
+      showToast(err?.message || 'İşlem sırasında bir hata oluştu.');
+    } finally {
+      setIsLocking(false);
+    }
+  };
 
   // Flash status message
   const showToast = (msg: string) => {
@@ -136,6 +236,10 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
 
   // 1-Click: Tüm aktif personelin puantajını otomatik doldur (Pazar hafta tatili, diğer günler geldi)
   const handleAutoPopulate = async () => {
+    if (isLocked) {
+      showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlidir. Otomatik doldurma yapmak için önce dönem kilidini açınız.`);
+      return;
+    }
     try {
       setIsPopulating(true);
       await hrService.autoPopulateMonthAttendance(selectedMonth, selectedYear, true);
@@ -144,9 +248,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       await loadAttendance();
       onAttendanceChanged?.();
       showToast(`${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} için tüm çalışanların puantajı ve bordroları başarıyla güncellendi.`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Puantaj doldurma hatası:', err);
-      showToast('Puantaj doldurulurken bir hata oluştu.');
+      showToast(err?.message || 'Puantaj doldurulurken bir hata oluştu.');
     } finally {
       setIsPopulating(false);
     }
@@ -154,6 +258,10 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
 
   // Tek bir personeli anında tüm ay "Geldi (N)" yap (Pazarlar Hafta Tatili)
   const handleMakeSingleEmployeePresent = async (empId: number, empName: string) => {
+    if (isLocked) {
+      showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlidir. Değişiklik yapmak için önce dönem kilidini açınız.`);
+      return;
+    }
     try {
       setIsPopulating(true);
       await hrService.bulkSetAttendanceForEmployees([empId], selectedMonth, selectedYear, 'present', true);
@@ -162,8 +270,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       await loadAttendance();
       onAttendanceChanged?.();
       showToast(`${empName} personeli için tüm ay 'Geldi (N)' olarak güncellendi.`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Puantaj güncelleme hatası:', err);
+      showToast(err?.message || 'Puantaj güncellenirken hata oluştu.');
     } finally {
       setIsPopulating(false);
     }
@@ -171,6 +280,10 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
 
   // Toplu popup modalı içinden işlem çalıştırma
   const handleExecuteBulkAction = async () => {
+    if (isLocked) {
+      showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlidir. Değişiklik yapmak için önce dönem kilidini açınız.`);
+      return;
+    }
     try {
       setIsPopulating(true);
       let targetIds: number[] = [];
@@ -203,8 +316,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       onAttendanceChanged?.();
       setIsBulkModalOpen(false);
       showToast(`${targetIds.length} personel için puantaj ve bordro toplu olarak güncellendi.`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Toplu puantaj işlemi hatası:', err);
+      showToast(err?.message || 'Toplu işlem hatası.');
     } finally {
       setIsPopulating(false);
     }
@@ -212,6 +326,10 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
 
   // Seçili personelleri doğrudan tüm ay "Geldi" yap
   const handleSetSelectedPresent = async () => {
+    if (isLocked) {
+      showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlidir. Değişiklik yapmak için önce dönem kilidini açınız.`);
+      return;
+    }
     if (selectedEmpIds.length === 0) return;
     try {
       setIsPopulating(true);
@@ -227,8 +345,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       await loadAttendance();
       onAttendanceChanged?.();
       showToast(`${selectedEmpIds.length} seçili personelin tamamı 'Geldi' olarak işaretlendi.`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Toplu güncelleme hatası:', err);
+      showToast(err?.message || 'Güncelleme hatası.');
     } finally {
       setIsPopulating(false);
     }
@@ -236,6 +355,10 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
 
   // Ayın puantajını temizle
   const handleClearAttendance = async () => {
+    if (isLocked) {
+      showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlidir. Puantajı temizlemek için önce dönem kilidini açınız.`);
+      return;
+    }
     try {
       setIsPopulating(true);
       const targetIds = selectedEmpIds.length > 0 ? selectedEmpIds : undefined;
@@ -246,8 +369,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       onAttendanceChanged?.();
       setIsBulkModalOpen(false);
       showToast(targetIds ? `${targetIds.length} personelin puantajı temizlendi.` : 'Tüm personellerin puantajı temizlendi.');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Puantaj temizleme hatası:', err);
+      showToast(err?.message || 'Puantaj temizlenirken hata oluştu.');
     } finally {
       setIsPopulating(false);
     }
@@ -270,6 +394,11 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
 
   // Open quick cell modal
   const handleCellClick = (emp: Employee, day: number) => {
+    if (isLocked) {
+      showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlidir. Puantaj hücreleri salt okunur moddadır. Değişiklik için dönem kilidini açınız.`);
+      return;
+    }
+
     const dateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const rec = records.find(r => r.employeeId === emp.id && r.date === dateStr);
     
@@ -291,6 +420,11 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
   // Save single attendance cell
   const handleSaveCell = async () => {
     if (!activeCell) return;
+    if (isLocked) {
+      showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlidir.`);
+      setActiveCell(null);
+      return;
+    }
     try {
       await hrService.saveAttendanceRecord({
         employeeId: activeCell.employeeId,
@@ -304,8 +438,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       await loadAttendance();
       onAttendanceChanged?.();
       setActiveCell(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Hücre kaydetme hatası:', err);
+      showToast(err?.message || 'Kayıt sırasında hata oluştu.');
     }
   };
 
@@ -327,28 +462,52 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       {/* Top Header & Month Controls */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         
-        {/* Month Picker */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={prevMonth}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
-            title="Önceki Ay"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-            <Calendar className="w-4 h-4 text-indigo-600" />
-            <span className="text-sm font-black text-slate-800 tracking-wide">
-              {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
-            </span>
+        {/* Month Picker & Lock Status Indicator */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={prevMonth}
+              className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+              title="Önceki Ay"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
+              <Calendar className="w-4 h-4 text-indigo-600" />
+              <span className="text-sm font-black text-slate-800 tracking-wide">
+                {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+              </span>
+            </div>
+            <button
+              onClick={nextMonth}
+              className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+              title="Sonraki Ay"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={nextMonth}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
-            title="Sonraki Ay"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+
+          {/* Period Lock Badge & Button */}
+          {isLocked ? (
+            <button
+              onClick={() => setIsLockModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+              title="Dönem kilitli. Kilidi açmak veya detayları görmek için tıklayınız."
+            >
+              <Lock className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+              <span>Dönem Kilitli</span>
+              <span className="text-[10px] text-rose-600 underline ml-0.5 font-normal">Aç</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsLockModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg font-semibold text-xs transition-colors cursor-pointer"
+              title="Puantaj tamamlandığında dönemi kilitleyerek yanlışlıkla değiştirilmesini önleyin"
+            >
+              <Lock className="w-3.5 h-3.5 text-slate-500" />
+              <span>Dönemi Kilitle</span>
+            </button>
+          )}
         </div>
 
         {/* Filter & Action Buttons */}
@@ -386,17 +545,96 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
           {/* Quick Auto Populate 1-Click */}
           <button
             onClick={handleAutoPopulate}
-            disabled={isPopulating}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-xs transition-colors disabled:opacity-50"
-            title="Tüm personelin puantajını doldurur (Pazarlar hafta tatili, diğer günler normal çalışma)"
+            disabled={isPopulating || isLocked}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-xs transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+            title={isLocked ? "Dönem kilitli olduğu için otomatik doldurma devre dışıdır" : "Tüm personelin puantajını doldurur (Pazarlar hafta tatili, diğer günler normal çalışma)"}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            {isPopulating ? 'İşleniyor...' : 'Puantajları Otomatik Doldur'}
+            {isPopulating ? 'İşleniyor...' : 'Otomatik Doldur'}
           </button>
+
+          {/* Excel'e Aktar (Export) Button with Dropdown Menu */}
+          <div className="relative" ref={exportMenuRef}>
+            <div className="flex items-center">
+              <button
+                onClick={() => handleExport('xls', 'filtered')}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-l-lg font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                title={`${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} puantajını biçimlendirilmiş Excel (.xls) olarak indir`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Excel'e Aktar</span>
+              </button>
+              <button
+                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                className="px-1.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-r-lg border-l border-emerald-600 transition-colors cursor-pointer"
+                title="Dışa aktarma seçenekleri"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Dropdown Options */}
+            {isExportMenuOpen && (
+              <div className="absolute right-0 mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95">
+                <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                  Puantaj Dışa Aktarma Seçenekleri
+                </div>
+
+                <button
+                  onClick={() => handleExport('xls', 'filtered')}
+                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 text-slate-800 transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-slate-900">Excel Formatı (.xls)</div>
+                    <div className="text-[10px] text-slate-500">Renkli 1-31 puantaj matrisi, lejant ve genel toplamlar</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleExport('csv', 'filtered')}
+                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 text-slate-800 transition-colors cursor-pointer"
+                >
+                  <FileDown className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-slate-900">CSV Tablosu (.csv)</div>
+                    <div className="text-[10px] text-slate-500">Standart UTF-8 BOM virgüllü veri seti</div>
+                  </div>
+                </button>
+
+                {selectedEmpIds.length > 0 && (
+                  <>
+                    <div className="my-1 border-t border-slate-100"></div>
+                    <button
+                      onClick={() => handleExport('xls', 'selected')}
+                      className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-indigo-50 text-indigo-900 font-bold transition-colors cursor-pointer"
+                    >
+                      <CheckSquare className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span>Yalnızca Seçili {selectedEmpIds.length} Personeli Aktar</span>
+                    </button>
+                  </>
+                )}
+
+                {employees.length !== filteredEmployees.length && (
+                  <button
+                    onClick={() => handleExport('xls', 'all')}
+                    className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer border-t border-slate-100"
+                  >
+                    <Users className="w-4 h-4 text-slate-500 shrink-0" />
+                    <span>Tüm Aktif Personelleri Aktar ({employees.length})</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Toplu İşlemler Popup Menu Trigger */}
           <button
             onClick={() => {
+              if (isLocked) {
+                showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlidir. Toplu işlem yapmak için önce kilidi açınız.`);
+                return;
+              }
               if (selectedEmpIds.length > 0) {
                 setBulkScope('selected_multiple');
               } else {
@@ -404,45 +642,95 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
               }
               setIsBulkModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs transition-colors"
+            disabled={isLocked}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isLocked ? "Dönem kilitli" : "Toplu puantaj işlemleri"}
           >
             <Layers className="w-3.5 h-3.5" />
-            Toplu İşlem Menüsü
+            Toplu İşlem
           </button>
         </div>
       </div>
 
+      {/* Period Lock Warning Banner if Locked */}
+      {isLocked && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-rose-50 via-amber-50 to-rose-50 border border-rose-200/90 rounded-xl text-xs text-rose-950 shadow-2xs animate-in fade-in">
+          <div className="flex items-start gap-2.5">
+            <div className="p-2 bg-rose-100/90 text-rose-800 rounded-lg shrink-0 mt-0.5">
+              <Lock className="w-4 h-4 text-rose-700" />
+            </div>
+            <div>
+              <div className="font-black text-rose-900 flex items-center gap-2 flex-wrap">
+                <span>{MONTH_NAMES[selectedMonth - 1]} {selectedYear} Puantaj Dönemi Kilitlidir</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-200 text-rose-900">
+                  Salt Okunur (Kesinleşti)
+                </span>
+              </div>
+              <p className="text-rose-800/90 mt-0.5 text-xs">
+                Bu dönemin puantaj verileri kesinleştirilmiştir. Yanlışlıkla değişiklik yapılmasını önlemek için hücre düzenleme ve otomatik işlemler kilitlenmiştir.
+                {periodLock?.lockedBy && ` • Kitleyen: ${periodLock.lockedBy}`}
+                {periodLock?.lockedAt && ` • Tarih: ${new Date(periodLock.lockedAt).toLocaleString('tr-TR')}`}
+                {periodLock?.notes && ` • Not: "${periodLock.notes}"`}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsLockModalOpen(true)}
+            className="shrink-0 px-3.5 py-1.5 bg-white hover:bg-rose-100 text-rose-900 font-bold rounded-lg border border-rose-300 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5 text-xs"
+          >
+            <Unlock className="w-3.5 h-3.5 text-rose-700" />
+            Dönem Kilidini Aç
+          </button>
+        </div>
+      )}
+
       {/* Dynamic Multi-Selection Bar */}
       {selectedEmpIds.length > 0 && (
-        <div className="flex items-center justify-between px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-xs animate-in fade-in">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-xs animate-in fade-in">
           <div className="flex items-center gap-2 text-indigo-900 font-bold">
             <CheckSquare className="w-4 h-4 text-indigo-600" />
             <span>{selectedEmpIds.length} personel seçildi</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => handleExport('xls', 'selected')}
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold transition-colors shadow-2xs cursor-pointer"
+              title="Seçili personellerin puantajını Excel olarak indir"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              Seçilenleri Excel'e Aktar ({selectedEmpIds.length})
+            </button>
+
             <button
               onClick={handleSetSelectedPresent}
-              disabled={isPopulating}
-              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors shadow-2xs"
+              disabled={isPopulating || isLocked}
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title={isLocked ? "Dönem kilitli" : "Seçili personelleri 'Geldi' yap"}
             >
               <Zap className="w-3.5 h-3.5" />
-              Seçilenleri Ay Boyunca 'Geldi' Yap
+              Tüm Ay 'Geldi' Yap
             </button>
 
             <button
               onClick={() => {
+                if (isLocked) {
+                  showToast(`🔒 ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} dönemi kilitlidir.`);
+                  return;
+                }
                 setBulkScope('selected_multiple');
                 setIsBulkModalOpen(true);
               }}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-colors shadow-2xs"
+              disabled={isLocked}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-colors shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title={isLocked ? "Dönem kilitli" : "Toplu durum ata"}
             >
               Diğer Durumu Ata...
             </button>
 
             <button
               onClick={() => setSelectedEmpIds([])}
-              className="px-2.5 py-1.5 text-slate-600 hover:bg-indigo-100 rounded-lg font-semibold transition-colors"
+              className="px-2.5 py-1.5 text-slate-600 hover:bg-indigo-100 rounded-lg font-semibold transition-colors cursor-pointer"
             >
               Seçimi Kaldır
             </button>
@@ -569,9 +857,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                         {/* Quick 1-Click: Bu personeli tüm ay 'Geldi' yap */}
                         <button
                           onClick={() => handleMakeSingleEmployeePresent(emp.id!, emp.name)}
-                          disabled={isPopulating}
-                          className="shrink-0 p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
-                          title="Bu personeli ay boyunca 'Geldi (N)' yap (Pazarlar hafta tatili)"
+                          disabled={isPopulating || isLocked}
+                          className="shrink-0 p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                          title={isLocked ? "Dönem kilitli" : "Bu personeli ay boyunca 'Geldi (N)' yap (Pazarlar hafta tatili)"}
                         >
                           <Zap className="w-3.5 h-3.5" />
                         </button>
@@ -617,13 +905,17 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                         <td
                           key={day}
                           onClick={() => handleCellClick(emp, day)}
-                          className={`p-1 text-center border-l border-slate-150 cursor-pointer transition-all hover:ring-2 hover:ring-indigo-400 hover:z-20 ${
+                          className={`p-1 text-center border-l border-slate-150 transition-all ${
+                            isLocked 
+                              ? 'cursor-not-allowed opacity-95' 
+                              : 'cursor-pointer hover:ring-2 hover:ring-indigo-400 hover:z-20'
+                          } ${
                             isSunday && status === 'weekly_rest' ? 'bg-slate-50' : ''
                           }`}
-                          title={`${emp.name} - ${day} ${MONTH_NAMES[selectedMonth - 1]}: ${cfg.label} ${overtime > 0 ? `(${overtime} sa mesai)` : ''}`}
+                          title={`${emp.name} - ${day} ${MONTH_NAMES[selectedMonth - 1]}: ${cfg.label} ${overtime > 0 ? `(${overtime} sa mesai)` : ''}${isLocked ? ' [Dönem Kilitli]' : ''}`}
                         >
                           <div className="flex flex-col items-center justify-center">
-                            <span className={`w-6 h-6 rounded flex items-center justify-center font-bold text-[11px] transition-transform active:scale-90 ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
+                            <span className={`w-6 h-6 rounded flex items-center justify-center font-bold text-[11px] transition-transform ${isLocked ? '' : 'active:scale-90'} ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
                               {cfg.code}
                             </span>
                             {overtime > 0 && (
@@ -692,7 +984,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
               </div>
               <button 
                 onClick={() => setIsBulkModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -716,7 +1008,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                   setIsBulkModalOpen(false);
                 }}
                 disabled={isPopulating}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center justify-center gap-2"
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4" />
                 Tüm Personelleri Otomatik 'Geldi' Yap
@@ -733,7 +1025,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                 <button
                   type="button"
                   onClick={() => setBulkScope('all')}
-                  className={`p-2.5 rounded-lg border text-center transition-all ${
+                  className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                     bulkScope === 'all'
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500/20'
                       : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -746,7 +1038,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                 <button
                   type="button"
                   onClick={() => setBulkScope('selected_single')}
-                  className={`p-2.5 rounded-lg border text-center transition-all ${
+                  className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                     bulkScope === 'selected_single'
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500/20'
                       : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -759,7 +1051,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                 <button
                   type="button"
                   onClick={() => setBulkScope('selected_multiple')}
-                  className={`p-2.5 rounded-lg border text-center transition-all ${
+                  className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                     bulkScope === 'selected_multiple'
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500/20'
                       : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -803,7 +1095,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                     key={key}
                     type="button"
                     onClick={() => setBulkTargetStatus(key as AttendanceStatus)}
-                    className={`px-3 py-2 rounded-lg border text-left flex items-center gap-2 transition-all text-xs ${
+                    className={`px-3 py-2 rounded-lg border text-left flex items-center gap-2 transition-all text-xs cursor-pointer ${
                       bulkTargetStatus === key
                         ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-2 ring-indigo-500/20 font-bold'
                         : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -823,7 +1115,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                   id="bulkRespectSunday"
                   checked={bulkRespectSunday}
                   onChange={(e) => setBulkRespectSunday(e.target.checked)}
-                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                  className="rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 />
                 <label htmlFor="bulkRespectSunday" className="text-xs text-slate-600 select-none cursor-pointer">
                   Pazar günleri <b>Hafta Tatili (H)</b> olarak korunsun
@@ -836,7 +1128,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
               <button
                 type="button"
                 onClick={handleClearAttendance}
-                className="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5"
+                className="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
                 title="Puantaj kayıtlarını siler"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -847,7 +1139,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                 <button
                   type="button"
                   onClick={() => setIsBulkModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
                 >
                   Vazgeç
                 </button>
@@ -855,12 +1147,146 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                   type="button"
                   onClick={handleExecuteBulkAction}
                   disabled={isPopulating}
-                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm shadow-indigo-200 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm shadow-indigo-200 transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   {isPopulating ? 'Uygulanıyor...' : 'İşlemi Uygula'}
                 </button>
               </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* DÖNEM KİLİTLEME / KİLİT AÇMA ONAY MODALI                     */}
+      {/* ============================================================ */}
+      {isLockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 p-6 space-y-5 animate-in fade-in zoom-in-95">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2.5 rounded-xl ${isLocked ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                  {isLocked ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">
+                    {isLocked ? 'Dönem Kilidini Aç' : 'Puantaj Dönemini Kilitle'}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {MONTH_NAMES[selectedMonth - 1]} {selectedYear} Dönemi
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsLockModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body Info */}
+            <div className="space-y-4">
+              {isLocked ? (
+                <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200/80 space-y-2 text-xs text-amber-900">
+                  <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                    <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Dönem kilidi açılmak üzere</span>
+                  </div>
+                  <p className="leading-relaxed">
+                    Kilidi açtığınızda, <b>{MONTH_NAMES[selectedMonth - 1]} {selectedYear}</b> dönemine ait puantaj kayıtları tekrar düzenlemeye, otomatik doldurmaya ve silmeye açılacaktır.
+                  </p>
+                  {periodLock && (
+                    <div className="mt-2 pt-2 border-t border-amber-200/60 text-[11px] text-amber-800 space-y-0.5">
+                      <div><b>Kitleyen:</b> {periodLock.lockedBy || 'Yetkili'}</div>
+                      <div><b>Kilitleme Tarihi:</b> {new Date(periodLock.lockedAt).toLocaleString('tr-TR')}</div>
+                      {periodLock.notes && <div><b>Mevcut Not:</b> {periodLock.notes}</div>}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs text-slate-700">
+                  <div className="font-bold flex items-center gap-1.5 text-slate-900">
+                    <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span>Kesinleşmiş Puantajı Koruma</span>
+                  </div>
+                  <p className="leading-relaxed">
+                    <b>{MONTH_NAMES[selectedMonth - 1]} {selectedYear}</b> puantajını tamamlayıp kilitlediğinizde:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-slate-600 pl-1">
+                    <li>Puantaj hücreleri yanlışlıkla değiştirilmeye karşı salt okunur olur.</li>
+                    <li>Otomatik doldurma ve toplu işlemler kilitlenir.</li>
+                    <li>İstediğiniz zaman Excel ve CSV çıktıları almaya devam edebilirsiniz.</li>
+                  </ul>
+                </div>
+              )}
+
+              {/* Form Inputs */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    İşlemi Yapan Yetkili
+                  </label>
+                  <input
+                    type="text"
+                    value={lockOperatorName}
+                    onChange={(e) => setLockOperatorName(e.target.value)}
+                    placeholder="Örn: İK Yöneticisi / Ad Soyad"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {isLocked ? 'Kilit Açma Gerekçesi / Notu (Opsiyonel)' : 'Kilitleme Notu / Açıklama (Opsiyonel)'}
+                  </label>
+                  <textarea
+                    value={lockNotes}
+                    onChange={(e) => setLockNotes(e.target.value)}
+                    placeholder={isLocked ? 'Örn: Düzeltme talebi üzerine kilit açıldı' : 'Örn: Puantaj kontrolleri tamamlandı, bordroya aktarıldı.'}
+                    rows={2}
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsLockModalOpen(false)}
+                disabled={isLocking}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                Vazgeç
+              </button>
+              
+              {isLocked ? (
+                <button
+                  type="button"
+                  onClick={() => handleToggleLock(false)}
+                  disabled={isLocking}
+                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Unlock className="w-4 h-4" />
+                  {isLocking ? 'Açılıyor...' : 'Kilidi Kaldır & Düzenlemeye İzin Ver'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleToggleLock(true)}
+                  disabled={isLocking}
+                  className="px-5 py-2 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Lock className="w-4 h-4 text-amber-400" />
+                  {isLocking ? 'Kilitleniyor...' : 'Dönemi Kesinleştir & Kilitle'}
+                </button>
+              )}
             </div>
 
           </div>

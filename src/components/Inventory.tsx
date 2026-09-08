@@ -32,8 +32,11 @@ import {
   Scissors,
   Wrench,
   Grid,
-  BookOpen
+  BookOpen,
+  BarChart3,
+  ExternalLink
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import Modal from './Modal';
@@ -769,6 +772,14 @@ export default function Inventory() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            to="/reports?tab=stock"
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-xl text-xs font-bold text-indigo-700 transition-all shadow-sm"
+          >
+            <BarChart3 className="w-4 h-4 text-indigo-600" />
+            <span>Stok & Maliyet Raporu</span>
+          </Link>
+
           <button
             onClick={() => setIsTemplateModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all shadow-sm"
