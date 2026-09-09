@@ -1,0 +1,490 @@
+import { db } from '../db';
+import type { 
+  AppUser, 
+  Role, 
+  AuditLog, 
+  AppModule, 
+  PermissionAction, 
+  AuditActionType,
+  UserStatus
+} from '../types';
+import { INITIAL_ROLES } from '../data/initialRoles';
+
+const ACTIVE_USER_STORAGE_KEY = 'proerp_active_user_id';
+
+class UserService {
+  // Listeners for active user changes
+  private activeUserChangeListeners: Array<(user: AppUser | null, role: Role | null) => void> = [];
+
+  // =========================================================================
+  // KULLANICI İŞLEMLERİ (USERS)
+  // =========================================================================
+
+  async getUsers(): Promise<AppUser[]> {
+    return await db.users.toArray();
+  }
+
+  async getUserById(id: number): Promise<AppUser | undefined> {
+    return await db.users.get(id);
+  }
+
+  async getUserByUsername(username: string): Promise<AppUser | undefined> {
+    return await db.users.where('username').equals(username).first();
+  }
+
+  async createUser(user: Omit<AppUser, 'id'>): Promise<number> {
+    // Check if username exists
+    const existing = await db.users.where('username').equals(user.username).first();
+    if (existing) {
+      throw new Error(`"${user.username}" kullanıcı adı zaten kullanımda.`);
+    }
+
+    // Lookup role name
+    let roleName = user.roleName;
+    if (!roleName && user.roleCode) {
+      const role = await db.roles.where('code').equals(user.roleCode).first();
+      roleName = role?.name;
+    }
+
+    const newId = await db.users.add({
+      ...user,
+      roleName,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as AppUser);
+
+    await this.logAudit(
+      'create',
+      'users',
+      `Yeni kullanıcı hesabı oluşturuldu: ${user.fullName} (${user.username})`,
+      `Rol: ${roleName || user.roleCode}, Departman: ${user.department || '-'}`,
+      newId as number
+    );
+
+    return newId as number;
+  }
+
+  async updateUser(id: number, updates: Partial<AppUser>): Promise<void> {
+    const existing = await db.users.get(id);
+    if (!existing) throw new Error('Kullanıcı bulunamadı.');
+
+    // If username is changing, check uniqueness
+    if (updates.username && updates.username !== existing.username) {
+      const duplicate = await db.users.where('username').equals(updates.username).first();
+      if (duplicate && duplicate.id !== id) {
+        throw new Error(`"${updates.username}" kullanıcı adı başka bir kullanıcı tarafından kullanılıyor.`);
+      }
+    }
+
+    let roleName = updates.roleName || existing.roleName;
+    if (updates.roleCode && updates.roleCode !== existing.roleCode) {
+      const role = await db.roles.where('code').equals(updates.roleCode).first();
+      roleName = role?.name;
+    }
+
+    await db.users.update(id, {
+      ...updates,
+      roleName,
+      updatedAt: new Date()
+    });
+
+    await this.logAudit(
+      'update',
+      'users',
+      `Kullanıcı bilgileri güncellendi: ${updates.fullName || existing.fullName}`,
+      `Kullanıcı Adı: ${updates.username || existing.username}`,
+      id
+    );
+
+    // Notify listeners if active user was updated
+    const activeUserId = this.getActiveUserIdSync();
+    if (activeUserId === id) {
+      this.notifyActiveUserChanged();
+    }
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    const user = await db.users.get(id);
+    if (!user) return;
+
+    // Prevent deleting the main super admin
+    if (user.username === 'mdemir' || user.roleCode === 'super_admin') {
+      const adminCount = await db.users.where('roleCode').equals('super_admin').count();
+      if (adminCount <= 1) {
+        throw new Error('Sistemdeki son Süper Admin hesabı silinemez.');
+      }
+    }
+
+    await db.users.delete(id);
+
+    await this.logAudit(
+      'delete',
+      'users',
+      `Kullanıcı hesabı silindi: ${user.fullName} (${user.username})`,
+      `Silinen Rol: ${user.roleName || user.roleCode}`,
+      id
+    );
+
+    // If deleted user was active, switch to first super_admin
+    const activeUserId = this.getActiveUserIdSync();
+    if (activeUserId === id) {
+      const firstAdmin = await db.users.where('roleCode').equals('super_admin').first();
+      if (firstAdmin?.id) {
+        this.setActiveUserId(firstAdmin.id);
+      }
+    }
+  }
+
+  async toggleUserStatus(id: number, status: UserStatus): Promise<void> {
+    const user = await db.users.get(id);
+    if (!user) return;
+
+    await db.users.update(id, { status, updatedAt: new Date() });
+
+    await this.logAudit(
+      'status_change',
+      'users',
+      `Kullanıcı durumu değiştirildi: ${user.fullName} -> ${status.toUpperCase()}`,
+      undefined,
+      id
+    );
+
+    const activeUserId = this.getActiveUserIdSync();
+    if (activeUserId === id) {
+      this.notifyActiveUserChanged();
+    }
+  }
+
+  // =========================================================================
+  // ROL & YETKİ İŞLEMLERİ (ROLES & PERMISSIONS)
+  // =========================================================================
+
+  async getRoles(): Promise<Role[]> {
+    return await db.roles.toArray();
+  }
+
+  async getRoleById(id: number): Promise<Role | undefined> {
+    return await db.roles.get(id);
+  }
+
+  async getRoleByCode(code: string): Promise<Role | undefined> {
+    return await db.roles.where('code').equals(code).first();
+  }
+
+  async createRole(role: Omit<Role, 'id'>): Promise<number> {
+    const existing = await db.roles.where('code').equals(role.code).first();
+    if (existing) {
+      throw new Error(`"${role.code}" kodlu rol zaten mevcut.`);
+    }
+
+    const newId = await db.roles.add({
+      ...role,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as Role);
+
+    await this.logAudit(
+      'create',
+      'users',
+      `Yeni rol tanımlandı: ${role.name} (${role.code})`,
+      role.description,
+      newId as number
+    );
+
+    return newId as number;
+  }
+
+  async updateRole(id: number, updates: Partial<Role>): Promise<void> {
+    const role = await db.roles.get(id);
+    if (!role) throw new Error('Rol bulunamadı.');
+
+    // Super admin permissions cannot be downgraded
+    if (role.code === 'super_admin' && updates.permissions) {
+      // Keep super_admin having full permissions
+    }
+
+    await db.roles.update(id, {
+      ...updates,
+      updatedAt: new Date()
+    });
+
+    // If role name changed, update all users with this role
+    if (updates.name && updates.name !== role.name) {
+      const usersWithRole = await db.users.where('roleCode').equals(role.code).toArray();
+      for (const u of usersWithRole) {
+        if (u.id) {
+          await db.users.update(u.id, { roleName: updates.name });
+        }
+      }
+    }
+
+    await this.logAudit(
+      'permission_change',
+      'users',
+      `Rol yetki ve bilgileri güncellendi: ${updates.name || role.name}`,
+      `Rol Kodu: ${role.code}`,
+      id
+    );
+
+    this.notifyActiveUserChanged();
+  }
+
+  async deleteRole(id: number): Promise<void> {
+    const role = await db.roles.get(id);
+    if (!role) return;
+
+    if (role.isSystem || role.code === 'super_admin') {
+      throw new Error('Sistem rollerinin (ön tanımlı roller) silinmesine izin verilmez.');
+    }
+
+    // Check if any users are assigned to this role
+    const assignedUsersCount = await db.users.where('roleCode').equals(role.code).count();
+    if (assignedUsersCount > 0) {
+      throw new Error(`Bu role atanmış ${assignedUsersCount} kullanıcı bulunmaktadır. Önce kullanıcıların rolünü değiştiriniz.`);
+    }
+
+    await db.roles.delete(id);
+
+    await this.logAudit(
+      'delete',
+      'users',
+      `Özel rol silindi: ${role.name} (${role.code})`,
+      undefined,
+      id
+    );
+  }
+
+  async resetRolesToDefaults(): Promise<void> {
+    // Keep custom roles, re-seed or update system roles
+    for (const initRole of INITIAL_ROLES) {
+      const existing = await db.roles.where('code').equals(initRole.code).first();
+      if (existing && existing.id) {
+        await db.roles.update(existing.id, {
+          name: initRole.name,
+          description: initRole.description,
+          permissions: initRole.permissions,
+          color: initRole.color,
+          updatedAt: new Date()
+        });
+      } else {
+        await db.roles.add(initRole);
+      }
+    }
+
+    await this.logAudit(
+      'system',
+      'system',
+      'Sistem rolleri ve yetki matrisleri fabrika varsayılan ayarlarına sıfırlandı.',
+      '7 temel sistem rolü yeniden yapılandırıldı.'
+    );
+
+    this.notifyActiveUserChanged();
+  }
+
+  // =========================================================================
+  // AKTİF KULLANICI & OTURUM YÖNETİMİ (SESSION & SWITCH USER)
+  // =========================================================================
+
+  getActiveUserIdSync(): number | null {
+    try {
+      const raw = localStorage.getItem(ACTIVE_USER_STORAGE_KEY);
+      return raw ? parseInt(raw, 10) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async getActiveUser(): Promise<AppUser | null> {
+    const id = this.getActiveUserIdSync();
+    if (id) {
+      const user = await db.users.get(id);
+      if (user && user.status === 'active') {
+        return user;
+      }
+    }
+
+    // Default fallback: first active super_admin or any active user
+    const superAdmin = await db.users.where('roleCode').equals('super_admin').first();
+    if (superAdmin?.id) {
+      this.setActiveUserId(superAdmin.id, false);
+      return superAdmin;
+    }
+
+    const anyUser = await db.users.toCollection().first();
+    if (anyUser?.id) {
+      this.setActiveUserId(anyUser.id, false);
+      return anyUser;
+    }
+
+    return null;
+  }
+
+  async getActiveRole(): Promise<Role | null> {
+    const user = await this.getActiveUser();
+    if (!user) return null;
+
+    if (user.roleCode) {
+      const role = await db.roles.where('code').equals(user.roleCode).first();
+      if (role) return role;
+    }
+
+    if (user.roleId) {
+      return (await db.roles.get(user.roleId)) || null;
+    }
+
+    return null;
+  }
+
+  async setActiveUserId(id: number, recordLog: boolean = true): Promise<void> {
+    const targetUser = await db.users.get(id);
+    if (!targetUser) return;
+
+    localStorage.setItem(ACTIVE_USER_STORAGE_KEY, id.toString());
+
+    // Update last login
+    await db.users.update(id, { lastLoginAt: new Date() });
+
+    if (recordLog) {
+      await this.logAudit(
+        'login',
+        'auth',
+        `Kullanıcı oturumu açıldı: ${targetUser.fullName} (${targetUser.roleName || targetUser.roleCode})`,
+        `Rol Simülatörü / Hızlı Profil Değişimi ile oturum açıldı.`,
+        id
+      );
+    }
+
+    this.notifyActiveUserChanged();
+  }
+
+  onActiveUserChange(callback: (user: AppUser | null, role: Role | null) => void): () => void {
+    this.activeUserChangeListeners.push(callback);
+    return () => {
+      this.activeUserChangeListeners = this.activeUserChangeListeners.filter(cb => cb !== callback);
+    };
+  }
+
+  private async notifyActiveUserChanged() {
+    const user = await this.getActiveUser();
+    const role = await this.getActiveRole();
+    for (const cb of this.activeUserChangeListeners) {
+      try {
+        cb(user, role);
+      } catch (err) {
+        console.error('Active user change listener error:', err);
+      }
+    }
+  }
+
+  // =========================================================================
+  // YETKİ KONTROL YARDIMCILARI (PERMISSION CHECKERS)
+  // =========================================================================
+
+  hasPermission(
+    user: AppUser | null, 
+    role: Role | null, 
+    module: AppModule, 
+    action: PermissionAction = 'view'
+  ): boolean {
+    if (!user || user.status !== 'active') return false;
+
+    // Super admin has absolute access to everything
+    if (user.roleCode === 'super_admin' || role?.code === 'super_admin') {
+      return true;
+    }
+
+    if (!role || !role.permissions) {
+      return false;
+    }
+
+    const modulePerm = role.permissions[module];
+    if (!modulePerm) return false;
+
+    return Boolean(modulePerm[action]);
+  }
+
+  isSuperAdmin(user: AppUser | null, role: Role | null): boolean {
+    return Boolean(user?.roleCode === 'super_admin' || role?.code === 'super_admin');
+  }
+
+  // =========================================================================
+  // İŞLEM DENETİM İZİ (AUDIT LOGS)
+  // =========================================================================
+
+  async logAudit(
+    action: AuditActionType,
+    module: AppModule | 'auth' | 'system',
+    description: string,
+    details?: string,
+    entityId?: string | number
+  ): Promise<void> {
+    try {
+      const activeUser = await this.getActiveUser();
+      const userName = activeUser?.fullName || 'Sistem';
+      const userRole = activeUser?.roleName || activeUser?.roleCode || 'Sistem';
+
+      await db.auditLogs.add({
+        userId: activeUser?.id,
+        userName,
+        userRole,
+        action,
+        module,
+        entityId,
+        description,
+        details,
+        ipAddress: '192.168.1.100', // Yerel ağ istemcisi
+        timestamp: new Date()
+      });
+    } catch (err) {
+      console.warn('Denetim günlüğü kaydedilemedi:', err);
+    }
+  }
+
+  async getAuditLogs(options?: {
+    module?: string;
+    action?: string;
+    userId?: number;
+    search?: string;
+    limit?: number;
+  }): Promise<AuditLog[]> {
+    let logs = await db.auditLogs.reverse().toArray();
+
+    if (options?.module && options.module !== 'all') {
+      logs = logs.filter(l => l.module === options.module);
+    }
+
+    if (options?.action && options.action !== 'all') {
+      logs = logs.filter(l => l.action === options.action);
+    }
+
+    if (options?.userId) {
+      logs = logs.filter(l => l.userId === options.userId);
+    }
+
+    if (options?.search) {
+      const q = options.search.toLowerCase();
+      logs = logs.filter(l => 
+        l.description.toLowerCase().includes(q) ||
+        l.userName.toLowerCase().includes(q) ||
+        (l.details && l.details.toLowerCase().includes(q))
+      );
+    }
+
+    if (options?.limit) {
+      logs = logs.slice(0, options.limit);
+    }
+
+    return logs;
+  }
+
+  async clearAuditLogs(): Promise<void> {
+    await db.auditLogs.clear();
+    await this.logAudit(
+      'system',
+      'system',
+      'İşlem denetim izi (audit log) geçmişi temizlendi.'
+    );
+  }
+}
+
+export const userService = new UserService();

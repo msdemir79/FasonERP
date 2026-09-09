@@ -8,14 +8,21 @@ interface Props {
   onClose: () => void;
   parentAccounts: Account[];
   onSuccess: () => void;
+  initialParentCode?: string;
 }
 
-export default function AddAccountModal({ isOpen, onClose, parentAccounts, onSuccess }: Props) {
-  const [parentCode, setParentCode] = useState('100');
+export default function AddAccountModal({ isOpen, onClose, parentAccounts, onSuccess, initialParentCode }: Props) {
+  const [parentCode, setParentCode] = useState(initialParentCode || '100');
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('TRY');
   const [description, setDescription] = useState('');
+
+  React.useEffect(() => {
+    if (initialParentCode) {
+      setParentCode(initialParentCode);
+    }
+  }, [initialParentCode, isOpen]);
 
   if (!isOpen) return null;
 

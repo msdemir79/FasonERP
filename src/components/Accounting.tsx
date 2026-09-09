@@ -34,6 +34,7 @@ import JournalEntryModal from './Accounting/JournalEntryModal';
 import JournalEntryPrintModal from './Accounting/JournalEntryPrintModal';
 import AddAccountModal from './Accounting/AddAccountModal';
 import EditAccountModal from './Accounting/EditAccountModal';
+import ChartOfAccounts from './Accounting/ChartOfAccounts';
 import MizanPrintModal from './Accounting/MizanPrintModal';
 import KebirPrintModal from './Accounting/KebirPrintModal';
 import AccountingReport from './Reports/AccountingReport';
@@ -63,6 +64,7 @@ export default function Accounting() {
   // Modals
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [selectedParentCodeForAdd, setSelectedParentCodeForAdd] = useState<string | undefined>(undefined);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [selectedEntryForPrint, setSelectedEntryForPrint] = useState<JournalEntry | null>(null);
   const [isMizanPrintModalOpen, setIsMizanPrintModalOpen] = useState(false);
@@ -139,15 +141,6 @@ export default function Accounting() {
       const matchHeader = `${e.entryNumber} ${e.description} ${e.documentNumber || ''}`.toLowerCase().includes(q);
       const matchLines = e.lines.some(l => `${l.accountCode} ${l.accountName} ${l.description}`.toLowerCase().includes(q));
       if (!matchHeader && !matchLines) return false;
-    }
-    return true;
-  });
-
-  // Filtered Chart of Accounts
-  const filteredAccounts = accounts.filter(acc => {
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      return acc.code.toLowerCase().includes(q) || acc.name.toLowerCase().includes(q);
     }
     return true;
   });
@@ -497,143 +490,19 @@ export default function Accounting() {
 
       {/* TAB 2: Tek Düzen Hesap Planı (TDHP) */}
       {activeTab === 'chart' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-gray-200">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <Search className="w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Hesap kodu (100, 120, 320, 600...) veya hesap adı ile filtrele..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full text-sm border-none focus:ring-0 placeholder-gray-400 p-0"
-              />
-            </div>
-            <span className="text-xs text-gray-500">
-              Toplam {filteredAccounts.length} Adet TDHP Hesabı
-            </span>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50 text-gray-600 font-semibold">
-                  <tr>
-                    <th className="py-3 px-4 text-left w-32">Hesap Kodu</th>
-                    <th className="py-3 px-4 text-left">Hesap Adı</th>
-                    <th className="py-3 px-4 text-left w-28">Seviye</th>
-                    <th className="py-3 px-4 text-left w-28">Hesap Tipi</th>
-                    <th className="py-3 px-4 text-left w-24">Para Birimi</th>
-                    <th className="py-3 px-4 text-center w-28">Durum</th>
-                    <th className="py-3 px-4 text-right w-44">İşlemler</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-gray-700">
-                  {filteredAccounts.map((acc) => {
-                    const isMainClass = acc.level === 1;
-                    const isGroup = acc.level === 2;
-                    const isMain = acc.level === 3;
-                    const isSub = acc.level === 4;
-                    const isMuavin = acc.level >= 5;
-
-                    return (
-                      <tr 
-                        key={acc.id} 
-                        className={`hover:bg-gray-50 transition-colors ${
-                          isMainClass ? 'bg-gray-100/80 font-black text-gray-900 border-t-2 border-gray-300' :
-                          isGroup ? 'bg-gray-50/60 font-bold text-gray-800 border-t border-gray-200' :
-                          isMain ? 'font-semibold text-gray-900' : 
-                          isSub ? 'text-gray-800' : 'bg-indigo-50/15 text-gray-900'
-                        }`}
-                      >
-                        <td className="py-2.5 px-4 font-mono">
-                          <span className={`inline-flex items-center ${
-                            isMainClass ? 'text-gray-900 font-black tracking-wide' :
-                            isGroup ? 'pl-3 text-gray-800 font-bold' :
-                            isMain ? 'pl-6 text-gray-900 font-bold' :
-                            isSub ? 'pl-9 text-indigo-900 font-semibold' :
-                            'pl-12 text-indigo-600 font-bold'
-                          }`}>
-                            {isSub && <span className="text-gray-400 font-normal mr-1.5 select-none">├─</span>}
-                            {isMuavin && <span className="text-indigo-400 font-normal mr-1.5 select-none">└──</span>}
-                            {acc.code}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-4 group">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className={`inline-flex items-center ${
-                              isMainClass ? 'font-black text-gray-900' :
-                              isGroup ? 'pl-3 font-bold text-gray-800' :
-                              isMain ? 'pl-6 font-semibold text-gray-900' :
-                              isSub ? 'pl-9 font-medium text-gray-800' :
-                              'pl-12 font-medium text-gray-900'
-                            }`}>
-                              {acc.name}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setEditingAccount(acc)}
-                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all cursor-pointer"
-                              title="Hesap adını düzenle"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-4 text-xs">
-                          {isMainClass ? '1: Sınıf' : 
-                           isGroup ? '2: Grup' : 
-                           isMain ? '3: Ana Hesap' : 
-                           isSub ? '4: Alt Hesap' : 
-                           '5: Muavin Hesap'}
-                        </td>
-                        <td className="py-2.5 px-4 text-xs uppercase font-medium text-gray-500">
-                          {acc.type === 'asset' ? 'Aktif' : acc.type === 'liability' ? 'Pasif' : acc.type === 'revenue' ? 'Gelir' : acc.type === 'cost' ? 'Maliyet' : acc.type === 'equity' ? 'Özkaynak' : 'Gider'}
-                        </td>
-                        <td className="py-2.5 px-4 font-mono text-xs text-gray-500">
-                          {acc.currency || 'TRY'}
-                        </td>
-                        <td className="py-2.5 px-4 text-center">
-                          {acc.isSystem ? (
-                            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">Sistem</span>
-                          ) : (
-                            <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-bold">
-                              {isMuavin ? 'Cari / Muavin' : 'Özel Alt Hesap'}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-4 text-right">
-                          <div className="inline-flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setEditingAccount(acc)}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors"
-                              title="Hesap Adını Düzenle"
-                            >
-                              <Edit3 className="w-3 h-3 text-indigo-600" />
-                              Düzenle
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedKebirCode(acc.code);
-                                setActiveTab('kebir');
-                              }}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition-colors"
-                            >
-                              Kebir
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <ChartOfAccounts
+          accounts={accounts}
+          journalEntries={journalEntries}
+          onEditAccount={(acc) => setEditingAccount(acc)}
+          onAddAccount={(parentCode) => {
+            setSelectedParentCodeForAdd(parentCode);
+            setIsAccountModalOpen(true);
+          }}
+          onOpenKebir={(code) => {
+            setSelectedKebirCode(code);
+            setActiveTab('kebir');
+          }}
+        />
       )}
 
       {/* TAB 3: Mizan Raporu (Trial Balance) */}
@@ -1035,8 +904,12 @@ export default function Accounting() {
       {/* MODAL: Yeni Alt Hesap Açma */}
       <AddAccountModal
         isOpen={isAccountModalOpen}
-        onClose={() => setIsAccountModalOpen(false)}
+        onClose={() => {
+          setIsAccountModalOpen(false);
+          setSelectedParentCodeForAdd(undefined);
+        }}
         parentAccounts={accounts}
+        initialParentCode={selectedParentCodeForAdd}
         onSuccess={() => alert('Yeni alt hesap başarıyla açıldı.')}
       />
 

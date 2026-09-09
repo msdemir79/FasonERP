@@ -26,8 +26,10 @@ import ProductionSettings from './ProductionSettings';
 import FinanceSettings from './FinanceSettings';
 import HRSettings from './HRSettings';
 import CompanySettings from './CompanySettings';
+import UsersManagement from '../Users';
 import PageHeader from '../PageHeader';
 import type { AppSettings } from '../../types';
+import { ShieldCheck } from 'lucide-react';
 
 export default function SettingsHub() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -111,6 +113,14 @@ export default function SettingsHub() {
       description: 'Çalışma saatleri, fazla mesai katsayıları, SGK ve vergi oranları'
     },
     {
+      id: 'users',
+      label: 'Kullanıcı & Yetki Yönetimi',
+      shortLabel: 'Kullanıcı & RBAC',
+      icon: ShieldCheck,
+      badge: 'Yetki & Denetim',
+      description: 'Kullanıcı hesapları, rol yetki matrisi ve işlem denetim izi'
+    },
+    {
       id: 'company',
       label: 'Firma & Sistem Araçları',
       shortLabel: 'Firma & Yedekleme',
@@ -189,6 +199,7 @@ export default function SettingsHub() {
         {activeTab === 'production' && <ProductionSettings settings={settings} onSave={handleSaveSettings} />}
         {activeTab === 'finance' && <FinanceSettings settings={settings} onSave={handleSaveSettings} />}
         {activeTab === 'hr' && <HRSettings settings={settings} onSave={handleSaveSettings} />}
+        {activeTab === 'users' && <UsersManagement />}
         {activeTab === 'company' && <CompanySettings settings={settings} onSave={handleSaveSettings} />}
       </div>
     </div>

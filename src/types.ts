@@ -796,3 +796,97 @@ export interface AttendancePeriodLock {
   notes?: string;
 }
 
+// ==========================================
+// KULLANICI & ROL TABANLI YETKİLENDİRME (RBAC)
+// ==========================================
+
+export type AppModule = 
+  | 'dashboard'
+  | 'inventory'
+  | 'orders'
+  | 'waybills'
+  | 'invoices'
+  | 'finance'
+  | 'accounting'
+  | 'hr'
+  | 'production'
+  | 'contacts'
+  | 'reports'
+  | 'users'
+  | 'settings';
+
+export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'export' | 'approve';
+
+export interface ModulePermission {
+  view: boolean;
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+  export: boolean;
+  approve: boolean;
+}
+
+export type RolePermissions = Record<AppModule, ModulePermission>;
+
+export interface Role {
+  id?: number;
+  code: string;
+  name: string;
+  description: string;
+  color?: string;
+  isSystem?: boolean;
+  permissions: RolePermissions;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export type UserStatus = 'active' | 'passive' | 'suspended';
+
+export interface AppUser {
+  id?: number;
+  username: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  title?: string;
+  department?: string;
+  roleId?: number;
+  roleCode: string;
+  roleName?: string;
+  status: UserStatus;
+  avatar?: string;
+  color?: string;
+  pinCode?: string;
+  lastLoginAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  notes?: string;
+}
+
+export type AuditActionType = 
+  | 'create' 
+  | 'update' 
+  | 'delete' 
+  | 'login' 
+  | 'logout'
+  | 'export' 
+  | 'approve' 
+  | 'status_change' 
+  | 'permission_change'
+  | 'system';
+
+export interface AuditLog {
+  id?: number;
+  userId?: number;
+  userName: string;
+  userRole: string;
+  action: AuditActionType;
+  module: AppModule | 'auth' | 'system';
+  entityId?: string | number;
+  description: string;
+  details?: string;
+  ipAddress?: string;
+  timestamp: Date;
+}
+
+
