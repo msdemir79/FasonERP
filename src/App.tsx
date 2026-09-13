@@ -21,6 +21,7 @@ import BrokenSizeReport from './components/Reports/BrokenSizeReport';
 import SettingsHub from './components/Settings';
 import { seedDatabase } from './db';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 /**
  * @license
@@ -33,8 +34,9 @@ export default function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <ThemeProvider defaultTheme="system" storageKey="shoerp-theme">
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
@@ -61,5 +63,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
   );
 }

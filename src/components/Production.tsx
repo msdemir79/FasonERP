@@ -637,7 +637,7 @@ export default function Production() {
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 15, 20, imgWidth, Math.min(imgHeight, 250));
 
-      const cleanBarcode = (ticketWorkOrder.barcode || ticketWorkOrder.id || 'proses').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const cleanBarcode = String(ticketWorkOrder.barcode || ticketWorkOrder.id || 'proses').replace(/[^a-zA-Z0-9_-]/g, '_');
       pdf.save(`Is_Emri_Proses_Karti_${cleanBarcode}.pdf`);
     } catch (err) {
       console.error('PDF oluşturulurken hata:', err);
@@ -679,7 +679,7 @@ export default function Production() {
         );
       case 'materials_consumed':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
             <Check className="w-3 h-3" /> Malzeme Harcandı
           </span>
         );
@@ -719,7 +719,7 @@ export default function Production() {
             <button
               onClick={() => handleCalculateMRP()}
               disabled={isMrpCalculating}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:bg-slate-800/50 transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
             >
               <RefreshCw className={cn("w-3.5 h-3.5 text-indigo-600", isMrpCalculating && "animate-spin")} />
               <span>{isMrpCalculating ? "Hesaplanıyor..." : "MRP İhtiyaç Hesapla"}</span>
@@ -727,9 +727,9 @@ export default function Production() {
 
             <button
               onClick={() => setIsRecipeModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:bg-slate-800/50 transition-colors shadow-xs cursor-pointer"
             >
-              <Settings2 className="w-3.5 h-3.5 text-slate-500" />
+              <Settings2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>Reçeteler (BoM)</span>
             </button>
 
@@ -746,10 +746,10 @@ export default function Production() {
 
       {/* Quick Stat Highlights */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Aktif İş Emirleri</span>
-            <span className="text-xl font-black text-slate-900">
+            <span className="text-xl font-black text-slate-900 dark:text-slate-100">
               {workOrders?.filter(w => w.status !== 'completed' && w.status !== 'cancelled').length || 0}
             </span>
           </div>
@@ -758,7 +758,7 @@ export default function Production() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Sipariş Havuzu</span>
             <span className="text-xl font-black text-amber-600">
@@ -770,7 +770,7 @@ export default function Production() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Eksik Hammadde</span>
             <span className={cn(
@@ -785,7 +785,7 @@ export default function Production() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Tamamlanan İmalat</span>
             <span className="text-xl font-black text-emerald-600">
@@ -807,14 +807,14 @@ export default function Production() {
               Terminali Aç <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900/10 text-white flex items-center justify-center">
             <Barcode className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* Main Tab Navigation Bar */}
-      <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-2">
+      <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1">
           <button
             onClick={() => setActiveTab('pipeline')}
@@ -822,7 +822,7 @@ export default function Production() {
               "px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
               activeTab === 'pipeline'
                 ? "bg-slate-900 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100"
+                : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
             )}
           >
             <Layers className="w-4 h-4 text-indigo-400" />
@@ -835,7 +835,7 @@ export default function Production() {
               "px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
               activeTab === 'orders_pool'
                 ? "bg-slate-900 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100"
+                : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
             )}
           >
             <ShoppingCart className="w-4 h-4 text-amber-400" />
@@ -851,7 +851,7 @@ export default function Production() {
               "px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
               activeTab === 'mrp'
                 ? "bg-slate-900 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100"
+                : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
             )}
           >
             <RefreshCw className="w-4 h-4 text-rose-400" />
@@ -869,7 +869,7 @@ export default function Production() {
               "px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
               activeTab === 'barcode_terminal'
                 ? "bg-slate-900 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100"
+                : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
             )}
           >
             <Barcode className="w-4 h-4 text-emerald-400" />
@@ -882,7 +882,7 @@ export default function Production() {
               "px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
               activeTab === 'recipes'
                 ? "bg-slate-900 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100"
+                : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
             )}
           >
             <Settings2 className="w-4 h-4 text-sky-400" />
@@ -895,7 +895,7 @@ export default function Production() {
               "px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
               activeTab === 'reports'
                 ? "bg-slate-900 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100"
+                : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
             )}
           >
             <BarChart3 className="w-4 h-4 text-purple-400" />
@@ -922,13 +922,13 @@ export default function Production() {
                 placeholder="İş emri, barkod, model ara..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <select
               value={stageFilter}
               onChange={e => setStageFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 focus:outline-none"
+              className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
             >
               <option value="all">Tüm Aşamalar</option>
               {PRODUCTION_STAGES_CONFIG.map(st => (
@@ -956,14 +956,14 @@ export default function Production() {
                     "p-3 rounded-2xl border text-left transition-all relative overflow-hidden",
                     isActive
                       ? "bg-indigo-900 text-white border-indigo-900 shadow-md ring-2 ring-indigo-400"
-                      : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
+                      : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
                   )}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <StageIcon className={cn("w-4 h-4", isActive ? "text-indigo-300" : "text-slate-400")} />
                     <span className={cn(
                       "text-xs font-black px-1.5 py-0.5 rounded-md",
-                      isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-800"
+                      isActive ? "bg-white dark:bg-slate-900/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
                     )}>
                       {count}
                     </span>
@@ -978,9 +978,9 @@ export default function Production() {
           {/* Work Order Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredWorkOrders.length === 0 ? (
-              <div className="col-span-full bg-white rounded-3xl p-16 border border-slate-200 text-center space-y-3">
+              <div className="col-span-full bg-white dark:bg-slate-900 rounded-3xl p-16 border border-slate-200 dark:border-slate-700 text-center space-y-3">
                 <Layers className="w-12 h-12 mx-auto text-slate-300" />
-                <h4 className="text-base font-black text-slate-700 uppercase tracking-wider">Kayıtlı İş Emri Bulunamadı</h4>
+                <h4 className="text-base font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">Kayıtlı İş Emri Bulunamadı</h4>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
                   Seçili filtreye uygun aktif iş emri yok. Satış Siparişleri Havuzundan siparişleri üretime alabilir veya yukarıdan yeni iş emri açabilirsiniz.
                 </p>
@@ -994,10 +994,10 @@ export default function Production() {
                 return (
                   <div
                     key={wo.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-3 group relative overflow-hidden"
+                    className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-3 group relative overflow-hidden"
                   >
                     {/* Top Stage & Barcode Row */}
-                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
                       <div className="flex items-center gap-1.5">
                         <span className={cn(
                           "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase flex items-center gap-1 border",
@@ -1008,7 +1008,7 @@ export default function Production() {
                         </span>
                       </div>
 
-                      <span className="font-mono text-[10px] font-black text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+                      <span className="font-mono text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                         {wo.barcode}
                       </span>
                     </div>
@@ -1020,7 +1020,7 @@ export default function Production() {
                           <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                             {product?.code || 'KODSUZ'}
                           </div>
-                          <h4 className="text-sm font-black text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                          <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 line-clamp-1 group-hover:text-indigo-600 transition-colors">
                             {product?.name || 'Bilinmeyen Ürün'}
                           </h4>
                         </div>
@@ -1028,7 +1028,7 @@ export default function Production() {
                           <img 
                             src={product.image} 
                             alt="" 
-                            className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" 
+                            className="w-10 h-10 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" 
                           />
                         )}
                       </div>
@@ -1036,12 +1036,12 @@ export default function Production() {
                       {/* Variant & Order info */}
                       <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
                         {wo.color && (
-                          <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold uppercase">
+                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded font-bold uppercase">
                             Renk: {wo.color}
                           </span>
                         )}
                         {wo.size && (
-                          <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold uppercase">
+                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded font-bold uppercase">
                             Beden: {wo.size}
                           </span>
                         )}
@@ -1053,7 +1053,7 @@ export default function Production() {
                       </div>
 
                       {wo.customerName && (
-                        <div className="text-[10px] text-slate-500 font-medium truncate flex items-center gap-1">
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate flex items-center gap-1">
                           <User className="w-3 h-3 text-slate-400" />
                           {wo.customerName}
                         </div>
@@ -1061,10 +1061,10 @@ export default function Production() {
                     </div>
 
                     {/* Quantity & Material Status */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                       <div>
                         <div className="text-[9px] font-bold text-slate-400 uppercase">Miktar</div>
-                        <div className="text-base font-black text-slate-900">{wo.quantity} <span className="text-xs font-bold text-slate-500">Adet/Çift</span></div>
+                        <div className="text-base font-black text-slate-900 dark:text-slate-100">{wo.quantity} <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Adet/Çift</span></div>
                       </div>
 
                       <div className="text-right">
@@ -1078,7 +1078,7 @@ export default function Production() {
                         <span>İlerleme: {stageInfo.order} / 8</span>
                         <span>{Math.round((stageInfo.order / 8) * 100)}%</span>
                       </div>
-                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden flex">
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex">
                         <div 
                           className="bg-indigo-600 h-full rounded-full transition-all duration-300"
                           style={{ width: `${(stageInfo.order / 8) * 100}%` }}
@@ -1100,7 +1100,7 @@ export default function Production() {
                       <button
                         type="button"
                         onClick={() => openTicketModal(wo)}
-                        className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center shrink-0"
+                        className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center justify-center shrink-0"
                         title="İş Emri & Barkod Ref Kartı"
                       >
                         <Printer className="w-4 h-4" />
@@ -1144,17 +1144,17 @@ export default function Production() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                   <tr>
-                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Sipariş No</th>
-                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Müşteri / Cari</th>
-                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Sipariş & Termin Tarihi</th>
-                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Ürün Kalemleri</th>
-                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Üretim Durumu</th>
-                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-wider text-right">İşlem</th>
+                    <th className="p-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sipariş No</th>
+                    <th className="p-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Müşteri / Cari</th>
+                    <th className="p-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sipariş & Termin Tarihi</th>
+                    <th className="p-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Ürün Kalemleri</th>
+                    <th className="p-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Üretim Durumu</th>
+                    <th className="p-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">İşlem</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1167,16 +1167,16 @@ export default function Production() {
                   ) : (
                     pendingSalesOrders.map(order => {
                       return (
-                        <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
+                        <tr key={order.id} className="hover:bg-slate-50 dark:bg-slate-800/50/70 transition-colors">
                           <td className="p-4">
-                            <div className="text-sm font-black text-slate-900">{order.orderNumber}</div>
+                            <div className="text-sm font-black text-slate-900 dark:text-slate-100">{order.orderNumber}</div>
                             <span className="text-[9px] font-bold text-slate-400 uppercase">Satış Siparişi</span>
                           </td>
                           <td className="p-4">
-                            <div className="text-xs font-black text-slate-800">{order.contactName}</div>
+                            <div className="text-xs font-black text-slate-800 dark:text-slate-200">{order.contactName}</div>
                           </td>
                           <td className="p-4">
-                            <div className="text-xs font-bold text-slate-700">
+                            <div className="text-xs font-bold text-slate-700 dark:text-slate-200">
                               {new Date(order.date).toLocaleDateString('tr-TR')}
                             </div>
                             {order.deliveryDate && (
@@ -1192,7 +1192,7 @@ export default function Production() {
                                 const hasRecipe = recipeMap.has(item.productId);
                                 return (
                                   <div key={idx} className="flex items-center gap-2 text-xs">
-                                    <span className="font-bold text-slate-800">{prod?.name || 'Ürün'}</span>
+                                    <span className="font-bold text-slate-800 dark:text-slate-200">{prod?.name || 'Ürün'}</span>
                                     <span className="text-slate-400 font-medium">({item.quantity} Adet)</span>
                                     {!hasRecipe && (
                                       <button
@@ -1243,15 +1243,15 @@ export default function Production() {
       {activeTab === 'mrp' && (
         <div className="space-y-6">
           {/* MRP Header Card */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <RefreshCw className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">
                   Otomatik Malzeme İhtiyaç Planlaması (MRP)
                 </h3>
               </div>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 Aktif ve bekleyen tüm üretim iş emirlerinin reçetelerine göre gerekli hammadde ihtiyaçları anlık stok ile karşılaştırılır.
               </p>
             </div>
@@ -1261,7 +1261,7 @@ export default function Production() {
                 type="button"
                 onClick={() => handleCalculateMRP()}
                 disabled={isMrpCalculating}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2"
+                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2"
               >
                 <RefreshCw className={cn("w-4 h-4", isMrpCalculating && "animate-spin")} />
                 Yeniden Hesapla
@@ -1281,9 +1281,9 @@ export default function Production() {
           </div>
 
           {/* MRP Table */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-              <div className="text-xs font-black text-slate-700 uppercase tracking-wider">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
                 Gerekli Hammadde ve Malzeme Listesi ({mrpResult?.items.length || 0} Kalem)
               </div>
               {mrpResult?.totalShortageCost ? (
@@ -1295,7 +1295,7 @@ export default function Production() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-slate-50/50 border-b border-slate-200">
+                <thead className="bg-slate-50 dark:bg-slate-800/50/50 border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-wider w-10">
                       <input
@@ -1333,7 +1333,7 @@ export default function Production() {
                         <tr 
                           key={item.rawMaterialId} 
                           className={cn(
-                            "hover:bg-slate-50 transition-colors",
+                            "hover:bg-slate-50 dark:bg-slate-800/50 transition-colors",
                             item.status === 'shortage' && "bg-rose-50/30"
                           )}
                         >
@@ -1352,11 +1352,11 @@ export default function Production() {
                             />
                           </td>
                           <td className="p-4">
-                            <div className="text-xs font-black text-slate-900">{item.rawMaterialName}</div>
+                            <div className="text-xs font-black text-slate-900 dark:text-slate-100">{item.rawMaterialName}</div>
                             <div className="text-[10px] font-mono text-slate-400">{item.rawMaterialCode}</div>
                           </td>
                           <td className="p-4 text-right">
-                            <span className="text-xs font-black text-slate-800">
+                            <span className="text-xs font-black text-slate-800 dark:text-slate-200">
                               {item.requiredQuantity} {item.unit}
                             </span>
                           </td>
@@ -1388,7 +1388,7 @@ export default function Production() {
                             )}
                           </td>
                           <td className="p-4 text-right">
-                            <div className="text-xs font-black text-slate-800">
+                            <div className="text-xs font-black text-slate-800 dark:text-slate-200">
                               {item.estimatedCost.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
                             </div>
                             <div className="text-[9px] text-slate-400">
@@ -1440,7 +1440,7 @@ export default function Production() {
                   placeholder="Barkod okutun veya 'WO-000101' yazıp Enter'a basın..."
                   value={scannedCode}
                   onChange={e => setScannedCode(e.target.value)}
-                  className="w-full pl-16 pr-32 py-5 bg-slate-800/90 border-2 border-indigo-500/50 rounded-2xl text-lg font-mono font-black text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 tracking-wider uppercase"
+                  className="w-full pl-16 pr-32 py-5 bg-slate-800/90 border-2 border-indigo-500/50 rounded-2xl text-lg font-mono font-black text-white placeholder:text-slate-500 dark:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 tracking-wider uppercase"
                 />
                 <button
                   type="submit"
@@ -1499,9 +1499,9 @@ export default function Production() {
           </div>
 
           {/* Scan History Table */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-              <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
                 Son Terminal İşlem Kayıtları
               </span>
               <span className="text-[10px] text-slate-400 font-bold uppercase">Canlı Akış</span>
@@ -1509,7 +1509,7 @@ export default function Production() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-slate-50/50 border-b border-slate-200">
+                <thead className="bg-slate-50 dark:bg-slate-800/50/50 border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="p-3 text-[9px] font-black text-slate-400 uppercase">Saat</th>
                     <th className="p-3 text-[9px] font-black text-slate-400 uppercase">Barkod</th>
@@ -1528,11 +1528,11 @@ export default function Production() {
                     </tr>
                   ) : (
                     scanHistory.map(hist => (
-                      <tr key={hist.id} className="hover:bg-slate-50 text-xs">
-                        <td className="p-3 font-mono font-bold text-slate-500">{hist.time}</td>
+                      <tr key={hist.id} className="hover:bg-slate-50 dark:bg-slate-800/50 text-xs">
+                        <td className="p-3 font-mono font-bold text-slate-500 dark:text-slate-400">{hist.time}</td>
                         <td className="p-3 font-mono font-black text-indigo-600">{hist.barcode}</td>
-                        <td className="p-3 font-black text-slate-900">{hist.productName}</td>
-                        <td className="p-3 font-bold text-slate-500">{hist.prevStage}</td>
+                        <td className="p-3 font-black text-slate-900 dark:text-slate-100">{hist.productName}</td>
+                        <td className="p-3 font-bold text-slate-500 dark:text-slate-400">{hist.prevStage}</td>
                         <td className="p-3 font-black text-emerald-600">{hist.newStage}</td>
                         <td className="p-3 text-center">
                           <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded uppercase">
@@ -1552,13 +1552,13 @@ export default function Production() {
       {/* TAB 5: RECIPES (BoM) MANAGEMENT */}
       {activeTab === 'recipes' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xs">
             <div>
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Ürün Reçeteleri & Varyant BoM Yönetimi</h3>
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">Ürün Reçeteleri & Varyant BoM Yönetimi</h3>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
                 1 adet veya 1 çift mamul üretimi için gereken hammadde, yarı mamul (taban, mostra vb.), aksesuar ve sarfiyat reçeteleri. Renk bazlı (örn: 2045 Siyah için 126 Taban Siyah) ve asorti matris eşlemeli tanımlanabilir.
               </p>
             </div>
@@ -1582,10 +1582,10 @@ export default function Production() {
               const hasGenericRecipe = allProdRecipes.some(r => !r.targetColor || r.targetColor === 'all');
 
               return (
-                <div key={prod.id} className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs space-y-4 flex flex-col justify-between hover:border-slate-300 transition-all">
+                <div key={prod.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700 p-5 shadow-xs space-y-4 flex flex-col justify-between hover:border-slate-300 transition-all">
                   <div className="space-y-3">
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                       <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest">{prod.code}</span>
                       <div className="flex items-center gap-1.5">
                         {allProdRecipes.length > 0 ? (
@@ -1602,13 +1602,13 @@ export default function Production() {
                     </div>
 
                     <div>
-                      <h4 className="text-base font-black text-slate-900 line-clamp-1">{prod.name}</h4>
+                      <h4 className="text-base font-black text-slate-900 dark:text-slate-100 line-clamp-1">{prod.name}</h4>
                       {prod.brand && <p className="text-[11px] font-bold text-slate-400">{prod.brand} {prod.subType ? `• ${prod.subType}` : ''}</p>}
                     </div>
 
                     {/* Color Pills & Status */}
                     {prod.colors && prod.colors.length > 0 && (
-                      <div className="space-y-1 bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
+                      <div className="space-y-1 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800">
                         <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Model Renk Varyantları:</div>
                         <div className="flex flex-wrap gap-1.5 pt-0.5">
                           {prod.colors.map(col => {
@@ -1624,7 +1624,7 @@ export default function Production() {
                                     ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
                                     : hasGenericRecipe
                                     ? "bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100"
-                                    : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
+                                    : "bg-white dark:bg-slate-900 text-slate-600 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
                                 )}
                               >
                                 <span>{col}</span>
@@ -1646,7 +1646,7 @@ export default function Production() {
                     {allProdRecipes.length > 0 && (
                       <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                         {allProdRecipes.map((rc, rcIdx) => (
-                          <div key={`prod-${prod.id}-rc-${rc.id || rcIdx}-${rc.targetColor || 'genel'}`} className="bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80 space-y-2">
+                          <div key={`prod-${prod.id}-rc-${rc.id || rcIdx}-${rc.targetColor || 'genel'}`} className="bg-slate-50 dark:bg-slate-800/50/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-black px-2 py-0.5 rounded-md uppercase bg-indigo-100 text-indigo-800 border border-indigo-200">
                                 {rc.targetColor ? `🎨 ${rc.targetColor} Reçetesi` : '🌐 Genel (Tüm Renkler)'}
@@ -1677,7 +1677,7 @@ export default function Production() {
                                 const isSemi = matProd?.categoryType === 'semi_finished';
                                 const isAccessory = matProd?.categoryType === 'accessory';
                                 return (
-                                  <div key={i} className="flex items-center justify-between text-xs font-bold text-slate-700 bg-white p-1.5 rounded-xl border border-slate-100">
+                                  <div key={i} className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
                                     <div className="truncate flex items-center gap-1.5">
                                       <span className={cn(
                                         "text-[8px] font-black px-1.5 py-0.2 rounded uppercase",
@@ -1685,7 +1685,7 @@ export default function Production() {
                                       )}>
                                         {isSemi ? 'Yarı Mamul' : isAccessory ? 'Aksesuar' : 'Hammadde'}
                                       </span>
-                                      <span className="truncate text-slate-900">{matProd?.name || 'Malzeme'}</span>
+                                      <span className="truncate text-slate-900 dark:text-slate-100">{matProd?.name || 'Malzeme'}</span>
                                       {ing.color && (
                                         <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded">
                                           [{ing.color}]
@@ -1710,7 +1710,7 @@ export default function Production() {
                     )}
                   </div>
 
-                  <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => openRecipeModalForProduct(prod.id!)}
@@ -1736,7 +1736,7 @@ export default function Production() {
         <form onSubmit={handleCreateManualWorkOrder} className="space-y-4">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Üretilecek Model / Mamul</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Üretilecek Model / Mamul</label>
               <span className="text-[9px] font-bold text-indigo-600">Yalnızca Bitmiş Mamuller</span>
             </div>
             <select
@@ -1751,7 +1751,7 @@ export default function Production() {
                   setManualWoColor(selectedP.colors[0]);
                 }
               }}
-              className="w-full border border-slate-300 rounded-xl p-3 text-sm font-bold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full border border-slate-300 rounded-xl p-3 text-sm font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             >
               <option value="">Mamul Model Seçiniz...</option>
               {products?.filter(p => p.categoryType === 'finished' || (!p.categoryType && !p.isRawMaterial && p.categoryType !== 'semi_finished' && p.categoryType !== 'accessory')).map(p => (
@@ -1762,8 +1762,8 @@ export default function Production() {
 
           {/* Quick Color Selector if model has colors */}
           {manualWoProductId > 0 && productMap.get(manualWoProductId)?.colors && (
-            <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Model Renk Seçimi:</label>
+            <div className="space-y-1.5 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Model Renk Seçimi:</label>
               <div className="flex flex-wrap gap-1.5">
                 {productMap.get(manualWoProductId)!.colors!.map(col => (
                   <button
@@ -1774,7 +1774,7 @@ export default function Production() {
                       "text-xs font-black px-3 py-1.5 rounded-lg border transition-all uppercase",
                       manualWoColor === col
                         ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                        : "bg-white text-slate-700 border-slate-300 hover:border-indigo-300"
+                        : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-300 hover:border-indigo-300"
                     )}
                   >
                     {col}
@@ -1786,58 +1786,58 @@ export default function Production() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Üretim Miktarı (Çift / Adet)</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Üretim Miktarı (Çift / Adet)</label>
               <input
                 type="number"
                 required
                 min="1"
                 defaultValue="100"
                 name="quantity"
-                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-black text-slate-900 focus:outline-none"
+                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-black text-slate-900 dark:text-slate-100 focus:outline-none"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hedef Bitiş Tarihi</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hedef Bitiş Tarihi</label>
               <input
                 type="date"
                 name="targetDate"
-                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-bold text-slate-900 focus:outline-none"
+                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-bold text-slate-900 dark:text-slate-100 focus:outline-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Renk / Varyant</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Renk / Varyant</label>
               <input
                 type="text"
                 name="color"
                 value={manualWoColor}
                 onChange={e => setManualWoColor(e.target.value)}
                 placeholder="Örn: Siyah"
-                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-bold text-slate-900 focus:outline-none uppercase"
+                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-bold text-slate-900 dark:text-slate-100 focus:outline-none uppercase"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Beden / Asorti (Opsiyonel)</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Beden / Asorti (Opsiyonel)</label>
               <input
                 type="text"
                 name="size"
                 value={manualWoSize}
                 onChange={e => setManualWoSize(e.target.value)}
                 placeholder="Örn: 40-44 Asorti"
-                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-bold text-slate-900 focus:outline-none"
+                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-bold text-slate-900 dark:text-slate-100 focus:outline-none"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notlar / Özel Talimatlar</label>
+            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Notlar / Özel Talimatlar</label>
             <textarea
               name="notes"
               rows={2}
               placeholder="Örn: Kalıp 224 kullanılacak, özel logo baskısı yapılacak..."
-              className="w-full border border-slate-300 rounded-xl p-3 text-sm font-medium text-slate-900 focus:outline-none"
+              className="w-full border border-slate-300 rounded-xl p-3 text-sm font-medium text-slate-900 dark:text-slate-100 focus:outline-none"
             />
           </div>
 
@@ -1855,7 +1855,7 @@ export default function Production() {
         <form onSubmit={handleSaveRecipe} className="space-y-6">
           {/* Target Product Selection */}
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Hedef Mamul / Model</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hedef Mamul / Model</label>
             <select
               required
               value={selectedProductId}
@@ -1865,7 +1865,7 @@ export default function Production() {
                 const colorToUse = prod?.colors && prod.colors.length > 0 ? prod.colors[0] : 'all';
                 loadRecipeForProductAndColor(newId, colorToUse);
               }}
-              className="w-full border border-slate-300 rounded-xl p-3 text-sm font-black text-slate-900 bg-white focus:outline-none"
+              className="w-full border border-slate-300 rounded-xl p-3 text-sm font-black text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none"
             >
               <option value="0">Model Seçiniz...</option>
               {products?.filter(p => p.categoryType === 'finished' || (!p.categoryType && !p.isRawMaterial && p.categoryType !== 'semi_finished' && p.categoryType !== 'accessory')).map(p => (
@@ -1876,7 +1876,7 @@ export default function Production() {
 
           {/* Target Variant / Color Tabs */}
           {selectedProductId > 0 && (
-            <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div className="space-y-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                   <Palette className="w-3.5 h-3.5 text-indigo-600" />
@@ -1896,7 +1896,7 @@ export default function Production() {
                     "px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border transition-all",
                     selectedRecipeTargetColor === 'all'
                       ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                      : "bg-white text-slate-700 border-slate-200 hover:border-slate-400"
+                      : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-400"
                   )}
                 >
                   🌐 Genel (Tüm Renkler)
@@ -1914,7 +1914,7 @@ export default function Production() {
                         "px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border transition-all flex items-center gap-1.5",
                         selectedRecipeTargetColor === col
                           ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                          : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
+                          : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
                       )}
                     >
                       <span>{col}</span>
@@ -1935,7 +1935,7 @@ export default function Production() {
                   <input
                     type="text"
                     placeholder="+ Özel Renk..."
-                    className="border border-slate-200 bg-white rounded-xl px-2.5 py-1 text-xs font-bold uppercase w-28 focus:outline-none focus:border-indigo-500"
+                    className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-2.5 py-1 text-xs font-bold uppercase w-28 focus:outline-none focus:border-indigo-500"
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -1954,9 +1954,9 @@ export default function Production() {
 
           {/* Ingredients Rows */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
               <div>
-                <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider block">
                   Reçete Bileşenleri & Yarı Mamuller
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium">
@@ -1986,7 +1986,7 @@ export default function Production() {
                 const selectedMat = productMap.get(ing.productId);
                 const isSemi = selectedMat?.categoryType === 'semi_finished';
                 return (
-                  <div key={idx} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
+                  <div key={idx} className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5">
                     {/* Row 1: Department + Part Name + Material Select */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
                       {/* Department Select */}
@@ -2021,7 +2021,7 @@ export default function Production() {
                             next[idx].partName = e.target.value;
                             setRecipeIngredients(next);
                           }}
-                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-black text-blue-700 bg-white uppercase focus:outline-none"
+                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-black text-blue-700 bg-white dark:bg-slate-900 uppercase focus:outline-none"
                           list="part-suggestions"
                         />
                         <datalist id="part-suggestions">
@@ -2080,7 +2080,7 @@ export default function Production() {
                             }
                             setRecipeIngredients(next);
                           }}
-                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-black text-slate-800 bg-white focus:outline-none"
+                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-black text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none"
                         >
                           <option value="0">Malzeme Seçiniz...</option>
                           
@@ -2128,7 +2128,7 @@ export default function Production() {
                               next[idx].color = e.target.value || undefined;
                               setRecipeIngredients(next);
                             }}
-                            className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 bg-white uppercase focus:outline-none"
+                            className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 uppercase focus:outline-none"
                             list={`color-sug-${idx}`}
                           />
                           {Array.isArray(selectedMat?.colors) && selectedMat.colors.length > 0 && (
@@ -2155,7 +2155,7 @@ export default function Production() {
                             next[idx].quantity = Number(e.target.value);
                             setRecipeIngredients(next);
                           }}
-                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-black text-slate-800 text-center bg-white focus:outline-none"
+                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-black text-slate-800 dark:text-slate-200 text-center bg-white dark:bg-slate-900 focus:outline-none"
                         />
                       </div>
 
@@ -2170,7 +2170,7 @@ export default function Production() {
                             next[idx].unit = e.target.value;
                             setRecipeIngredients(next);
                           }}
-                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-600 text-center bg-white uppercase focus:outline-none"
+                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-600 text-center bg-white dark:bg-slate-900 uppercase focus:outline-none"
                         />
                       </div>
 
@@ -2187,7 +2187,7 @@ export default function Production() {
                     </div>
 
                     {/* Matrix Matching Toggle & Explanation */}
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-xs">
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-700/60 text-xs">
                       <label className="flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
@@ -2201,7 +2201,7 @@ export default function Production() {
                         />
                         <span className={cn(
                           "font-black text-[11px] uppercase tracking-wide",
-                          ing.isMatrixMatched ? "text-emerald-700" : "text-slate-500"
+                          ing.isMatrixMatched ? "text-emerald-700" : "text-slate-500 dark:text-slate-400"
                         )}>
                           🎯 Beden Matrisli (Asorti Eşlemeli)
                         </span>
@@ -2220,7 +2220,7 @@ export default function Production() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Tahmini Birim İşçilik Maliyeti (₺)</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tahmini Birim İşçilik Maliyeti (₺)</label>
               <input
                 type="number"
                 step="0.01"
@@ -2228,17 +2228,17 @@ export default function Production() {
                 value={recipeLaborCost}
                 onChange={e => setRecipeLaborCost(Number(e.target.value))}
                 placeholder="Örn: 25.50"
-                className="w-full border border-slate-300 rounded-xl p-3 text-xs font-bold text-slate-900 bg-white focus:outline-none"
+                className="w-full border border-slate-300 rounded-xl p-3 text-xs font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Reçete Notları / Proses Bilgisi</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Reçete Notları / Proses Bilgisi</label>
               <input
                 type="text"
                 value={recipeNotes}
                 onChange={e => setRecipeNotes(e.target.value)}
                 placeholder="Örn: 126 Taban için 224 nolu kalıp kullanılacaktır..."
-                className="w-full border border-slate-300 rounded-xl p-3 text-xs font-medium text-slate-900 bg-white focus:outline-none"
+                className="w-full border border-slate-300 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none"
               />
             </div>
           </div>
@@ -2259,9 +2259,9 @@ export default function Production() {
       <Modal isOpen={isStageTransitionModalOpen} onClose={() => setIsStageTransitionModalOpen(false)} title="Üretim Aşaması İlerlemesi">
         {selectedWorkOrder && (
           <div className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
               <div className="text-[10px] font-bold text-slate-400 uppercase">İş Emri & Model</div>
-              <div className="text-base font-black text-slate-900">
+              <div className="text-base font-black text-slate-900 dark:text-slate-100">
                 {productMap.get(selectedWorkOrder.productId)?.name} ({selectedWorkOrder.barcode})
               </div>
               <div className="text-xs font-bold text-indigo-700">
@@ -2270,11 +2270,11 @@ export default function Production() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hedef Aşama</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hedef Aşama</label>
               <select
                 value={transitionTargetStage}
                 onChange={e => setTransitionTargetStage(e.target.value as ProductionStage)}
-                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-black text-slate-900 bg-white focus:outline-none"
+                className="w-full border border-slate-300 rounded-xl p-3 text-sm font-black text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none"
               >
                 {PRODUCTION_STAGES_CONFIG.map(st => (
                   <option key={st.id} value={st.id}>{st.label}</option>
@@ -2284,35 +2284,35 @@ export default function Production() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">İşleyen Operatör</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">İşleyen Operatör</label>
                 <input
                   type="text"
                   placeholder="Örn: Ahmet Usta"
                   value={transitionOperator}
                   onChange={e => setTransitionOperator(e.target.value)}
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:outline-none"
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fire / Iskarta (Adet)</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fire / Iskarta (Adet)</label>
                 <input
                   type="number"
                   min="0"
                   value={transitionScrap}
                   onChange={e => setTransitionScrap(Number(e.target.value))}
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:outline-none"
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Aşama Notu</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aşama Notu</label>
               <input
                 type="text"
                 placeholder="Örn: Kesim tamamlandı, lazer baskıya aktarıldı."
                 value={transitionNotes}
                 onChange={e => setTransitionNotes(e.target.value)}
-                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-medium text-slate-800 focus:outline-none"
+                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
               />
             </div>
 
@@ -2367,7 +2367,7 @@ export default function Production() {
               </div>
             )}
 
-            <div id="printable-ticket" className="bg-white p-6 rounded-3xl border-2 border-slate-900 space-y-4 text-black">
+            <div id="printable-ticket" className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-900 space-y-4 text-black">
               {/* Header */}
               <div className="flex items-center justify-between border-b-2 border-black pb-3">
                 <div>
@@ -2380,34 +2380,34 @@ export default function Production() {
               </div>
 
               {/* Product Info */}
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-2xl border border-slate-300">
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-300">
                 <div>
-                  <span className="text-[9px] font-bold text-slate-500 uppercase block">Model Adı / Kodu</span>
+                  <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Model Adı / Kodu</span>
                   <span className="text-sm font-black text-black">
                     {productMap.get(ticketWorkOrder.productId)?.name} ({productMap.get(ticketWorkOrder.productId)?.code})
                   </span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-bold text-slate-500 uppercase block">Üretim Miktarı</span>
+                  <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Üretim Miktarı</span>
                   <span className="text-sm font-black text-black">{ticketWorkOrder.quantity} Çift / Adet</span>
                 </div>
                 {ticketWorkOrder.orderNumber && (
                   <div>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Sipariş / Müşteri</span>
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Sipariş / Müşteri</span>
                     <span className="text-xs font-black text-black">{ticketWorkOrder.orderNumber} - {ticketWorkOrder.customerName || ''}</span>
                   </div>
                 )}
                 {ticketWorkOrder.color && (
                   <div>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Varyant / Renk</span>
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Varyant / Renk</span>
                     <span className="text-xs font-black text-black">{ticketWorkOrder.color} {ticketWorkOrder.size ? `(${ticketWorkOrder.size})` : ''}</span>
                   </div>
                 )}
               </div>
 
               {/* Main Work Order Barcode */}
-              <div className="p-3 bg-white border border-slate-300 rounded-2xl flex flex-col items-center justify-center">
-                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1">İş Emri Ana Barkodu</div>
+              <div className="p-3 bg-white dark:bg-slate-900 border border-slate-300 rounded-2xl flex flex-col items-center justify-center">
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">İş Emri Ana Barkodu</div>
                 <BarcodeSvg value={ticketWorkOrder.barcode} height={50} showText={true} />
               </div>
 
@@ -2416,17 +2416,17 @@ export default function Production() {
                 <div className="text-[9px] font-black uppercase tracking-wider text-slate-600">Proses Aşama Ref Kodları</div>
                 <div className="grid grid-cols-4 gap-1.5 text-center text-[8px] font-bold font-mono">
                   {PRODUCTION_STAGES_CONFIG.slice(1, 7).map(st => (
-                    <div key={st.id} className="p-1.5 rounded-lg border border-slate-300 bg-slate-50">
-                      <div className="text-[8px] font-black uppercase text-slate-800 mb-0.5">{st.shortLabel}</div>
+                    <div key={st.id} className="p-1.5 rounded-lg border border-slate-300 bg-slate-50 dark:bg-slate-800/50">
+                      <div className="text-[8px] font-black uppercase text-slate-800 dark:text-slate-200 mb-0.5">{st.shortLabel}</div>
                       <BarcodeSvg value={`${ticketWorkOrder.barcode}-${st.id.slice(0, 3).toUpperCase()}`} height={24} showText={false} />
-                      <span className="text-[7px] text-slate-500">{ticketWorkOrder.barcode}-{st.id.slice(0, 3).toUpperCase()}</span>
+                      <span className="text-[7px] text-slate-500 dark:text-slate-400">{ticketWorkOrder.barcode}-{st.id.slice(0, 3).toUpperCase()}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => {
@@ -2498,11 +2498,11 @@ export default function Production() {
           </p>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tedarikçi Seçimi</label>
+            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tedarikçi Seçimi</label>
             <select
               value={mrpSupplierId || ''}
               onChange={e => setMrpSupplierId(Number(e.target.value) || null)}
-              className="w-full border border-slate-300 rounded-xl p-3 text-sm font-black text-slate-900 bg-white focus:outline-none"
+              className="w-full border border-slate-300 rounded-xl p-3 text-sm font-black text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none"
             >
               <option value="">Otomatik / Varsayılan Tedarikçi</option>
               {contacts?.filter(c => c.type === 'supplier').map(c => (
@@ -2511,9 +2511,9 @@ export default function Production() {
             </select>
           </div>
 
-          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1.5 max-h-40 overflow-y-auto">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-1.5 max-h-40 overflow-y-auto">
             {mrpResult?.items.filter(i => selectedMrpItems.includes(i.rawMaterialId) && i.shortageQuantity > 0).map(i => (
-              <div key={i.rawMaterialId} className="flex justify-between text-xs font-bold text-slate-800">
+              <div key={i.rawMaterialId} className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                 <span>{i.rawMaterialName}</span>
                 <span className="text-rose-600 font-black">{i.shortageQuantity} {i.unit} ({i.estimatedCost.toLocaleString('tr-TR')} ₺)</span>
               </div>

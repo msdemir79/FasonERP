@@ -175,24 +175,24 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
   return (
     <div className="space-y-6">
       {/* Top Controls */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="flex items-center gap-2">
           <button
             onClick={prevMonth}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-600 transition-colors cursor-pointer"
             title="Önceki Ay"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg">
             <Calendar className="w-4 h-4 text-indigo-600" />
-            <span className="text-sm font-black text-slate-800 tracking-wide">
+            <span className="text-sm font-black text-slate-800 dark:text-slate-200 tracking-wide">
               {MONTH_NAMES[selectedMonth - 1]} {selectedYear} Bordrosu
             </span>
           </div>
           <button
             onClick={nextMonth}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-600 transition-colors cursor-pointer"
             title="Sonraki Ay"
           >
             <ChevronRight className="w-4 h-4" />
@@ -202,11 +202,11 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
         {/* Filter & Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5 text-xs w-full lg:w-auto">
           {/* SGK Status Filter */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-lg">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
             <button
               onClick={() => setSgkFilter('all')}
               className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
-                sgkFilter === 'all' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                sgkFilter === 'all' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               Tümü ({payrolls.length})
@@ -214,7 +214,7 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
             <button
               onClick={() => setSgkFilter('sgk_li')}
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
-                sgkFilter === 'sgk_li' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                sgkFilter === 'sgk_li' ? 'bg-white dark:bg-slate-900 text-emerald-700 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               <Shield className="w-3 h-3 text-emerald-600" />
@@ -223,7 +223,7 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
             <button
               onClick={() => setSgkFilter('sgk_siz')}
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
-                sgkFilter === 'sgk_siz' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                sgkFilter === 'sgk_siz' ? 'bg-white dark:bg-slate-900 text-amber-700 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               <DollarSign className="w-3 h-3 text-amber-600" />
@@ -255,37 +255,37 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
 
             {/* Dropdown Options */}
             {isExportMenuOpen && (
-              <div className="absolute right-0 mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95">
-                <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100">
+              <div className="absolute right-0 mt-1.5 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95">
+                <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
                   Bordro Dışa Aktarma Seçenekleri
                 </div>
 
                 <button
                   onClick={() => handleExport('xls', 'filtered')}
-                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 text-slate-800 transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-bold text-slate-900">Excel İcmal Tablosu (.xls)</div>
-                    <div className="text-[10px] text-slate-500">Biçimlendirilmiş, tüm yasal kesintiler ve toplamlar</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100">Excel İcmal Tablosu (.xls)</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Biçimlendirilmiş, tüm yasal kesintiler ve toplamlar</div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => handleExport('csv', 'filtered')}
-                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 text-slate-800 transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                 >
                   <FileDown className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-bold text-slate-900">CSV Tablosu (.csv)</div>
-                    <div className="text-[10px] text-slate-500">Standart UTF-8 BOM virgüllü veri seti</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100">CSV Tablosu (.csv)</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Standart UTF-8 BOM virgüllü veri seti</div>
                   </div>
                 </button>
 
                 {sgkFilter !== 'all' && (
                   <button
                     onClick={() => handleExport('xls', 'all')}
-                    className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer border-t border-slate-100 font-semibold"
+                    className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer border-t border-slate-100 dark:border-slate-800 font-semibold"
                   >
                     <Shield className="w-4 h-4 text-indigo-600 shrink-0" />
                     <span>Tüm Personelleri Dahil Et ({payrolls.length})</span>
@@ -320,15 +320,15 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Card 1: SGK'lı Personel */}
-        <div className="p-5 bg-white rounded-xl border border-emerald-200 shadow-sm space-y-3 relative overflow-hidden">
+        <div className="p-5 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 shadow-sm space-y-3 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
                 <Shield className="w-4 h-4" />
               </span>
               <div>
-                <h4 className="font-bold text-xs text-slate-800 uppercase">SGK'lı Personel</h4>
-                <p className="text-[11px] text-slate-500">{sgkLiRecords.length} Çalışan (Bordrolu)</p>
+                <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase">SGK'lı Personel</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">{sgkLiRecords.length} Çalışan (Bordrolu)</p>
               </div>
             </div>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -339,13 +339,13 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
           <div className="space-y-1.5 pt-1 text-xs">
             <div className="flex justify-between text-slate-600">
               <span>Toplam Net Maaş:</span>
-              <span className="font-bold font-mono text-slate-900">₺{totalSgkLiNet.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+              <span className="font-bold font-mono text-slate-900 dark:text-slate-100">₺{totalSgkLiNet.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-slate-600">
               <span>SGK & Vergi Yükü:</span>
               <span className="font-mono text-rose-600">₺{totalSgkLiTaxesAndSGK.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between pt-2 border-t border-slate-100 font-black text-slate-900">
+            <div className="flex justify-between pt-2 border-t border-slate-100 dark:border-slate-800 font-black text-slate-900 dark:text-slate-100">
               <span>İşveren Toplam Maliyet:</span>
               <span className="font-mono text-emerald-700 text-sm">₺{totalSgkLiEmployerCost.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
             </div>
@@ -353,15 +353,15 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
         </div>
 
         {/* Card 2: SGK'sız / Günlük Yevmiyeli */}
-        <div className="p-5 bg-white rounded-xl border border-amber-200 shadow-sm space-y-3 relative overflow-hidden">
+        <div className="p-5 bg-white dark:bg-slate-900 rounded-xl border border-amber-200 shadow-sm space-y-3 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="p-2 bg-amber-100 text-amber-700 rounded-lg">
                 <DollarSign className="w-4 h-4" />
               </span>
               <div>
-                <h4 className="font-bold text-xs text-slate-800 uppercase">SGK'sız / Yevmiyeli</h4>
-                <p className="text-[11px] text-slate-500">{sgkSizRecords.length} Çalışan (Harici / Usta)</p>
+                <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase">SGK'sız / Yevmiyeli</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">{sgkSizRecords.length} Çalışan (Harici / Usta)</p>
               </div>
             </div>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
@@ -372,13 +372,13 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
           <div className="space-y-1.5 pt-1 text-xs">
             <div className="flex justify-between text-slate-600">
               <span>Fiili Gün / Mesai Hakediş:</span>
-              <span className="font-bold font-mono text-slate-900">₺{totalSgkSizNet.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+              <span className="font-bold font-mono text-slate-900 dark:text-slate-100">₺{totalSgkSizNet.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-slate-600">
               <span>Yasal Kesinti / Stopaj:</span>
               <span className="font-mono text-slate-400">₺0,00</span>
             </div>
-            <div className="flex justify-between pt-2 border-t border-slate-100 font-black text-slate-900">
+            <div className="flex justify-between pt-2 border-t border-slate-100 dark:border-slate-800 font-black text-slate-900 dark:text-slate-100">
               <span>Toplam Net Ödenecek:</span>
               <span className="font-mono text-amber-700 text-sm">₺{totalSgkSizCost.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
             </div>
@@ -416,14 +416,14 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
       </div>
 
       {/* Detailed Payroll Records Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-indigo-600" />
-            <h3 className="font-bold text-sm text-slate-800">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
               Personel Bordro & Hakediş Listesi ({MONTH_NAMES[selectedMonth - 1]} {selectedYear})
             </h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 dark:text-slate-200">
               {filteredPayrolls.length} Kayıt
             </span>
           </div>
@@ -453,7 +453,7 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+              <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
                 <th className="p-3">Personel</th>
                 <th className="p-3 text-center">SGK Tipi</th>
                 <th className="p-3 text-center">Puantaj</th>
@@ -461,7 +461,7 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
                 <th className="p-3 text-right">Fazla Mesai</th>
                 <th className="p-3 text-right">Yasal Kesintiler</th>
                 <th className="p-3 text-right">Avans Kes.</th>
-                <th className="p-3 text-right font-black text-slate-900">Net Ödenecek</th>
+                <th className="p-3 text-right font-black text-slate-900 dark:text-slate-100">Net Ödenecek</th>
                 <th className="p-3 text-right text-emerald-800">İşveren Maliyeti</th>
                 <th className="p-3 text-center">Muhasebe</th>
                 <th className="p-3 text-center">İşlem</th>
@@ -482,10 +482,10 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
                   const isSgk = rec.sgkStatus === 'sgk_li';
 
                   return (
-                    <tr key={rec.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={rec.id} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors">
                       <td className="p-3">
-                        <div className="font-bold text-slate-800">{rec.employeeName}</div>
-                        <div className="text-[10px] text-slate-500">{rec.employeeCode} • {rec.department}</div>
+                        <div className="font-bold text-slate-800 dark:text-slate-200">{rec.employeeName}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">{rec.employeeCode} • {rec.department}</div>
                       </td>
 
                       <td className="p-3 text-center">
@@ -497,13 +497,13 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
                       </td>
 
                       <td className="p-3 text-center">
-                        <div className="font-semibold text-slate-700">{rec.daysWorked} Gün</div>
+                        <div className="font-semibold text-slate-700 dark:text-slate-200">{rec.daysWorked} Gün</div>
                         {rec.overtimeHours > 0 && (
                           <div className="text-[10px] font-bold text-indigo-600">+{rec.overtimeHours} sa mesai</div>
                         )}
                       </td>
 
-                      <td className="p-3 text-right font-mono font-medium text-slate-700">
+                      <td className="p-3 text-right font-mono font-medium text-slate-700 dark:text-slate-200">
                         ₺{rec.basePay.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                       </td>
 
@@ -519,7 +519,7 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
                         {rec.advanceDeduction > 0 ? `-₺${rec.advanceDeduction.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : '-'}
                       </td>
 
-                      <td className="p-3 text-right font-mono font-black text-slate-900 bg-slate-50/50">
+                      <td className="p-3 text-right font-mono font-black text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-800/50/50">
                         ₺{rec.netSalary.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                       </td>
 
@@ -537,7 +537,7 @@ export default function PayrollTab({ employees, onPayrollUpdated }: PayrollTabPr
                           <button
                             onClick={() => handleAccountPayroll(rec.id!)}
                             disabled={accountingPayrollId === rec.id}
-                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold border border-slate-300 transition-colors flex items-center gap-1 mx-auto disabled:opacity-50"
+                            className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded text-[10px] font-bold border border-slate-300 transition-colors flex items-center gap-1 mx-auto disabled:opacity-50"
                             title="Genel Muhasebe TDHP Yevmiye Fişi Oluştur"
                           >
                             <BookOpen className="w-3 h-3 text-indigo-600" />

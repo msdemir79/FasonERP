@@ -45,7 +45,7 @@ const MONTH_NAMES = [
 
 const STATUS_CONFIG: Record<AttendanceStatus, { label: string; code: string; bg: string; text: string; border: string }> = {
   present: { label: 'Geldi (Normal)', code: 'N', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-300' },
-  weekly_rest: { label: 'Hafta Tatili', code: 'H', bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-300' },
+  weekly_rest: { label: 'Hafta Tatili', code: 'H', bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600', border: 'border-slate-300' },
   absent: { label: 'Devamsız', code: 'D', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-300' },
   paid_leave: { label: 'Ücretli İzin', code: 'İ', bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-300' },
   unpaid_leave: { label: 'Ücretsiz İzin', code: 'Ü', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-300' },
@@ -463,27 +463,27 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       )}
 
       {/* Top Header & Month Controls */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         
         {/* Month Picker & Lock Status Indicator */}
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex items-center gap-1.5">
             <button
               onClick={prevMonth}
-              className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+              className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-600 transition-colors"
               title="Önceki Ay"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg">
               <Calendar className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm font-black text-slate-800 tracking-wide">
+              <span className="text-sm font-black text-slate-800 dark:text-slate-200 tracking-wide">
                 {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
               </span>
             </div>
             <button
               onClick={nextMonth}
-              className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+              className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-600 transition-colors"
               title="Sonraki Ay"
             >
               <ChevronRight className="w-4 h-4" />
@@ -504,10 +504,10 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
           ) : (
             <button
               onClick={() => setIsLockModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg font-semibold text-xs transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 border border-slate-300 rounded-lg font-semibold text-xs transition-colors cursor-pointer"
               title="Puantaj tamamlandığında dönemi kilitleyerek yanlışlıkla değiştirilmesini önleyin"
             >
-              <Lock className="w-3.5 h-3.5 text-slate-500" />
+              <Lock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>Dönemi Kilitle</span>
             </button>
           )}
@@ -516,11 +516,11 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
         {/* Filter & Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5 text-xs w-full lg:w-auto">
           {/* SGK Status Filter */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-lg">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
             <button
               onClick={() => setSgkFilter('all')}
               className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
-                sgkFilter === 'all' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                sgkFilter === 'all' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               Tümü ({employees.length})
@@ -528,7 +528,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
             <button
               onClick={() => setSgkFilter('sgk_li')}
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1 transition-colors ${
-                sgkFilter === 'sgk_li' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                sgkFilter === 'sgk_li' ? 'bg-white dark:bg-slate-900 text-emerald-700 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               <Shield className="w-3 h-3 text-emerald-600" />
@@ -537,7 +537,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
             <button
               onClick={() => setSgkFilter('sgk_siz')}
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1 transition-colors ${
-                sgkFilter === 'sgk_siz' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                sgkFilter === 'sgk_siz' ? 'bg-white dark:bg-slate-900 text-amber-700 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               <DollarSign className="w-3 h-3 text-amber-600" />
@@ -578,36 +578,36 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
 
             {/* Dropdown Options */}
             {isExportMenuOpen && (
-              <div className="absolute right-0 mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95">
-                <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100">
+              <div className="absolute right-0 mt-1.5 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95">
+                <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
                   Puantaj Dışa Aktarma Seçenekleri
                 </div>
 
                 <button
                   onClick={() => handleExport('xls', 'filtered')}
-                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 text-slate-800 transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-bold text-slate-900">Excel Formatı (.xls)</div>
-                    <div className="text-[10px] text-slate-500">Renkli 1-31 puantaj matrisi, lejant ve genel toplamlar</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100">Excel Formatı (.xls)</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Renkli 1-31 puantaj matrisi, lejant ve genel toplamlar</div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => handleExport('csv', 'filtered')}
-                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 text-slate-800 transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                 >
                   <FileDown className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-bold text-slate-900">CSV Tablosu (.csv)</div>
-                    <div className="text-[10px] text-slate-500">Standart UTF-8 BOM virgüllü veri seti</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100">CSV Tablosu (.csv)</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Standart UTF-8 BOM virgüllü veri seti</div>
                   </div>
                 </button>
 
                 {selectedEmpIds.length > 0 && (
                   <>
-                    <div className="my-1 border-t border-slate-100"></div>
+                    <div className="my-1 border-t border-slate-100 dark:border-slate-800"></div>
                     <button
                       onClick={() => handleExport('xls', 'selected')}
                       className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-indigo-50 text-indigo-900 font-bold transition-colors cursor-pointer"
@@ -621,9 +621,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                 {employees.length !== filteredEmployees.length && (
                   <button
                     onClick={() => handleExport('xls', 'all')}
-                    className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer border-t border-slate-100"
+                    className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer border-t border-slate-100 dark:border-slate-800"
                   >
-                    <Users className="w-4 h-4 text-slate-500 shrink-0" />
+                    <Users className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
                     <span>Tüm Aktif Personelleri Aktar ({employees.length})</span>
                   </button>
                 )}
@@ -679,7 +679,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
           </div>
           <button
             onClick={() => setIsLockModalOpen(true)}
-            className="shrink-0 px-3.5 py-1.5 bg-white hover:bg-rose-100 text-rose-900 font-bold rounded-lg border border-rose-300 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5 text-xs"
+            className="shrink-0 px-3.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-rose-100 text-rose-900 font-bold rounded-lg border border-rose-300 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5 text-xs"
           >
             <Unlock className="w-3.5 h-3.5 text-rose-700" />
             Dönem Kilidini Aç
@@ -742,7 +742,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       )}
 
       {/* Status Legend (Renk Açıklaması) */}
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 text-[11px]">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
         <span className="font-bold text-slate-600 mr-2 flex items-center gap-1">
           <Info className="w-3 h-3" /> Kodlar:
         </span>
@@ -763,12 +763,12 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       </div>
 
       {/* Puantaj Matrisi (Calendar Matrix Table) */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-x-auto">
         <table className="w-full text-xs text-left border-collapse min-w-[1100px]">
           <thead>
-            <tr className="bg-slate-100 text-slate-700 border-b border-slate-200 font-bold">
+            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 font-bold">
               {/* Checkbox Select All */}
-              <th className="p-2 w-8 text-center bg-slate-100 sticky left-0 z-20 shadow-xs border-r border-slate-200">
+              <th className="p-2 w-8 text-center bg-slate-100 dark:bg-slate-800 sticky left-0 z-20 shadow-xs border-r border-slate-200 dark:border-slate-700">
                 <input
                   type="checkbox"
                   checked={selectedEmpIds.length > 0 && selectedEmpIds.length === filteredEmployees.length}
@@ -778,7 +778,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                 />
               </th>
               
-              <th className="p-3 sticky left-8 bg-slate-100 z-10 w-52 min-w-[200px] shadow-xs">
+              <th className="p-3 sticky left-8 bg-slate-100 dark:bg-slate-800 z-10 w-52 min-w-[200px] shadow-xs">
                 Personel & Hızlı İşlem
               </th>
               <th className="p-2 w-20 text-center">Statü</th>
@@ -793,21 +793,21 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                 return (
                   <th
                     key={day}
-                    className={`p-1 text-center w-8 min-w-[32px] border-l border-slate-200 ${
-                      isSunday ? 'bg-slate-200/70 text-rose-600 font-black' : isSaturday ? 'bg-slate-150 text-slate-700' : ''
+                    className={`p-1 text-center w-8 min-w-[32px] border-l border-slate-200 dark:border-slate-700 ${
+                      isSunday ? 'bg-slate-200/70 text-rose-600 font-black' : isSaturday ? 'bg-slate-150 text-slate-700 dark:text-slate-200' : ''
                     }`}
                   >
-                    <div className="text-[10px] font-normal text-slate-500">{dayName}</div>
+                    <div className="text-[10px] font-normal text-slate-500 dark:text-slate-400">{dayName}</div>
                     <div className="text-xs font-bold">{day}</div>
                   </th>
                 );
               })}
 
               {/* Summary Headers */}
-              <th className="p-2 text-center bg-slate-100 border-l border-slate-300 w-12 text-[11px]">Fiili</th>
-              <th className="p-2 text-center bg-slate-100 w-12 text-[11px]">Tatil</th>
-              <th className="p-2 text-center bg-slate-100 w-12 text-[11px]">İzin</th>
-              <th className="p-2 text-center bg-slate-100 w-12 text-[11px] text-rose-600">Devam.</th>
+              <th className="p-2 text-center bg-slate-100 dark:bg-slate-800 border-l border-slate-300 w-12 text-[11px]">Fiili</th>
+              <th className="p-2 text-center bg-slate-100 dark:bg-slate-800 w-12 text-[11px]">Tatil</th>
+              <th className="p-2 text-center bg-slate-100 dark:bg-slate-800 w-12 text-[11px]">İzin</th>
+              <th className="p-2 text-center bg-slate-100 dark:bg-slate-800 w-12 text-[11px] text-rose-600">Devam.</th>
               <th className="p-2 text-center bg-indigo-50 text-indigo-700 border-l border-indigo-200 w-14 text-[11px]">FM (Sa)</th>
             </tr>
           </thead>
@@ -833,9 +833,9 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                 let totalOvertime = 0;
 
                 return (
-                  <tr key={emp.id} className={`transition-colors ${isSelected ? 'bg-indigo-50/40' : 'hover:bg-slate-50/80'}`}>
+                  <tr key={emp.id} className={`transition-colors ${isSelected ? 'bg-indigo-50/40' : 'hover:bg-slate-50 dark:bg-slate-800/50/80'}`}>
                     {/* Checkbox */}
-                    <td className="p-2 text-center sticky left-0 bg-white group-hover:bg-slate-50 z-20 border-r border-slate-200 shadow-xs">
+                    <td className="p-2 text-center sticky left-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:bg-slate-800/50 z-20 border-r border-slate-200 dark:border-slate-700 shadow-xs">
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -845,13 +845,13 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                     </td>
 
                     {/* Employee info with Quick Action Button */}
-                    <td className="p-3 sticky left-8 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-200 shadow-xs">
+                    <td className="p-3 sticky left-8 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:bg-slate-800/50 z-10 border-r border-slate-200 dark:border-slate-700 shadow-xs">
                       <div className="flex items-center justify-between gap-1">
                         <div className="truncate">
-                          <div className="font-bold text-slate-800 truncate">{emp.name}</div>
+                          <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{emp.name}</div>
                           <div className="flex items-center gap-1 mt-0.5">
-                            <span className="text-[10px] font-mono text-slate-500">{emp.employeeCode}</span>
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium truncate">
+                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{emp.employeeCode}</span>
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 font-medium truncate">
                               {emp.department}
                             </span>
                           </div>
@@ -913,7 +913,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                               ? 'cursor-not-allowed opacity-95' 
                               : 'cursor-pointer hover:ring-2 hover:ring-indigo-400 hover:z-20'
                           } ${
-                            isSunday && status === 'weekly_rest' ? 'bg-slate-50' : ''
+                            isSunday && status === 'weekly_rest' ? 'bg-slate-50 dark:bg-slate-800/50' : ''
                           }`}
                           title={`${emp.name} - ${day} ${MONTH_NAMES[selectedMonth - 1]}: ${cfg.label} ${overtime > 0 ? `(${overtime} sa mesai)` : ''}${isLocked ? ' [Dönem Kilitli]' : ''}`}
                         >
@@ -935,7 +935,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                     <td className="p-2 text-center font-bold text-emerald-700 bg-emerald-50/30 border-l border-slate-300">
                       {workedCount}
                     </td>
-                    <td className="p-2 text-center font-medium text-slate-600 bg-slate-50/50">
+                    <td className="p-2 text-center font-medium text-slate-600 bg-slate-50 dark:bg-slate-800/50/50">
                       {restCount}
                     </td>
                     <td className="p-2 text-center font-medium text-sky-700 bg-sky-50/30">
@@ -970,17 +970,17 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       {/* ============================================================ */}
       {isBulkModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 p-6 space-y-5 animate-in fade-in zoom-in-95">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700 p-6 space-y-5 animate-in fade-in zoom-in-95">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
                   <Layers className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-slate-800">Toplu Puantaj İşlemleri</h3>
-                  <p className="text-xs text-slate-500">
+                  <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Toplu Puantaj İşlemleri</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Dönem: <b>{MONTH_NAMES[selectedMonth - 1]} {selectedYear}</b>
                   </p>
                 </div>
@@ -1020,7 +1020,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
 
             {/* Kapsam Seçimi (Scope) */}
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-slate-700 uppercase">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase">
                 Uygulanacak Kapsam
               </label>
 
@@ -1031,7 +1031,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                   className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                     bulkScope === 'all'
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500/20'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200'
                   }`}
                 >
                   <Users className="w-4 h-4 mx-auto mb-1 text-indigo-600" />
@@ -1044,7 +1044,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                   className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                     bulkScope === 'selected_single'
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500/20'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200'
                   }`}
                 >
                   <UserCheck className="w-4 h-4 mx-auto mb-1 text-indigo-600" />
@@ -1057,7 +1057,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                   className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                     bulkScope === 'selected_multiple'
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500/20'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200'
                   }`}
                 >
                   <CheckSquare className="w-4 h-4 mx-auto mb-1 text-indigo-600" />
@@ -1068,13 +1068,13 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
               {/* Single Employee Picker if scope === selected_single */}
               {bulkScope === 'selected_single' && (
                 <div className="pt-2 animate-in fade-in">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
                     Personel Seçiniz
                   </label>
                   <select
                     value={bulkTargetEmployeeId}
                     onChange={(e) => setBulkTargetEmployeeId(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-900"
                   >
                     {employees.map(e => (
                       <option key={e.id} value={e.id}>
@@ -1088,7 +1088,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
 
             {/* Atanacak Durum */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-700 uppercase">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase">
                 Atanacak Çalışma Durumu
               </label>
               
@@ -1101,7 +1101,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                     className={`px-3 py-2 rounded-lg border text-left flex items-center gap-2 transition-all text-xs cursor-pointer ${
                       bulkTargetStatus === key
                         ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-2 ring-indigo-500/20 font-bold'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200'
                     }`}
                   >
                     <span className={`w-5 h-5 rounded flex items-center justify-center font-bold text-[10px] ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
@@ -1127,7 +1127,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={handleClearAttendance}
@@ -1142,7 +1142,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                 <button
                   type="button"
                   onClick={() => setIsBulkModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:bg-slate-800 rounded-lg cursor-pointer"
                 >
                   Vazgeç
                 </button>
@@ -1167,19 +1167,19 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       {/* ============================================================ */}
       {isLockModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 p-6 space-y-5 animate-in fade-in zoom-in-95">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6 space-y-5 animate-in fade-in zoom-in-95">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
                 <div className={`p-2.5 rounded-xl ${isLocked ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                   {isLocked ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-slate-900">
+                  <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
                     {isLocked ? 'Dönem Kilidini Aç' : 'Puantaj Dönemini Kilitle'}
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {MONTH_NAMES[selectedMonth - 1]} {selectedYear} Dönemi
                   </p>
                 </div>
@@ -1212,8 +1212,8 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                   )}
                 </div>
               ) : (
-                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs text-slate-700">
-                  <div className="font-bold flex items-center gap-1.5 text-slate-900">
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2 text-xs text-slate-700 dark:text-slate-200">
+                  <div className="font-bold flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
                     <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
                     <span>Kesinleşmiş Puantajı Koruma</span>
                   </div>
@@ -1231,7 +1231,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
               {/* Form Inputs */}
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
                     İşlemi Yapan Yetkili
                   </label>
                   <input
@@ -1239,12 +1239,12 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                     value={lockOperatorName}
                     onChange={(e) => setLockOperatorName(e.target.value)}
                     placeholder="Örn: İK Yöneticisi / Ad Soyad"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-900"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
                     {isLocked ? 'Kilit Açma Gerekçesi / Notu (Opsiyonel)' : 'Kilitleme Notu / Açıklama (Opsiyonel)'}
                   </label>
                   <textarea
@@ -1252,19 +1252,19 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                     onChange={(e) => setLockNotes(e.target.value)}
                     placeholder={isLocked ? 'Örn: Düzeltme talebi üzerine kilit açıldı' : 'Örn: Puantaj kontrolleri tamamlandı, bordroya aktarıldı.'}
                     rows={2}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white resize-none"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-900 resize-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setIsLockModalOpen(false)}
                 disabled={isLocking}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:bg-slate-800 rounded-lg cursor-pointer"
               >
                 Vazgeç
               </button>
@@ -1301,17 +1301,17 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
       {/* ============================================================ */}
       {activeCell && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 p-5 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-sm text-slate-800">{activeCell.employeeName}</h3>
-              <p className="text-xs text-slate-500">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-700 p-5 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">{activeCell.employeeName}</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {activeCell.day} {MONTH_NAMES[selectedMonth - 1]} {selectedYear} Puantaj Girişi
               </p>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5 uppercase">
                   Çalışma Durumu
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -1323,7 +1323,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                       className={`px-2.5 py-2 rounded-lg border text-left flex items-center gap-2 transition-all ${
                         editStatus === key
                           ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-2 ring-indigo-500/20 font-bold'
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200'
                       }`}
                     >
                       <span className={`w-5 h-5 rounded flex items-center justify-center font-bold text-[10px] ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
@@ -1336,7 +1336,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase flex items-center justify-between">
                   <span>Fazla Mesai Saati</span>
                   <span className="text-indigo-600 font-mono font-bold">{editOvertime} Saat</span>
                 </label>
@@ -1363,11 +1363,11 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setActiveCell(null)}
-                className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:bg-slate-800 rounded-lg"
               >
                 İptal
               </button>

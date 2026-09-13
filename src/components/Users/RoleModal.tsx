@@ -126,7 +126,7 @@ export default function RoleModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -161,7 +161,7 @@ export default function RoleModal({
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
               Rol Adı <span className="text-rose-500">*</span>
             </label>
             <input
@@ -170,12 +170,12 @@ export default function RoleModal({
               placeholder="Örn: Fason Saya Takipçisi"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
               Sistem Rol Kodu <span className="text-rose-500">*</span>
             </label>
             <input
@@ -185,7 +185,7 @@ export default function RoleModal({
               placeholder="Örn: fason_tracker"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
             />
             <span className="text-[10px] text-slate-400 mt-0.5 block">
               {role?.isSystem ? 'Sistem rollerinin kodu değiştirilemez.' : 'Benzersiz tanımlayıcı (küçük harf ve alt çizgi)'}
@@ -193,7 +193,7 @@ export default function RoleModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
               Rol Açıklaması
             </label>
             <textarea
@@ -201,7 +201,7 @@ export default function RoleModal({
               placeholder="Bu role sahip kullanıcıların şirket içindeki yetki kapsamı..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
           </div>
 
@@ -215,7 +215,7 @@ export default function RoleModal({
               <select
                 value={templateRoleCode}
                 onChange={(e) => setTemplateRoleCode(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="blank">⚪ Boş Şablon (Tüm Yetkiler Kapalı)</option>
                 <option value="full">🟢 Tam Yetkili Şablon (Tüm Yetkiler Açık)</option>
@@ -235,7 +235,7 @@ export default function RoleModal({
 
           {/* Renk Seçimi */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
               Rol Rozet Rengi
             </label>
             <div className="flex items-center gap-2">
@@ -247,7 +247,7 @@ export default function RoleModal({
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
                     color === c 
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800'
                   }`}
                 >
                   {c}
@@ -257,11 +257,11 @@ export default function RoleModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors"
             >
               İptal
             </button>

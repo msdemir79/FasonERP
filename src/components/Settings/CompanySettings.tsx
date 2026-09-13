@@ -201,7 +201,7 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
       )}
 
       {/* SECTION 1: FİRMA KİMLİK VE ANTET BİLGİLERİ */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -216,14 +216,14 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* LOGO YÜKLEME ALANI */}
-          <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80 space-y-3">
+          <div className="bg-slate-50 dark:bg-slate-800/50/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <label className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                   <ImageIcon className="w-4 h-4 text-indigo-600" />
                   Firma Logosu
                 </label>
-                <p className="text-[11px] text-slate-500 font-normal mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal mt-0.5">
                   Eklenen logo yan menüde (panelde) ve tüm sayfa başlıklarında gösterilir. (PNG, JPG, SVG - max 2MB)
                 </p>
               </div>
@@ -242,7 +242,7 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
               {comp.logo ? (
                 <div className="relative group shrink-0">
-                  <div className="w-24 h-24 rounded-2xl bg-white border-2 border-indigo-200 p-2 shadow-xs flex items-center justify-center overflow-hidden">
+                  <div className="w-24 h-24 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-200 p-2 shadow-xs flex items-center justify-center overflow-hidden">
                     <img src={comp.logo} alt="Firma Logosu" className="max-w-full max-h-full object-contain" />
                   </div>
                   <div className="mt-1 text-center">
@@ -252,15 +252,15 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
                   </div>
                 </div>
               ) : (
-                <div className="w-24 h-24 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 shrink-0">
+                <div className="w-24 h-24 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 shrink-0">
                   <ImageIcon className="w-8 h-8 stroke-1" />
                   <span className="text-[10px] font-medium mt-1">Logo Yok</span>
                 </div>
               )}
 
               <div className="flex-1 space-y-2 w-full">
-                <label className="flex flex-col items-center justify-center px-4 py-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all shadow-2xs group text-center">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700 group-hover:text-indigo-600">
+                <label className="flex flex-col items-center justify-center px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all shadow-2xs group text-center">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600">
                     <UploadCloud className="w-4 h-4 text-indigo-600" />
                     <span>{comp.logo ? 'Logoyu Değiştir' : 'Yeni Logo Görseli Yükle'}</span>
                   </div>
@@ -278,96 +278,96 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Firma Kısa Adı (Ticari Marka)</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Firma Kısa Adı (Ticari Marka)</label>
               <input
                 type="text"
                 required
                 value={comp.companyName || ''}
                 onChange={e => setComp({ ...comp, companyName: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Resmi Ticari Ünvan</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Resmi Ticari Ünvan</label>
               <input
                 type="text"
                 required
                 value={comp.companyTitle || ''}
                 onChange={e => setComp({ ...comp, companyTitle: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Vergi Dairesi</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Vergi Dairesi</label>
               <input
                 type="text"
                 value={comp.taxOffice || ''}
                 onChange={e => setComp({ ...comp, taxOffice: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Vergi Kimlik Numarası (VKN)</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Vergi Kimlik Numarası (VKN)</label>
               <input
                 type="text"
                 value={comp.taxNumber || ''}
                 onChange={e => setComp({ ...comp, taxNumber: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Telefon</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Telefon</label>
               <input
                 type="text"
                 value={comp.phone || ''}
                 onChange={e => setComp({ ...comp, phone: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">E-Posta</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">E-Posta</label>
               <input
                 type="email"
                 value={comp.email || ''}
                 onChange={e => setComp({ ...comp, email: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
             <div className="md:col-span-2 space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Firma Adresi</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Firma Adresi</label>
               <textarea
                 rows={2}
                 value={comp.address || ''}
                 onChange={e => setComp({ ...comp, address: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Banka & Şube</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Banka & Şube</label>
               <input
                 type="text"
                 value={comp.bankName || ''}
                 onChange={e => setComp({ ...comp, bankName: e.target.value })}
                 placeholder="Örn: Garanti BBVA Merter"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">IBAN Numarası</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">IBAN Numarası</label>
               <input
                 type="text"
                 value={comp.iban || ''}
                 onChange={e => setComp({ ...comp, iban: e.target.value })}
                 placeholder="TRXX 0000 0000 0000 0000 00"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
           </div>
@@ -386,7 +386,7 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
       </div>
 
       {/* SECTION 2: VERİTABANI YÖNETİMİ, YEDEKLEME VE SIFIRLAMA */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -401,13 +401,13 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
 
         <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Backup */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between space-y-4">
+          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 flex flex-col justify-between space-y-4">
             <div className="space-y-2">
               <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
                 <Download className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Tam Veritabanı Yedeği</h4>
-              <p className="text-[11px] text-slate-500">Stoklar, siparişler, irsaliyeler, cariler ve ayarları tek bir JSON dosyasında bilgisayarınıza indirir.</p>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">Tam Veritabanı Yedeği</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Stoklar, siparişler, irsaliyeler, cariler ve ayarları tek bir JSON dosyasında bilgisayarınıza indirir.</p>
             </div>
 
             <button
@@ -422,13 +422,13 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
           </div>
 
           {/* Restore */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between space-y-4">
+          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 flex flex-col justify-between space-y-4">
             <div className="space-y-2">
               <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
                 <Upload className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Yedekten Geri Yükle</h4>
-              <p className="text-[11px] text-slate-500">Daha önce aldığınız bir ProERP JSON yedek dosyasını sisteme yükleyerek verileri yeniler.</p>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">Yedekten Geri Yükle</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Daha önce aldığınız bir ProERP JSON yedek dosyasını sisteme yükleyerek verileri yeniler.</p>
             </div>
 
             <label className="w-full bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs">
@@ -444,13 +444,13 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
           </div>
 
           {/* Reset Demo */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between space-y-4">
+          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 flex flex-col justify-between space-y-4">
             <div className="space-y-2">
               <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">
                 <RefreshCw className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Fabrika / Demo Verisi</h4>
-              <p className="text-[11px] text-slate-500">Tüm tabloları sıfırlar ve zengin ayakkabı imalat demo verilerini (ürünler, reçeteler, cariler) tekrar yükler.</p>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">Fabrika / Demo Verisi</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Tüm tabloları sıfırlar ve zengin ayakkabı imalat demo verilerini (ürünler, reçeteler, cariler) tekrar yükler.</p>
             </div>
 
             <button

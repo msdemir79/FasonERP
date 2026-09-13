@@ -23,7 +23,7 @@ interface LeaveTabProps {
 const LEAVE_TYPE_CONFIG: Record<LeaveType, { label: string; color: string; bg: string }> = {
   annual: { label: 'Yıllık İzin', color: 'text-sky-700', bg: 'bg-sky-50 border-sky-200' },
   excuse: { label: 'Mazeret İzni', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
-  unpaid: { label: 'Ücretsiz İzin', color: 'text-slate-700', bg: 'bg-slate-100 border-slate-200' },
+  unpaid: { label: 'Ücretsiz İzin', color: 'text-slate-700 dark:text-slate-200', bg: 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700' },
   sick: { label: 'Sağlık / Rapor', color: 'text-purple-700', bg: 'bg-purple-50 border-purple-200' },
   marriage: { label: 'Evlilik İzni', color: 'text-pink-700', bg: 'bg-pink-50 border-pink-200' },
   maternity: { label: 'Doğum İzni', color: 'text-teal-700', bg: 'bg-teal-50 border-teal-200' },
@@ -152,7 +152,7 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
   return (
     <div className="space-y-6">
       {/* Top Header Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         
         {/* Search and Filters */}
         <div className="flex flex-wrap items-center gap-3 flex-1">
@@ -167,11 +167,11 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
             />
           </div>
 
-          <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs">
             <button
               onClick={() => setStatusFilter('all')}
               className={`px-3 py-1 rounded-md font-semibold transition-colors ${
-                statusFilter === 'all' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                statusFilter === 'all' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               Tümü ({leaves.length})
@@ -179,7 +179,7 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
             <button
               onClick={() => setStatusFilter('pending')}
               className={`px-3 py-1 rounded-md font-semibold transition-colors ${
-                statusFilter === 'pending' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                statusFilter === 'pending' ? 'bg-white dark:bg-slate-900 text-amber-700 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               Bekleyen ({leaves.filter(l => l.status === 'pending').length})
@@ -187,7 +187,7 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
             <button
               onClick={() => setStatusFilter('approved')}
               className={`px-3 py-1 rounded-md font-semibold transition-colors ${
-                statusFilter === 'approved' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                statusFilter === 'approved' ? 'bg-white dark:bg-slate-900 text-emerald-700 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               Onaylanan ({leaves.filter(l => l.status === 'approved').length})
@@ -212,13 +212,13 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left 2 Cols: Leave Requests List */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-indigo-600" />
               İzin Talepleri & Geçmişi
             </h3>
-            <span className="text-xs text-slate-500 font-medium">{filteredLeaves.length} Talep</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{filteredLeaves.length} Talep</span>
           </div>
 
           <div className="divide-y divide-slate-100">
@@ -231,19 +231,19 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
                 const typeCfg = LEAVE_TYPE_CONFIG[leave.leaveType] || LEAVE_TYPE_CONFIG.annual;
 
                 return (
-                  <div key={leave.id} className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div key={leave.id} className="p-4 hover:bg-slate-50 dark:bg-slate-800/50/70 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-slate-800">{leave.employeeName}</span>
+                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">{leave.employeeName}</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${typeCfg.bg} ${typeCfg.color}`}>
                           {typeCfg.label}
                         </span>
-                        <span className="text-xs font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                        <span className="text-xs font-black text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
                           {leave.days} Gün
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                         <span>
                           {new Date(leave.startDate).toLocaleDateString('tr-TR')} - {new Date(leave.endDate).toLocaleDateString('tr-TR')}
                         </span>
@@ -304,8 +304,8 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
         </div>
 
         {/* Right 1 Col: Employee Leave Balances Overview */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
-          <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
+          <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <User className="w-4 h-4 text-indigo-600" />
             Personel Yıllık İzin Durumu
           </h3>
@@ -318,11 +318,11 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
               const percent = Math.min(100, Math.round((used / (entitled || 1)) * 100));
 
               return (
-                <div key={emp.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200/70 space-y-2">
+                <div key={emp.id} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700/70 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-bold text-xs text-slate-800">{emp.name}</p>
-                      <p className="text-[10px] text-slate-500">{emp.position}</p>
+                      <p className="font-bold text-xs text-slate-800 dark:text-slate-200">{emp.name}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">{emp.position}</p>
                     </div>
                     <span className="text-xs font-mono font-black text-indigo-600">
                       {remaining} Gün Kaldı
@@ -339,7 +339,7 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
                     />
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] text-slate-500">
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                     <span>Hak Edilen: <b>{entitled}g</b></span>
                     <span>Kullanılan: <b>{used}g</b></span>
                   </div>
@@ -353,9 +353,9 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
       {/* NEW LEAVE MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-base text-slate-800">Yeni İzin Talebi</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Yeni İzin Talebi</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
@@ -372,13 +372,13 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
 
             <form onSubmit={handleCreateLeave} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">
                   Personel *
                 </label>
                 <select
                   value={selectedEmployeeId}
                   onChange={(e) => setSelectedEmployeeId(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-slate-900"
                 >
                   {employees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
@@ -389,13 +389,13 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">
                   İzin Türü *
                 </label>
                 <select
                   value={leaveType}
                   onChange={(e) => setLeaveType(e.target.value as LeaveType)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-slate-900"
                 >
                   <option value="annual">Yıllık Ücretli İzin</option>
                   <option value="excuse">Mazeret İzni</option>
@@ -409,7 +409,7 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">
                     Başlangıç Tarihi
                   </label>
                   <input
@@ -422,7 +422,7 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">
                     Bitiş Tarihi
                   </label>
                   <input
@@ -436,7 +436,7 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">
                   İzin Gün Sayısı
                 </label>
                 <input
@@ -449,7 +449,7 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">
                   Gerekçe / Açıklama
                 </label>
                 <textarea
@@ -461,11 +461,11 @@ export default function LeaveTab({ employees, onLeavesUpdated }: LeaveTabProps) 
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:bg-slate-800 rounded-lg"
                 >
                   Vazgeç
                 </button>

@@ -223,12 +223,12 @@ export function InvoicePrintModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl border border-slate-200 flex flex-col max-h-[96vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-150">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[96vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-150">
         
         {/* ========================================================================= */}
         {/* ÜST EYLEM VE ŞABLON SEÇİM ÇUBUĞU (Ekranda görünür, baskıda gizlenir) */}
         {/* ========================================================================= */}
-        <div className="p-3 sm:p-4 border-b border-slate-200 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 print:hidden">
           
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-indigo-500/20 border border-indigo-400/30 rounded-xl flex items-center justify-center text-indigo-400">
@@ -261,7 +261,7 @@ export function InvoicePrintModal({
               )}
               title="Gelir İdaresi Başkanlığı resmi standart e-Arşiv / e-Fatura formatı (Kırmızı GİB Rozetli Klasik)"
             >
-              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-white dark:bg-slate-900 animate-pulse" />
               1. GİB Klasik Resmi
             </button>
 
@@ -336,9 +336,9 @@ export function InvoicePrintModal({
         {/* ========================================================================= */}
         {/* BELGE GÖRÜNTÜLEME ALANI */}
         {/* ========================================================================= */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-200/60 print:p-0 print:bg-white print:overflow-visible">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-200/60 print:p-0 print:bg-white dark:bg-slate-900 print:overflow-visible">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-24 text-slate-500 gap-3">
+            <div className="flex flex-col items-center justify-center py-24 text-slate-500 dark:text-slate-400 gap-3">
               <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
               <div className="text-xs font-bold uppercase tracking-wider">Fatura detayları yükleniyor...</div>
             </div>
@@ -347,7 +347,7 @@ export function InvoicePrintModal({
           ) : (
             <div 
               ref={printContainerRef}
-              className="max-w-[210mm] mx-auto bg-white p-6 sm:p-8 rounded-xl border border-slate-300 shadow-md print:border-none print:shadow-none print:p-0 text-slate-900 relative print:m-0"
+              className="max-w-[210mm] mx-auto bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-xl border border-slate-300 shadow-md print:border-none print:shadow-none print:p-0 text-slate-900 dark:text-slate-100 relative print:m-0"
               style={{ minHeight: '270mm' }}
             >
               
@@ -442,7 +442,7 @@ function GibOfficialTemplate({
     : (isSales ? 'e-ARŞİV FATURA' : 'ALIŞ FATURASI');
 
   return (
-    <div className="space-y-4 font-sans text-xs text-slate-900">
+    <div className="space-y-4 font-sans text-xs text-slate-900 dark:text-slate-100">
       
       {/* 1. Üst Başlık Şeridi: Sol Kurumsal Logo & Ortada GİB e-Arşiv Rozeti & Sağda Belge Bilgileri */}
       <div className="grid grid-cols-12 gap-3 pb-3 border-b-2 border-slate-900 items-center">
@@ -450,7 +450,7 @@ function GibOfficialTemplate({
         {/* Sol Sütun: Firma Logosu */}
         <div className="col-span-4 flex items-center gap-3">
           {compLogo ? (
-            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-0.5 border border-slate-300 shrink-0 overflow-hidden shadow-xs">
+            <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center p-0.5 border border-slate-300 shrink-0 overflow-hidden shadow-xs">
               <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
             </div>
           ) : (
@@ -459,13 +459,13 @@ function GibOfficialTemplate({
             </div>
           )}
           <div className="min-w-0">
-            <div className="font-black text-sm tracking-tight text-slate-900 leading-tight uppercase truncate">
+            <div className="font-black text-sm tracking-tight text-slate-900 dark:text-slate-100 leading-tight uppercase truncate">
               {compName}
             </div>
             <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider line-clamp-1">
               {compTitle}
             </div>
-            <div className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">
+            <div className="text-[9px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 truncate">
               {compWebsite}
             </div>
           </div>
@@ -482,24 +482,24 @@ function GibOfficialTemplate({
               {invoiceTitle}
             </span>
           </div>
-          <div className="text-[9px] text-slate-500 font-medium">
+          <div className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">
             GİB 509 Sıra No.lu VUK Genel Tebliği Standardı
           </div>
         </div>
 
         {/* Sağ Sütun: Resmi e-Belge Kimlik Bilgileri Kutusu */}
         <div className="col-span-4 text-right">
-          <div className="inline-block bg-slate-50 border border-slate-300 rounded p-2 text-[10px] space-y-1 w-full text-left font-mono">
-            <div className="flex justify-between border-b border-slate-200 pb-0.5">
-              <span className="text-slate-500 font-sans font-bold">Fatura No:</span>
-              <span className="font-black text-slate-900">{invoice.invoiceNumber}</span>
+          <div className="inline-block bg-slate-50 dark:bg-slate-800/50 border border-slate-300 rounded p-2 text-[10px] space-y-1 w-full text-left font-mono">
+            <div className="flex justify-between border-b border-slate-200 dark:border-slate-700 pb-0.5">
+              <span className="text-slate-500 dark:text-slate-400 font-sans font-bold">Fatura No:</span>
+              <span className="font-black text-slate-900 dark:text-slate-100">{invoice.invoiceNumber}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500 font-sans">Fatura Tarihi:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-sans">Fatura Tarihi:</span>
               <span className="font-bold">{formattedDate}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500 font-sans">Düzenleme Saati:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-sans">Düzenleme Saati:</span>
               <span>{formattedTime}</span>
             </div>
             {dueDateFormatted && (
@@ -514,22 +514,22 @@ function GibOfficialTemplate({
       </div>
 
       {/* 2. ETTN (Evrensel Tekil Tanımlama No) ve Senaryo Şeridi */}
-      <div className="bg-slate-100 p-2 rounded border border-slate-300 text-[10px] flex flex-wrap justify-between items-center gap-2">
+      <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-300 text-[10px] flex flex-wrap justify-between items-center gap-2">
         <div className="flex items-center gap-1">
           <span className="font-bold text-slate-600 uppercase">ETTN (UUID):</span>
-          <span className="font-mono font-bold text-slate-800 break-all">{invoice.ettn || '00000000-0000-0000-0000-000000000000'}</span>
+          <span className="font-mono font-bold text-slate-800 dark:text-slate-200 break-all">{invoice.ettn || '00000000-0000-0000-0000-000000000000'}</span>
         </div>
-        <div className="flex items-center gap-4 text-slate-700">
+        <div className="flex items-center gap-4 text-slate-700 dark:text-slate-200">
           <div>
-            <span className="text-slate-500">Senaryo: </span>
+            <span className="text-slate-500 dark:text-slate-400">Senaryo: </span>
             <span className="font-black uppercase">{invoice.scenario === 'commercial' ? 'TİCARİ FATURA' : (invoice.scenario === 'withholding' ? 'TEVKİFAT' : 'TEMEL FATURA')}</span>
           </div>
           <div>
-            <span className="text-slate-500">Fatura Tipi: </span>
+            <span className="text-slate-500 dark:text-slate-400">Fatura Tipi: </span>
             <span className="font-black uppercase">{isSales ? 'SATIŞ' : 'ALIŞ'}</span>
           </div>
           <div>
-            <span className="text-slate-500">Para Birimi: </span>
+            <span className="text-slate-500 dark:text-slate-400">Para Birimi: </span>
             <span className="font-black font-mono">{invoice.currency || 'TRY'}</span>
           </div>
         </div>
@@ -539,17 +539,17 @@ function GibOfficialTemplate({
       <div className="grid grid-cols-2 gap-3">
         
         {/* SATICI KUTUSU */}
-        <div className="border border-slate-300 rounded p-3 bg-white space-y-1 text-[11px] leading-tight">
+        <div className="border border-slate-300 rounded p-3 bg-white dark:bg-slate-900 space-y-1 text-[11px] leading-tight">
           <div className="bg-slate-800 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-1">
             SATICI BİLGİLERİ
           </div>
-          <div className="font-black text-slate-900 text-xs uppercase">
+          <div className="font-black text-slate-900 dark:text-slate-100 text-xs uppercase">
             {compTitle}
           </div>
           <div className="text-slate-600">
             {compAddress}
           </div>
-          <div className="pt-1 text-slate-700 font-mono text-[10px] space-y-0.5">
+          <div className="pt-1 text-slate-700 dark:text-slate-200 font-mono text-[10px] space-y-0.5">
             <div><span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> {compTaxOffice}</div>
             <div><span className="font-sans font-bold text-slate-600">VKN:</span> {compTaxNumber} <span className="font-sans font-bold text-slate-600 ml-2">Ticaret Sicil:</span> {compTradeReg}</div>
             <div><span className="font-sans font-bold text-slate-600">Tel:</span> {compPhone} | <span className="font-sans font-bold text-slate-600">E-Posta:</span> {compEmail}</div>
@@ -557,11 +557,11 @@ function GibOfficialTemplate({
         </div>
 
         {/* ALICI (MÜŞTERİ / CARİ) KUTUSU */}
-        <div className="border border-slate-300 rounded p-3 bg-white space-y-1 text-[11px] leading-tight">
+        <div className="border border-slate-300 rounded p-3 bg-white dark:bg-slate-900 space-y-1 text-[11px] leading-tight">
           <div className="bg-indigo-800 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-1">
             SAYIN (ALICI / MÜŞTERİ BİLGİLERİ)
           </div>
-          <div className="font-black text-slate-900 text-xs">
+          <div className="font-black text-slate-900 dark:text-slate-100 text-xs">
             {invoice.contact?.companyTitle || invoice.contact?.name || 'MÜŞTERİ BİLGİSİ GİRİLMEMİŞ'}
           </div>
           <div className="text-slate-600">
@@ -569,7 +569,7 @@ function GibOfficialTemplate({
             {invoice.contact?.district ? ` ${invoice.contact.district} /` : ''}
             {invoice.contact?.city ? ` ${invoice.contact.city}` : ''}
           </div>
-          <div className="pt-1 text-slate-700 font-mono text-[10px] space-y-0.5">
+          <div className="pt-1 text-slate-700 dark:text-slate-200 font-mono text-[10px] space-y-0.5">
             <div>
               <span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> {invoice.contact?.taxOffice ? `${invoice.contact.taxOffice} V.D.` : '-'}
             </div>
@@ -589,26 +589,34 @@ function GibOfficialTemplate({
       </div>
 
       {/* 4. Bağlı Sipariş & İrsaliye Bilgileri Şeridi */}
-      <div className="border border-slate-300 rounded p-2 bg-slate-50 flex items-center justify-between text-[10px] font-mono">
+      <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-[10px] font-mono">
         <div className="flex items-center gap-4">
           <div>
-            <span className="font-sans font-bold text-slate-500">Sipariş No: </span>
+            <span className="font-sans font-bold text-slate-500 dark:text-slate-400">Sipariş No: </span>
             <span className="font-bold text-indigo-700">{invoice.orderNumber || (invoice.orderId ? `SIP-${invoice.orderId}` : '-')}</span>
           </div>
+          {invoice.waybillNumber && (
+            <div>
+              <span className="font-sans font-bold text-slate-500 dark:text-slate-400">İrsaliye No: </span>
+              <span className="font-bold text-purple-700">{invoice.waybillNumber}</span>
+            </div>
+          )}
           <div>
-            <span className="font-sans font-bold text-slate-500">Sipariş Tarihi: </span>
-            <span>{invoice.order?.date ? new Date(invoice.order.date).toLocaleDateString('tr-TR') : formattedDate}</span>
+            <span className="font-sans font-bold text-slate-500 dark:text-slate-400">Düzenleme Tarihi: </span>
+            <span>{invoice.date ? new Date(invoice.date).toLocaleDateString('tr-TR') : formattedDate}</span>
           </div>
         </div>
         <div className="text-slate-600 font-sans italic font-medium">
-          * Bu belgenin sevk irsaliyesi yerine geçtiği kabul edilmiştir (VUK 509).
+          {invoice.waybillNumber 
+            ? `* İrsaliye (${invoice.waybillNumber}) istinaden düzenlenmiştir.` 
+            : '* Bu belgenin sevk irsaliyesi yerine geçtiği kabul edilmiştir (VUK 509).'}
         </div>
       </div>
 
       {/* 5. Mal / Hizmet Satırları Tablosu */}
       <div className="border border-slate-300 rounded overflow-hidden">
         <table className="w-full text-left border-collapse text-[10px]">
-          <thead className="bg-slate-100 border-b border-slate-300 font-bold text-slate-800 uppercase tracking-wider">
+          <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-300 font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
             <tr>
               <th className="p-2 text-center border-r border-slate-300 w-8">S.No</th>
               <th className="p-2 border-r border-slate-300">Mal / Hizmet Açıklaması</th>
@@ -631,38 +639,38 @@ function GibOfficialTemplate({
                 const lineTotal = Number(item.total) || (lineMatrah + lineTax);
 
                 return (
-                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                    <td className="p-2 text-center font-mono border-r border-slate-200 text-slate-500">{idx + 1}</td>
-                    <td className="p-2 border-r border-slate-200">
-                      <div className="font-bold text-slate-900">{item.productName}</div>
-                      <div className="text-[9px] text-slate-500 flex items-center gap-2 mt-0.5 font-mono">
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50/50'}>
+                    <td className="p-2 text-center font-mono border-r border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">{idx + 1}</td>
+                    <td className="p-2 border-r border-slate-200 dark:border-slate-700">
+                      <div className="font-bold text-slate-900 dark:text-slate-100">{item.productName}</div>
+                      <div className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 font-mono">
                         {item.productCode && <span>Kod: {item.productCode}</span>}
                         {item.color && <span>Renk: {item.color}</span>}
                         {item.size && <span>Beden/No: {item.size}</span>}
                       </div>
                     </td>
-                    <td className="p-2 text-right font-mono font-bold text-slate-900 border-r border-slate-200">
+                    <td className="p-2 text-right font-mono font-bold text-slate-900 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700">
                       {item.quantity}
                     </td>
-                    <td className="p-2 text-center text-slate-600 border-r border-slate-200">
+                    <td className="p-2 text-center text-slate-600 border-r border-slate-200 dark:border-slate-700">
                       {item.unit || 'Çift'}
                     </td>
-                    <td className="p-2 text-right font-mono border-r border-slate-200">
+                    <td className="p-2 text-right font-mono border-r border-slate-200 dark:border-slate-700">
                       ₺{Number(item.unitPrice || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="p-2 text-right font-mono text-slate-600 border-r border-slate-200">
+                    <td className="p-2 text-right font-mono text-slate-600 border-r border-slate-200 dark:border-slate-700">
                       {item.discountRate > 0 ? `%${item.discountRate}` : '-'}
                     </td>
-                    <td className="p-2 text-right font-mono font-semibold text-slate-900 border-r border-slate-200">
+                    <td className="p-2 text-right font-mono font-semibold text-slate-900 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700">
                       ₺{lineMatrah.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="p-2 text-center font-mono border-r border-slate-200 text-slate-700">
+                    <td className="p-2 text-center font-mono border-r border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
                       %{item.taxRate}
                     </td>
-                    <td className="p-2 text-right font-mono border-r border-slate-200 text-slate-700">
+                    <td className="p-2 text-right font-mono border-r border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
                       ₺{lineTax.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="p-2 text-right font-mono font-bold text-slate-900">
+                    <td className="p-2 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
                       ₺{lineTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
@@ -689,7 +697,7 @@ function GibOfficialTemplate({
               Vergi / KDV Matrah Dağılımı
             </div>
             <table className="w-full text-[10px] border border-slate-300 rounded overflow-hidden">
-              <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 text-[9px] uppercase">
+              <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold border-b border-slate-300 text-[9px] uppercase">
                 <tr>
                   <th className="p-1.5 text-center border-r border-slate-300">KDV Oranı</th>
                   <th className="p-1.5 text-right border-r border-slate-300">KDV Hariç Tutar (Matrah)</th>
@@ -701,14 +709,14 @@ function GibOfficialTemplate({
                 {Object.keys(taxBreakdown).length > 0 ? (
                   Object.entries(taxBreakdown).map(([rate, vals]: [string, any]) => (
                     <tr key={rate}>
-                      <td className="p-1.5 text-center font-bold border-r border-slate-200">%{rate}</td>
-                      <td className="p-1.5 text-right border-r border-slate-200">
+                      <td className="p-1.5 text-center font-bold border-r border-slate-200 dark:border-slate-700">%{rate}</td>
+                      <td className="p-1.5 text-right border-r border-slate-200 dark:border-slate-700">
                         ₺{Number(vals?.matrah || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="p-1.5 text-right border-r border-slate-200 text-indigo-700 font-bold">
+                      <td className="p-1.5 text-right border-r border-slate-200 dark:border-slate-700 text-indigo-700 font-bold">
                         ₺{Number(vals?.tax || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="p-1.5 text-right font-bold text-slate-900">
+                      <td className="p-1.5 text-right font-bold text-slate-900 dark:text-slate-100">
                         ₺{Number(vals?.total || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     </tr>
@@ -724,33 +732,33 @@ function GibOfficialTemplate({
 
           {/* Fatura Açıklaması / Notlar */}
           {invoice.notes && (
-            <div className="border border-slate-300 rounded p-2 bg-slate-50 text-[10px]">
-              <span className="font-bold text-slate-700 block text-[9px] uppercase">Açıklama & Notlar:</span>
+            <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50 text-[10px]">
+              <span className="font-bold text-slate-700 dark:text-slate-200 block text-[9px] uppercase">Açıklama & Notlar:</span>
               <p className="text-slate-600 mt-0.5 whitespace-pre-wrap">{invoice.notes}</p>
             </div>
           )}
 
           {/* Banka Hesap Bilgileri */}
-          <div className="border border-slate-300 rounded p-2 bg-slate-50 text-[10px] space-y-0.5">
-            <div className="font-bold text-slate-700 uppercase text-[9px] flex items-center gap-1">
+          <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50 text-[10px] space-y-0.5">
+            <div className="font-bold text-slate-700 dark:text-slate-200 uppercase text-[9px] flex items-center gap-1">
               <CreditCard className="w-3 h-3 text-indigo-600" />
               Banka & Havale Bilgileri:
             </div>
-            <div className="text-slate-800 font-medium">
+            <div className="text-slate-800 dark:text-slate-200 font-medium">
               <span className="font-bold">Banka:</span> {compBank} | <span className="font-bold">Hesap Sahibi:</span> {compTitle}
             </div>
-            <div className="font-mono font-bold text-slate-900 text-[10px]">
+            <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-[10px]">
               IBAN: {compIban} (TRY)
             </div>
           </div>
 
           {/* Resmi Karekod & VUK Bilgilendirme */}
           <div className="flex items-center gap-3 pt-1">
-            <div className="w-14 h-14 border border-slate-300 rounded p-1 flex items-center justify-center bg-white shadow-xs">
-              <QrCode className="w-12 h-12 text-slate-800" />
+            <div className="w-14 h-14 border border-slate-300 rounded p-1 flex items-center justify-center bg-white dark:bg-slate-900 shadow-xs">
+              <QrCode className="w-12 h-12 text-slate-800 dark:text-slate-200" />
             </div>
-            <div className="text-[9px] text-slate-500 leading-tight">
-              <span className="font-bold text-slate-700 block">Karekodlu Resmi e-Belge Doğrulama:</span>
+            <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
+              <span className="font-bold text-slate-700 dark:text-slate-200 block">Karekodlu Resmi e-Belge Doğrulama:</span>
               Bu fatura Gelir İdaresi Başkanlığı 509 Sıra No.lu VUK Genel Tebliği uyarınca elektronik ortamda tanzim edilmiştir. E-İmza ile onaylanmıştır.
             </div>
           </div>
@@ -760,8 +768,8 @@ function GibOfficialTemplate({
         {/* Sağ Alan: Resmi Toplamlar Tablosu (5 Sütun) */}
         <div className="col-span-5 space-y-2">
           
-          <div className="border-2 border-slate-900 rounded p-3 bg-white space-y-1.5 text-xs font-mono">
-            <div className="flex justify-between text-slate-700 font-sans pb-1 border-b border-slate-200">
+          <div className="border-2 border-slate-900 rounded p-3 bg-white dark:bg-slate-900 space-y-1.5 text-xs font-mono">
+            <div className="flex justify-between text-slate-700 dark:text-slate-200 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
               <span>Mal / Hizmet Toplam Tutarı:</span>
               <span className="font-mono font-bold">
                 ₺{Number(invoice.subtotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -769,7 +777,7 @@ function GibOfficialTemplate({
             </div>
 
             {Number(invoice.discountTotal) > 0 && (
-              <div className="flex justify-between text-rose-600 font-sans pb-1 border-b border-slate-200">
+              <div className="flex justify-between text-rose-600 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
                 <span>Toplam İskonto Tutarı:</span>
                 <span className="font-mono font-bold">
                   -₺{Number(invoice.discountTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -777,7 +785,7 @@ function GibOfficialTemplate({
               </div>
             )}
 
-            <div className="flex justify-between text-slate-800 font-sans pb-1 border-b border-slate-200">
+            <div className="flex justify-between text-slate-800 dark:text-slate-200 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
               <span className="font-bold">Hesaplanan KDV:</span>
               <span className="font-mono font-bold text-indigo-700">
                 ₺{Number(invoice.taxTotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -785,7 +793,7 @@ function GibOfficialTemplate({
             </div>
 
             {Number(invoice.withholdingAmount) > 0 && (
-              <div className="flex justify-between text-purple-700 font-sans pb-1 border-b border-slate-200">
+              <div className="flex justify-between text-purple-700 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
                 <span>Tevkifat Tutarı ({invoice.withholdingRate || 5}/10):</span>
                 <span className="font-mono font-bold">
                   -₺{Number(invoice.withholdingAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -794,7 +802,7 @@ function GibOfficialTemplate({
             )}
 
             <div className="pt-2 border-t-2 border-slate-900 flex justify-between items-baseline font-sans">
-              <span className="text-xs font-black text-slate-900 uppercase">ÖDENECEK TOPLAM:</span>
+              <span className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase">ÖDENECEK TOPLAM:</span>
               <span className="text-lg font-black font-mono text-slate-950">
                 ₺{Number(invoice.grandTotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
@@ -802,7 +810,7 @@ function GibOfficialTemplate({
           </div>
 
           {/* YAZIYLA TUTAR KUTUSU */}
-          <div className="border border-slate-300 rounded p-2 bg-slate-100 text-[9px] text-center font-bold text-slate-800 uppercase tracking-wide">
+          <div className="border border-slate-300 rounded p-2 bg-slate-100 dark:bg-slate-800 text-[9px] text-center font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
             YALNIZ: {amountInWords}
           </div>
 
@@ -813,8 +821,8 @@ function GibOfficialTemplate({
       {/* 7. Resmi İmza ve Mühür Bölümü */}
       <div className="grid grid-cols-2 gap-8 pt-4 border-t border-slate-300 text-center text-[10px]">
         <div className="space-y-1">
-          <div className="font-bold text-slate-800 uppercase">Düzenleyen / Teslim Eden</div>
-          <div className="h-14 flex flex-col items-center justify-center font-serif italic text-slate-500 border border-dashed border-slate-200 rounded p-1 bg-slate-50/50">
+          <div className="font-bold text-slate-800 dark:text-slate-200 uppercase">Düzenleyen / Teslim Eden</div>
+          <div className="h-14 flex flex-col items-center justify-center font-serif italic text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-700 rounded p-1 bg-slate-50 dark:bg-slate-800/50/50">
             <span className="font-sans font-bold text-[9px] text-indigo-800">ProERP Muhasebe Departmanı</span>
             <span className="text-[8px] text-slate-400">5070 Sayılı Kanun Uyarınca e-İmzalıdır</span>
           </div>
@@ -822,8 +830,8 @@ function GibOfficialTemplate({
         </div>
 
         <div className="space-y-1">
-          <div className="font-bold text-slate-800 uppercase">Teslim Alan / Alıcı</div>
-          <div className="h-14 flex items-center justify-center font-serif italic text-slate-600 border border-dashed border-slate-200 rounded p-1 bg-slate-50/50">
+          <div className="font-bold text-slate-800 dark:text-slate-200 uppercase">Teslim Alan / Alıcı</div>
+          <div className="h-14 flex items-center justify-center font-serif italic text-slate-600 border border-dashed border-slate-200 dark:border-slate-700 rounded p-1 bg-slate-50 dark:bg-slate-800/50/50">
             {invoice.contact?.name || 'Teslim Alan Yetkili'}
           </div>
           <div className="text-[9px] text-slate-400">Ad Soyad / İmza / Kaşe</div>
@@ -866,7 +874,7 @@ function CorporateModernTemplate({
   const compIban = companySettings?.iban || 'TR33 0001 0002 0003 0004 0005 01';
 
   return (
-    <div className="space-y-4 font-sans text-xs text-slate-900">
+    <div className="space-y-4 font-sans text-xs text-slate-900 dark:text-slate-100">
       
       {/* 1. Üst Başlık Şeridi: Kurumsal Lacivert Logo & Ortada GİB e-Arşiv Rozeti & Sağda Belge Bilgileri */}
       <div className="grid grid-cols-12 gap-3 pb-3 border-b-2 border-indigo-950 items-center">
@@ -874,7 +882,7 @@ function CorporateModernTemplate({
         {/* Sol Sütun: Firma Logosu ve Resmi Ünvan */}
         <div className="col-span-4 flex items-center gap-3">
           {compLogo ? (
-            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-0.5 border border-indigo-200 shrink-0 overflow-hidden shadow-xs">
+            <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center p-0.5 border border-indigo-200 shrink-0 overflow-hidden shadow-xs">
               <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
             </div>
           ) : (
@@ -905,7 +913,7 @@ function CorporateModernTemplate({
               {invoiceTitle}
             </span>
           </div>
-          <div className="text-[9px] text-slate-500 font-medium">
+          <div className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">
             GİB 509 Sıra No.lu VUK Genel Tebliği Standardı
           </div>
           <div className="text-[8px] text-slate-400">
@@ -917,15 +925,15 @@ function CorporateModernTemplate({
         <div className="col-span-4 text-right">
           <div className="inline-block bg-indigo-50/40 border border-indigo-200 rounded p-2 text-[10px] space-y-1 w-full text-left font-mono">
             <div className="flex justify-between border-b border-indigo-100 pb-0.5">
-              <span className="text-slate-500 font-sans font-bold">Fatura No:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-sans font-bold">Fatura No:</span>
               <span className="font-black text-indigo-950">{invoice.invoiceNumber}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500 font-sans">Fatura Tarihi:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-sans">Fatura Tarihi:</span>
               <span className="font-bold">{formattedDate}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500 font-sans">Düzenleme Saati:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-sans">Düzenleme Saati:</span>
               <span>{formattedTime}</span>
             </div>
             {dueDateFormatted && (
@@ -965,17 +973,17 @@ function CorporateModernTemplate({
       <div className="grid grid-cols-2 gap-3">
         
         {/* SATICI KUTUSU */}
-        <div className="border border-indigo-200 rounded p-3 bg-white space-y-1 text-[11px] leading-tight">
+        <div className="border border-indigo-200 rounded p-3 bg-white dark:bg-slate-900 space-y-1 text-[11px] leading-tight">
           <div className="bg-indigo-950 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-1">
             SATICI BİLGİLERİ
           </div>
-          <div className="font-black text-slate-900 text-xs uppercase">
+          <div className="font-black text-slate-900 dark:text-slate-100 text-xs uppercase">
             {compTitle}
           </div>
           <div className="text-slate-600">
             {compAddress}
           </div>
-          <div className="pt-1 text-slate-700 font-mono text-[10px] space-y-0.5">
+          <div className="pt-1 text-slate-700 dark:text-slate-200 font-mono text-[10px] space-y-0.5">
             <div><span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> {compTaxOffice}</div>
             <div><span className="font-sans font-bold text-slate-600">VKN:</span> {compTaxNumber} <span className="font-sans font-bold text-slate-600 ml-2">Ticaret Sicil:</span> {compTradeReg}</div>
             <div><span className="font-sans font-bold text-slate-600">Tel:</span> {compPhone} | <span className="font-sans font-bold text-slate-600">E-Posta:</span> {compEmail}</div>
@@ -983,11 +991,11 @@ function CorporateModernTemplate({
         </div>
 
         {/* ALICI (MÜŞTERİ / CARİ) KUTUSU */}
-        <div className="border border-indigo-200 rounded p-3 bg-white space-y-1 text-[11px] leading-tight">
+        <div className="border border-indigo-200 rounded p-3 bg-white dark:bg-slate-900 space-y-1 text-[11px] leading-tight">
           <div className="bg-indigo-800 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-1">
             SAYIN (ALICI / MÜŞTERİ BİLGİLERİ)
           </div>
-          <div className="font-black text-slate-900 text-xs">
+          <div className="font-black text-slate-900 dark:text-slate-100 text-xs">
             {invoice.contact?.companyTitle || invoice.contact?.name || 'MÜŞTERİ BİLGİSİ GİRİLMEMİŞ'}
           </div>
           <div className="text-slate-600">
@@ -995,7 +1003,7 @@ function CorporateModernTemplate({
             {invoice.contact?.district ? ` ${invoice.contact.district} /` : ''}
             {invoice.contact?.city ? ` ${invoice.contact.city}` : ''}
           </div>
-          <div className="pt-1 text-slate-700 font-mono text-[10px] space-y-0.5">
+          <div className="pt-1 text-slate-700 dark:text-slate-200 font-mono text-[10px] space-y-0.5">
             <div>
               <span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> {invoice.contact?.taxOffice ? `${invoice.contact.taxOffice} V.D.` : '-'}
             </div>
@@ -1021,13 +1029,21 @@ function CorporateModernTemplate({
             <span className="font-sans font-bold text-slate-600">Sipariş No: </span>
             <span className="font-bold text-indigo-900">{invoice.orderNumber || (invoice.orderId ? `SIP-${invoice.orderId}` : '-')}</span>
           </div>
+          {invoice.waybillNumber && (
+            <div>
+              <span className="font-sans font-bold text-slate-600">İrsaliye No: </span>
+              <span className="font-bold text-purple-900">{invoice.waybillNumber}</span>
+            </div>
+          )}
           <div>
             <span className="font-sans font-bold text-slate-600">Sipariş Tarihi: </span>
             <span>{invoice.order?.date ? new Date(invoice.order.date).toLocaleDateString('tr-TR') : formattedDate}</span>
           </div>
         </div>
         <div className="text-indigo-900 font-sans italic font-medium">
-          * Bu belgenin sevk irsaliyesi yerine geçtiği kabul edilmiştir (VUK 509).
+          {invoice.waybillNumber 
+            ? `* İrsaliye (${invoice.waybillNumber}) istinaden düzenlenmiştir.` 
+            : '* Bu belgenin sevk irsaliyesi yerine geçtiği kabul edilmiştir (VUK 509).'}
         </div>
       </div>
 
@@ -1057,29 +1073,29 @@ function CorporateModernTemplate({
                 const lineTotal = Number(item.total) || (lineMatrah + lineTax);
 
                 return (
-                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-indigo-50/20'}>
-                    <td className="p-2 text-center border-r border-slate-200 text-slate-500 font-mono">{idx + 1}</td>
-                    <td className="p-2 border-r border-slate-200 font-sans">
-                      <div className="font-bold text-slate-900">{item.productName}</div>
-                      <div className="text-[9px] text-slate-500 flex items-center gap-2 mt-0.5 font-mono">
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-indigo-50/20'}>
+                    <td className="p-2 text-center border-r border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-mono">{idx + 1}</td>
+                    <td className="p-2 border-r border-slate-200 dark:border-slate-700 font-sans">
+                      <div className="font-bold text-slate-900 dark:text-slate-100">{item.productName}</div>
+                      <div className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 font-mono">
                         {item.productCode && <span>Kod: {item.productCode}</span>}
                         {item.color && <span>Renk: {item.color}</span>}
                         {item.size && <span>Beden/No: {item.size}</span>}
                       </div>
                     </td>
-                    <td className="p-2 text-right border-r border-slate-200 font-bold text-slate-900">{item.quantity}</td>
-                    <td className="p-2 text-center border-r border-slate-200 text-slate-600 font-sans">{item.unit || 'Çift'}</td>
-                    <td className="p-2 text-right border-r border-slate-200">
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700 font-bold text-slate-900 dark:text-slate-100">{item.quantity}</td>
+                    <td className="p-2 text-center border-r border-slate-200 dark:border-slate-700 text-slate-600 font-sans">{item.unit || 'Çift'}</td>
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700">
                       ₺{Number(item.unitPrice || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="p-2 text-right border-r border-slate-200 text-rose-600">
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700 text-rose-600">
                       {Number(item.discountRate) > 0 ? `%${item.discountRate}` : '-'}
                     </td>
-                    <td className="p-2 text-right border-r border-slate-200">
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700">
                       ₺{lineMatrah.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="p-2 text-center border-r border-slate-200 font-bold">%{item.taxRate}</td>
-                    <td className="p-2 text-right border-r border-slate-200 text-indigo-900 font-bold">
+                    <td className="p-2 text-center border-r border-slate-200 dark:border-slate-700 font-bold">%{item.taxRate}</td>
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700 text-indigo-900 font-bold">
                       ₺{lineTax.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="p-2 text-right font-bold text-slate-950">
@@ -1124,14 +1140,14 @@ function CorporateModernTemplate({
                 {Object.keys(taxBreakdown).length > 0 ? (
                   Object.entries(taxBreakdown).map(([rate, vals]: [string, any]) => (
                     <tr key={rate}>
-                      <td className="p-1.5 text-center font-bold border-r border-slate-200">%{rate}</td>
-                      <td className="p-1.5 text-right border-r border-slate-200">
+                      <td className="p-1.5 text-center font-bold border-r border-slate-200 dark:border-slate-700">%{rate}</td>
+                      <td className="p-1.5 text-right border-r border-slate-200 dark:border-slate-700">
                         ₺{Number(vals?.matrah || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="p-1.5 text-right border-r border-slate-200 text-indigo-900 font-bold">
+                      <td className="p-1.5 text-right border-r border-slate-200 dark:border-slate-700 text-indigo-900 font-bold">
                         ₺{Number(vals?.tax || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="p-1.5 text-right font-bold text-slate-900">
+                      <td className="p-1.5 text-right font-bold text-slate-900 dark:text-slate-100">
                         ₺{Number(vals?.total || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     </tr>
@@ -1150,10 +1166,10 @@ function CorporateModernTemplate({
             {invoice.notes && (
               <div className="pb-1 border-b border-indigo-100">
                 <span className="font-bold text-indigo-950">Fatura Notu: </span>
-                <span className="text-slate-700">{invoice.notes}</span>
+                <span className="text-slate-700 dark:text-slate-200">{invoice.notes}</span>
               </div>
             )}
-            <div className="text-[9px] text-slate-700">
+            <div className="text-[9px] text-slate-700 dark:text-slate-200">
               <span className="font-bold text-indigo-950">Ödeme & Banka Bilgisi: </span>
               {compBank} ({compTitle})
             </div>
@@ -1164,10 +1180,10 @@ function CorporateModernTemplate({
 
           {/* Resmi Karekod & VUK Bilgilendirme */}
           <div className="flex items-center gap-3 pt-1">
-            <div className="w-14 h-14 border border-indigo-200 rounded p-1 flex items-center justify-center bg-white shadow-2xs">
+            <div className="w-14 h-14 border border-indigo-200 rounded p-1 flex items-center justify-center bg-white dark:bg-slate-900 shadow-2xs">
               <QrCode className="w-12 h-12 text-indigo-950" />
             </div>
-            <div className="text-[9px] text-slate-500 leading-tight">
+            <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
               <span className="font-bold text-indigo-950 block">Karekodlu Resmi e-Belge Doğrulama:</span>
               Bu fatura Gelir İdaresi Başkanlığı 509 Sıra No.lu VUK Genel Tebliği uyarınca elektronik ortamda tanzim edilmiştir. 5070 Sayılı Kanun Uyarınca E-İmza ile onaylanmıştır.
             </div>
@@ -1178,8 +1194,8 @@ function CorporateModernTemplate({
         {/* Sağ Alan: Resmi Toplamlar Tablosu */}
         <div className="col-span-5 space-y-2">
           
-          <div className="border-2 border-indigo-950 rounded p-3 bg-white space-y-1.5 text-xs font-mono">
-            <div className="flex justify-between text-slate-700 font-sans pb-1 border-b border-slate-200">
+          <div className="border-2 border-indigo-950 rounded p-3 bg-white dark:bg-slate-900 space-y-1.5 text-xs font-mono">
+            <div className="flex justify-between text-slate-700 dark:text-slate-200 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
               <span>Mal / Hizmet Toplam Tutarı:</span>
               <span className="font-mono font-bold">
                 ₺{Number(invoice.subtotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1187,7 +1203,7 @@ function CorporateModernTemplate({
             </div>
 
             {Number(invoice.discountTotal) > 0 && (
-              <div className="flex justify-between text-rose-600 font-sans pb-1 border-b border-slate-200">
+              <div className="flex justify-between text-rose-600 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
                 <span>Toplam İskonto Tutarı:</span>
                 <span className="font-mono font-bold">
                   -₺{Number(invoice.discountTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1195,7 +1211,7 @@ function CorporateModernTemplate({
               </div>
             )}
 
-            <div className="flex justify-between text-slate-800 font-sans pb-1 border-b border-slate-200">
+            <div className="flex justify-between text-slate-800 dark:text-slate-200 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
               <span className="font-bold">Hesaplanan KDV:</span>
               <span className="font-mono font-bold text-indigo-900">
                 ₺{Number(invoice.taxTotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1203,7 +1219,7 @@ function CorporateModernTemplate({
             </div>
 
             {Number(invoice.withholdingAmount) > 0 && (
-              <div className="flex justify-between text-purple-700 font-sans pb-1 border-b border-slate-200">
+              <div className="flex justify-between text-purple-700 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
                 <span>Tevkifat Tutarı ({invoice.withholdingRate || 5}/10):</span>
                 <span className="font-mono font-bold">
                   -₺{Number(invoice.withholdingAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1232,7 +1248,7 @@ function CorporateModernTemplate({
       <div className="grid grid-cols-2 gap-8 pt-4 border-t border-indigo-200 text-center text-[10px]">
         <div className="space-y-1">
           <div className="font-bold text-indigo-950 uppercase">Düzenleyen / Teslim Eden</div>
-          <div className="h-14 flex flex-col items-center justify-center font-serif italic text-slate-500 border border-dashed border-indigo-200 rounded p-1 bg-indigo-50/20">
+          <div className="h-14 flex flex-col items-center justify-center font-serif italic text-slate-500 dark:text-slate-400 border border-dashed border-indigo-200 rounded p-1 bg-indigo-50/20">
             <span className="font-sans font-bold text-[9px] text-indigo-900">ProERP Muhasebe Departmanı</span>
             <span className="text-[8px] text-slate-400">5070 Sayılı Kanun Uyarınca e-İmzalıdır</span>
           </div>
@@ -1284,7 +1300,7 @@ function CompactDeliveryTemplate({
   const compIban = companySettings?.iban || 'TR33 0001 0002 0003 0004 0005 01';
 
   return (
-    <div className="space-y-3.5 font-sans text-xs text-slate-900">
+    <div className="space-y-3.5 font-sans text-xs text-slate-900 dark:text-slate-100">
       
       {/* 1. Resmi İrsaliye Yerine Geçer Yasal İhtar Şeridi */}
       <div className="bg-emerald-800 text-white p-2 rounded text-[10px] text-center font-bold tracking-wide border border-emerald-900 space-y-0.5">
@@ -1304,7 +1320,7 @@ function CompactDeliveryTemplate({
         {/* Sol Sütun: Firma Bilgileri */}
         <div className="col-span-4 flex items-center gap-3">
           {compLogo ? (
-            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-0.5 border border-emerald-300 shrink-0 overflow-hidden shadow-xs">
+            <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center p-0.5 border border-emerald-300 shrink-0 overflow-hidden shadow-xs">
               <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
             </div>
           ) : (
@@ -1319,7 +1335,7 @@ function CompactDeliveryTemplate({
             <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider line-clamp-1">
               {compTitle}
             </div>
-            <div className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">
+            <div className="text-[9px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 truncate">
               VKN: {compTaxNumber} | {compTaxOffice}
             </div>
           </div>
@@ -1335,7 +1351,7 @@ function CompactDeliveryTemplate({
               {invoiceTitle}
             </span>
           </div>
-          <div className="text-[9px] text-slate-500 font-medium">
+          <div className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">
             T.C. Gelir İdaresi Başkanlığı e-Belge Sistemi
           </div>
           <div className="text-[8px] text-emerald-800 font-bold">
@@ -1347,11 +1363,11 @@ function CompactDeliveryTemplate({
         <div className="col-span-4 text-right">
           <div className="inline-block bg-emerald-50/40 border border-emerald-300 rounded p-2 text-[10px] space-y-1 w-full text-left font-mono">
             <div className="flex justify-between border-b border-emerald-200 pb-0.5">
-              <span className="text-slate-500 font-sans font-bold">Fatura No:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-sans font-bold">Fatura No:</span>
               <span className="font-black text-emerald-950">{invoice.invoiceNumber}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500 font-sans">Düzenleme Tarihi/Saati:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-sans">Düzenleme Tarihi/Saati:</span>
               <span className="font-bold">{formattedDate} {formattedTime}</span>
             </div>
             <div className="flex justify-between text-emerald-900 font-bold border-t border-emerald-200 pt-0.5">
@@ -1359,7 +1375,7 @@ function CompactDeliveryTemplate({
               <span>{formattedDate} {formattedTime}</span>
             </div>
             {dueDateFormatted && (
-              <div className="flex justify-between text-slate-700">
+              <div className="flex justify-between text-slate-700 dark:text-slate-200">
                 <span className="font-sans">Vade Tarihi:</span>
                 <span>{dueDateFormatted}</span>
               </div>
@@ -1370,22 +1386,22 @@ function CompactDeliveryTemplate({
       </div>
 
       {/* 3. ETTN (UUID) ve Lojistik Sevk / Taşıma Şeridi */}
-      <div className="bg-slate-100 border border-slate-300 rounded p-2 text-[10px] flex flex-wrap justify-between items-center gap-2">
+      <div className="bg-slate-100 dark:bg-slate-800 border border-slate-300 rounded p-2 text-[10px] flex flex-wrap justify-between items-center gap-2">
         <div className="flex items-center gap-1.5">
           <span className="font-bold text-slate-600 uppercase">ETTN:</span>
-          <span className="font-mono font-bold text-slate-800 break-all">{invoice.ettn || '00000000-0000-0000-0000-000000000000'}</span>
+          <span className="font-mono font-bold text-slate-800 dark:text-slate-200 break-all">{invoice.ettn || '00000000-0000-0000-0000-000000000000'}</span>
         </div>
-        <div className="flex items-center gap-4 text-slate-700">
+        <div className="flex items-center gap-4 text-slate-700 dark:text-slate-200">
           <div>
-            <span className="text-slate-500">Taşıma Türü: </span>
+            <span className="text-slate-500 dark:text-slate-400">Taşıma Türü: </span>
             <span className="font-bold uppercase">Karayolu (Özmal / Ambar)</span>
           </div>
           <div>
-            <span className="text-slate-500">Senaryo: </span>
+            <span className="text-slate-500 dark:text-slate-400">Senaryo: </span>
             <span className="font-black uppercase">{invoice.scenario === 'commercial' ? 'TİCARİ FATURA' : 'TEMEL FATURA'}</span>
           </div>
           <div>
-            <span className="text-slate-500">Para Birimi: </span>
+            <span className="text-slate-500 dark:text-slate-400">Para Birimi: </span>
             <span className="font-black font-mono">{invoice.currency || 'TRY'}</span>
           </div>
         </div>
@@ -1395,17 +1411,17 @@ function CompactDeliveryTemplate({
       <div className="grid grid-cols-2 gap-3">
         
         {/* SATICI KUTUSU */}
-        <div className="border border-slate-300 rounded p-2.5 bg-white space-y-1 text-[11px] leading-tight">
+        <div className="border border-slate-300 rounded p-2.5 bg-white dark:bg-slate-900 space-y-1 text-[11px] leading-tight">
           <div className="bg-slate-900 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-1">
             SATICI BİLGİLERİ
           </div>
-          <div className="font-black text-slate-900 text-xs uppercase">
+          <div className="font-black text-slate-900 dark:text-slate-100 text-xs uppercase">
             {compTitle}
           </div>
           <div className="text-slate-600">
             {compAddress}
           </div>
-          <div className="pt-1 text-slate-700 font-mono text-[10px] space-y-0.5">
+          <div className="pt-1 text-slate-700 dark:text-slate-200 font-mono text-[10px] space-y-0.5">
             <div><span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> {compTaxOffice} | <span className="font-sans font-bold text-slate-600">VKN:</span> {compTaxNumber}</div>
             <div><span className="font-sans font-bold text-slate-600">Tic. Sicil:</span> {compTradeReg}</div>
             <div><span className="font-sans font-bold text-slate-600">Tel:</span> {compPhone} | <span className="font-sans font-bold text-slate-600">E-Posta:</span> {compEmail}</div>
@@ -1413,20 +1429,20 @@ function CompactDeliveryTemplate({
         </div>
 
         {/* ALICI VE SEVK / TESLİMAT KUTUSU */}
-        <div className="border border-slate-300 rounded p-2.5 bg-white space-y-1 text-[11px] leading-tight">
+        <div className="border border-slate-300 rounded p-2.5 bg-white dark:bg-slate-900 space-y-1 text-[11px] leading-tight">
           <div className="bg-emerald-900 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-1">
             ALICI VE TESLİMAT / SEVK ADRESİ
           </div>
-          <div className="font-black text-slate-900 text-xs">
+          <div className="font-black text-slate-900 dark:text-slate-100 text-xs">
             {invoice.contact?.companyTitle || invoice.contact?.name || 'MÜŞTERİ BİLGİSİ GİRİLMEMİŞ'}
           </div>
           <div className="text-slate-600">
-            <span className="font-bold text-slate-700">Sevk Adresi: </span>
+            <span className="font-bold text-slate-700 dark:text-slate-200">Sevk Adresi: </span>
             {invoice.contact?.address || 'Belirtilmemiştir.'}
             {invoice.contact?.district ? ` ${invoice.contact.district} /` : ''}
             {invoice.contact?.city ? ` ${invoice.contact.city}` : ''}
           </div>
-          <div className="pt-1 text-slate-700 font-mono text-[10px] space-y-0.5">
+          <div className="pt-1 text-slate-700 dark:text-slate-200 font-mono text-[10px] space-y-0.5">
             <div>
               <span className="font-sans font-bold text-slate-600">Vergi Dairesi:</span> {invoice.contact?.taxOffice ? `${invoice.contact.taxOffice} V.D.` : '-'} | 
               <span className="font-sans font-bold text-slate-600 ml-1">VKN/TCKN:</span> {invoice.contact?.taxNumber || invoice.contact?.tcKimlik || '11111111111'}
@@ -1441,19 +1457,27 @@ function CompactDeliveryTemplate({
       </div>
 
       {/* 5. Bağlı Sipariş & Sevk Notu */}
-      <div className="border border-slate-300 rounded p-2 bg-slate-50 flex items-center justify-between text-[10px] font-mono">
+      <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-[10px] font-mono">
         <div className="flex items-center gap-4">
           <div>
             <span className="font-sans font-bold text-slate-600">Bağlı Sipariş No: </span>
             <span className="font-bold text-emerald-800">{invoice.orderNumber || (invoice.orderId ? `SIP-${invoice.orderId}` : '-')}</span>
           </div>
+          {invoice.waybillNumber && (
+            <div>
+              <span className="font-sans font-bold text-slate-600">İrsaliye No: </span>
+              <span className="font-bold text-purple-800">{invoice.waybillNumber}</span>
+            </div>
+          )}
           <div>
             <span className="font-sans font-bold text-slate-600">Sipariş Tarihi: </span>
             <span>{invoice.order?.date ? new Date(invoice.order.date).toLocaleDateString('tr-TR') : formattedDate}</span>
           </div>
         </div>
         <div className="text-slate-600 font-sans italic">
-          * İrsaliyeli faturadaki mallar hasarsız ve tam teslim alınmıştır.
+          {invoice.waybillNumber 
+            ? `* İrsaliye (${invoice.waybillNumber}) istinaden faturalandırılmıştır.` 
+            : '* İrsaliyeli faturadaki mallar hasarsız ve tam teslim alınmıştır.'}
         </div>
       </div>
 
@@ -1483,29 +1507,29 @@ function CompactDeliveryTemplate({
                 const lineTotal = Number(item.total) || (lineMatrah + lineTax);
 
                 return (
-                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="p-2 text-center border-r border-slate-200 text-slate-500 font-mono">{idx + 1}</td>
-                    <td className="p-2 border-r border-slate-200 font-sans">
-                      <div className="font-bold text-slate-900">{item.productName}</div>
-                      <div className="text-[9px] text-slate-500 flex items-center gap-2 mt-0.5 font-mono">
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50'}>
+                    <td className="p-2 text-center border-r border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-mono">{idx + 1}</td>
+                    <td className="p-2 border-r border-slate-200 dark:border-slate-700 font-sans">
+                      <div className="font-bold text-slate-900 dark:text-slate-100">{item.productName}</div>
+                      <div className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 font-mono">
                         {item.productCode && <span>Kod: {item.productCode}</span>}
                         {item.color && <span>Renk: {item.color}</span>}
                         {item.size && <span>Beden/No: {item.size}</span>}
                       </div>
                     </td>
-                    <td className="p-2 text-right border-r border-slate-200 font-bold text-slate-900">{item.quantity}</td>
-                    <td className="p-2 text-center border-r border-slate-200 text-slate-600 font-sans">{item.unit || 'Çift'}</td>
-                    <td className="p-2 text-right border-r border-slate-200">
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700 font-bold text-slate-900 dark:text-slate-100">{item.quantity}</td>
+                    <td className="p-2 text-center border-r border-slate-200 dark:border-slate-700 text-slate-600 font-sans">{item.unit || 'Çift'}</td>
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700">
                       ₺{Number(item.unitPrice || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="p-2 text-right border-r border-slate-200 text-rose-600">
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700 text-rose-600">
                       {Number(item.discountRate) > 0 ? `%${item.discountRate}` : '-'}
                     </td>
-                    <td className="p-2 text-right border-r border-slate-200">
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700">
                       ₺{lineMatrah.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="p-2 text-center border-r border-slate-200 font-bold">%{item.taxRate}</td>
-                    <td className="p-2 text-right border-r border-slate-200 text-slate-800 font-bold">
+                    <td className="p-2 text-center border-r border-slate-200 dark:border-slate-700 font-bold">%{item.taxRate}</td>
+                    <td className="p-2 text-right border-r border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold">
                       ₺{lineTax.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="p-2 text-right font-bold text-slate-950">
@@ -1538,7 +1562,7 @@ function CompactDeliveryTemplate({
               <span className="font-mono text-slate-300">VUK-509</span>
             </div>
             <table className="w-full text-[9px] border-collapse">
-              <thead className="bg-slate-100 border-b border-slate-300 font-bold text-slate-800">
+              <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-300 font-bold text-slate-800 dark:text-slate-200">
                 <tr>
                   <th className="p-1.5 text-center border-r border-slate-300">KDV Oranı</th>
                   <th className="p-1.5 text-right border-r border-slate-300">Vergi Hariç Tutar (Matrah)</th>
@@ -1550,14 +1574,14 @@ function CompactDeliveryTemplate({
                 {Object.keys(taxBreakdown).length > 0 ? (
                   Object.entries(taxBreakdown).map(([rate, vals]: [string, any]) => (
                     <tr key={rate}>
-                      <td className="p-1.5 text-center font-bold border-r border-slate-200">%{rate}</td>
-                      <td className="p-1.5 text-right border-r border-slate-200">
+                      <td className="p-1.5 text-center font-bold border-r border-slate-200 dark:border-slate-700">%{rate}</td>
+                      <td className="p-1.5 text-right border-r border-slate-200 dark:border-slate-700">
                         ₺{Number(vals?.matrah || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="p-1.5 text-right border-r border-slate-200 text-slate-800 font-bold">
+                      <td className="p-1.5 text-right border-r border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold">
                         ₺{Number(vals?.tax || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="p-1.5 text-right font-bold text-slate-900">
+                      <td className="p-1.5 text-right font-bold text-slate-900 dark:text-slate-100">
                         ₺{Number(vals?.total || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     </tr>
@@ -1572,26 +1596,26 @@ function CompactDeliveryTemplate({
           </div>
 
           {/* Banka & Sevk Açıklaması */}
-          <div className="border border-slate-300 rounded p-2 bg-slate-50 text-[10px] space-y-1">
+          <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50 text-[10px] space-y-1">
             {invoice.notes && (
-              <div className="pb-1 border-b border-slate-200">
-                <span className="font-bold text-slate-700">Sevk / Teslimat Notu: </span>
-                <span className="text-slate-700">{invoice.notes}</span>
+              <div className="pb-1 border-b border-slate-200 dark:border-slate-700">
+                <span className="font-bold text-slate-700 dark:text-slate-200">Sevk / Teslimat Notu: </span>
+                <span className="text-slate-700 dark:text-slate-200">{invoice.notes}</span>
               </div>
             )}
             <div className="text-[9px] text-slate-600">
-              <span className="font-bold text-slate-800">Banka IBAN: </span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">Banka IBAN: </span>
               {compBank} | {compIban} (TRY)
             </div>
           </div>
 
           {/* Resmi Karekod & VUK Bilgilendirme */}
           <div className="flex items-center gap-3 pt-1">
-            <div className="w-14 h-14 border border-slate-300 rounded p-1 flex items-center justify-center bg-white shadow-2xs">
-              <QrCode className="w-12 h-12 text-slate-900" />
+            <div className="w-14 h-14 border border-slate-300 rounded p-1 flex items-center justify-center bg-white dark:bg-slate-900 shadow-2xs">
+              <QrCode className="w-12 h-12 text-slate-900 dark:text-slate-100" />
             </div>
-            <div className="text-[9px] text-slate-500 leading-tight">
-              <span className="font-bold text-slate-800 block">Karekodlu İrsaliyeli e-Arşiv Belge Doğrulama:</span>
+            <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight">
+              <span className="font-bold text-slate-800 dark:text-slate-200 block">Karekodlu İrsaliyeli e-Arşiv Belge Doğrulama:</span>
               Bu belge 509 Sıra No.lu VUK Tebliği gereğince elektronik ortamda sevk irsaliyesi ve fatura olarak tanzim edilmiştir. 5070 Sayılı Kanun gereği e-imzalıdır.
             </div>
           </div>
@@ -1601,8 +1625,8 @@ function CompactDeliveryTemplate({
         {/* Sağ Alan: Resmi Toplamlar Tablosu */}
         <div className="col-span-5 space-y-2">
           
-          <div className="border-2 border-slate-900 rounded p-3 bg-white space-y-1.5 text-xs font-mono">
-            <div className="flex justify-between text-slate-700 font-sans pb-1 border-b border-slate-200">
+          <div className="border-2 border-slate-900 rounded p-3 bg-white dark:bg-slate-900 space-y-1.5 text-xs font-mono">
+            <div className="flex justify-between text-slate-700 dark:text-slate-200 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
               <span>Mal / Hizmet Toplam Tutarı:</span>
               <span className="font-mono font-bold">
                 ₺{Number(invoice.subtotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1610,7 +1634,7 @@ function CompactDeliveryTemplate({
             </div>
 
             {Number(invoice.discountTotal) > 0 && (
-              <div className="flex justify-between text-rose-600 font-sans pb-1 border-b border-slate-200">
+              <div className="flex justify-between text-rose-600 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
                 <span>Toplam İskonto Tutarı:</span>
                 <span className="font-mono font-bold">
                   -₺{Number(invoice.discountTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1618,7 +1642,7 @@ function CompactDeliveryTemplate({
               </div>
             )}
 
-            <div className="flex justify-between text-slate-800 font-sans pb-1 border-b border-slate-200">
+            <div className="flex justify-between text-slate-800 dark:text-slate-200 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
               <span className="font-bold">Hesaplanan KDV:</span>
               <span className="font-mono font-bold text-indigo-700">
                 ₺{Number(invoice.taxTotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1626,7 +1650,7 @@ function CompactDeliveryTemplate({
             </div>
 
             {Number(invoice.withholdingAmount) > 0 && (
-              <div className="flex justify-between text-purple-700 font-sans pb-1 border-b border-slate-200">
+              <div className="flex justify-between text-purple-700 font-sans pb-1 border-b border-slate-200 dark:border-slate-700">
                 <span>Tevkifat Tutarı ({invoice.withholdingRate || 5}/10):</span>
                 <span className="font-mono font-bold">
                   -₺{Number(invoice.withholdingAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1635,7 +1659,7 @@ function CompactDeliveryTemplate({
             )}
 
             <div className="pt-2 border-t-2 border-slate-900 flex justify-between items-baseline font-sans">
-              <span className="text-xs font-black text-slate-900 uppercase">ÖDENECEK TOPLAM:</span>
+              <span className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase">ÖDENECEK TOPLAM:</span>
               <span className="text-lg font-black font-mono text-slate-950">
                 ₺{Number(invoice.grandTotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
@@ -1643,7 +1667,7 @@ function CompactDeliveryTemplate({
           </div>
 
           {/* YAZIYLA TUTAR KUTUSU */}
-          <div className="border border-slate-300 rounded p-2 bg-slate-100 text-[9px] text-center font-bold text-slate-800 uppercase tracking-wide">
+          <div className="border border-slate-300 rounded p-2 bg-slate-100 dark:bg-slate-800 text-[9px] text-center font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
             YALNIZ: {amountInWords}
           </div>
 
@@ -1654,27 +1678,27 @@ function CompactDeliveryTemplate({
       {/* 8. Üçlü Resmi Lojistik / Sevk İmzaları (GİB İrsaliyeli Fatura Standardı) */}
       <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-300 text-center text-[10px]">
         <div className="space-y-1">
-          <div className="font-bold text-slate-800 uppercase">1. Düzenleyen / Muhasebe</div>
-          <div className="h-12 flex flex-col items-center justify-center font-serif italic text-slate-500 border border-dashed border-slate-200 rounded p-1 bg-slate-50/50">
-            <span className="font-sans font-bold text-[9px] text-slate-800">ProERP Muhasebe</span>
+          <div className="font-bold text-slate-800 dark:text-slate-200 uppercase">1. Düzenleyen / Muhasebe</div>
+          <div className="h-12 flex flex-col items-center justify-center font-serif italic text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-700 rounded p-1 bg-slate-50 dark:bg-slate-800/50/50">
+            <span className="font-sans font-bold text-[9px] text-slate-800 dark:text-slate-200">ProERP Muhasebe</span>
             <span className="text-[8px] text-slate-400">e-İmza ile Onaylıdır</span>
           </div>
           <div className="text-[8px] text-slate-400">İmza / Kaşe</div>
         </div>
 
         <div className="space-y-1">
-          <div className="font-bold text-slate-800 uppercase">2. Taşıyıcı / Şoför (Teslim Eden)</div>
-          <div className="h-12 flex flex-col items-center justify-center font-serif italic text-slate-500 border border-dashed border-slate-200 rounded p-1 bg-slate-50/50">
-            <span className="font-sans font-bold text-[9px] text-slate-700">Firma Sevkiyat Sorumlusu</span>
+          <div className="font-bold text-slate-800 dark:text-slate-200 uppercase">2. Taşıyıcı / Şoför (Teslim Eden)</div>
+          <div className="h-12 flex flex-col items-center justify-center font-serif italic text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-700 rounded p-1 bg-slate-50 dark:bg-slate-800/50/50">
+            <span className="font-sans font-bold text-[9px] text-slate-700 dark:text-slate-200">Firma Sevkiyat Sorumlusu</span>
             <span className="text-[8px] text-slate-400">Araç Plaka / Ehliyet No</span>
           </div>
           <div className="text-[8px] text-slate-400">Ad Soyad / İmza</div>
         </div>
 
         <div className="space-y-1">
-          <div className="font-bold text-slate-800 uppercase">3. Teslim Alan / Müşteri</div>
-          <div className="h-12 flex flex-col items-center justify-center font-serif italic text-slate-600 border border-dashed border-slate-200 rounded p-1 bg-slate-50/50">
-            <span className="font-sans font-bold text-[9px] text-slate-800 truncate max-w-[140px]">{invoice.contact?.name || 'Teslim Alan'}</span>
+          <div className="font-bold text-slate-800 dark:text-slate-200 uppercase">3. Teslim Alan / Müşteri</div>
+          <div className="h-12 flex flex-col items-center justify-center font-serif italic text-slate-600 border border-dashed border-slate-200 dark:border-slate-700 rounded p-1 bg-slate-50 dark:bg-slate-800/50/50">
+            <span className="font-sans font-bold text-[9px] text-slate-800 dark:text-slate-200 truncate max-w-[140px]">{invoice.contact?.name || 'Teslim Alan'}</span>
             <span className="text-[8px] text-slate-400">Malları Hasarsız Teslim Aldım</span>
           </div>
           <div className="text-[8px] text-slate-400">Kaşe / İmza / Tarih</div>

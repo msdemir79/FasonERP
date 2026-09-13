@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { db } from '../db';
 import { erpService } from '../services/erpService';
 import type { 
@@ -46,16 +46,19 @@ import {
   Info,
   ShieldAlert,
   MapPin,
-  Car
+  Car,
+  Receipt
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WaybillPrintModal } from './Waybills/WaybillPrintModal';
 import PageHeader from './PageHeader';
 
 export default function Waybills() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'all' | 'sales' | 'purchase'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'issued' | 'draft' | 'cancelled'>('all');
+  const [invoicedFilter, setInvoicedFilter] = useState<'all' | 'invoiced' | 'not_invoiced'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modals
@@ -110,9 +113,16 @@ export default function Waybills() {
   const totalSalesGrandTotal = salesWaybills.reduce((sum, w) => sum + (Number(w.grandTotal) || 0), 0);
   const totalPurchaseGrandTotal = purchaseWaybills.reduce((sum, w) => sum + (Number(w.grandTotal) || 0), 0);
 
+  // Pending invoicing calculations
+  const pendingInvoicingWaybills = waybills?.filter(w => w.status === 'issued' && (!w.invoicedStatus || w.invoicedStatus === 'not_invoiced')) || [];
+  const pendingInvoicingCount = pendingInvoicingWaybills.length;
+  const pendingInvoicingAmount = pendingInvoicingWaybills.reduce((sum, w) => sum + (Number(w.grandTotal) || 0), 0);
+
   const filteredWaybills = waybills?.filter(wb => {
     if (activeTab !== 'all' && wb.type !== activeTab) return false;
     if (statusFilter !== 'all' && wb.status !== statusFilter) return false;
+    if (invoicedFilter === 'invoiced' && wb.invoicedStatus !== 'invoiced') return false;
+    if (invoicedFilter === 'not_invoiced' && wb.invoicedStatus === 'invoiced') return false;
     
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
@@ -120,11 +130,12 @@ export default function Waybills() {
       const matchNumber = wb.waybillNumber?.toLowerCase().includes(term);
       const matchContact = contact?.name?.toLowerCase().includes(term);
       const matchOrder = wb.orderNumber?.toLowerCase().includes(term);
+      const matchInvoice = wb.invoiceNumber?.toLowerCase().includes(term);
       const matchPlate = wb.vehiclePlate?.toLowerCase().includes(term);
       const matchDriver = wb.driverName?.toLowerCase().includes(term);
       const matchCarrier = wb.carrierTitle?.toLowerCase().includes(term);
       const matchEttn = wb.ettn?.toLowerCase().includes(term);
-      return matchNumber || matchContact || matchOrder || matchPlate || matchDriver || matchCarrier || matchEttn;
+      return matchNumber || matchContact || matchOrder || matchInvoice || matchPlate || matchDriver || matchCarrier || matchEttn;
     }
     return true;
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
@@ -185,7 +196,7 @@ export default function Waybills() {
           </div>
           <button 
             onClick={() => setNotification(null)}
-            className="p-1 rounded-lg hover:bg-black/5 transition-colors text-slate-500"
+            className="p-1 rounded-lg hover:bg-black/5 transition-colors text-slate-500 dark:text-slate-400"
           >
             <X className="w-4 h-4" />
           </button>
@@ -202,8 +213,17 @@ export default function Waybills() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <button
+              onClick={() => navigate('/invoices?action=selectWaybill')}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              title="Faturalanmamış açık irsaliyeleri listeleyip faturaya dönüştür"
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>İrsaliyeyi Faturalandır</span>
+            </button>
+
+            <button
               onClick={() => setIsResetModalOpen(true)}
-              className="bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-600 hover:text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="bg-white dark:bg-slate-900 hover:bg-rose-50 border border-slate-200 dark:border-slate-700 hover:border-rose-300 text-slate-600 hover:text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
               title="İrsaliyeleri ve sevkiyat durumlarını sıfırla"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -212,7 +232,7 @@ export default function Waybills() {
 
             <button
               onClick={() => openCreateModal('purchase')}
-              className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
               <span>Gelen İrsaliye</span>
@@ -232,15 +252,15 @@ export default function Waybills() {
       {/* KPI SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Sevk İrsaliyeleri */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Satış & Sevk İrsaliyeleri</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Satış & Sevk İrsaliyeleri</span>
             <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-black text-slate-900 tracking-tight">
+            <div className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
               {totalSalesGrandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
             </div>
             <div className="text-xs text-indigo-600 font-semibold mt-0.5">
@@ -250,16 +270,16 @@ export default function Waybills() {
         </div>
 
         {/* Toplam Sevk Miktarı */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Toplam Sevk Miktarı</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Toplam Sevk Miktarı</span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <Package className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-black text-slate-900 tracking-tight">
-              {totalSalesQuantity.toLocaleString('tr-TR')} <span className="text-sm font-bold text-slate-500">Çift</span>
+            <div className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+              {totalSalesQuantity.toLocaleString('tr-TR')} <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Çift</span>
             </div>
             <div className="text-xs text-emerald-600 font-semibold mt-0.5">
               Depodan sevk edilen net ürün hacmi
@@ -268,15 +288,15 @@ export default function Waybills() {
         </div>
 
         {/* Alış & Mal Kabul İrsaliyeleri */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Alış / Gelen İrsaliye</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Alış / Gelen İrsaliye</span>
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
               <ArrowDownLeft className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-black text-slate-900 tracking-tight">
+            <div className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
               {totalPurchaseGrandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
             </div>
             <div className="text-xs text-amber-600 font-semibold mt-0.5">
@@ -285,36 +305,44 @@ export default function Waybills() {
           </div>
         </div>
 
-        {/* Aktif Sevkiyat & Lojistik */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+        {/* Faturalanmayı Bekleyen İrsaliyeler */}
+        <div 
+          onClick={() => {
+            setInvoicedFilter(invoicedFilter === 'not_invoiced' ? 'all' : 'not_invoiced');
+          }}
+          className={cn(
+            "bg-white dark:bg-slate-900 p-5 rounded-2xl border transition-all cursor-pointer shadow-2xs flex flex-col justify-between",
+            invoicedFilter === 'not_invoiced' ? "border-purple-400 ring-2 ring-purple-400/20 bg-purple-50/20" : "border-slate-200 dark:border-slate-700 hover:border-purple-300"
+          )}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">GİB e-İrsaliye Standardı</span>
-            <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <QrCode className="w-4 h-4" />
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Faturalanacak İrsaliyeler</span>
+            <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+              <Receipt className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>VUK 509 Uyumlu</span>
+            <div className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+              {pendingInvoicingAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
             </div>
-            <div className="text-xs text-slate-500 font-medium mt-0.5">
-              Karekod, ETTN, Plaka & 3'lü İmza
+            <div className="text-xs text-purple-600 font-semibold mt-0.5 flex items-center gap-1">
+              <span>{pendingInvoicingCount} adet irsaliye fatura bekliyor</span>
+              {invoicedFilter === 'not_invoiced' && <span className="font-bold text-purple-700">(Filtrelendi)</span>}
             </div>
           </div>
         </div>
       </div>
 
       {/* SEARCH, TABS & FILTERS */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           {/* Tab Selection */}
-          <div className="flex items-center p-1 bg-slate-100 rounded-xl w-full md:w-auto">
+          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-full md:w-auto">
             <button
               onClick={() => setActiveTab('all')}
               className={cn(
                 "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
-                activeTab === 'all' ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                activeTab === 'all' ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
               )}
             >
               Tümü ({waybills?.length || 0})
@@ -323,7 +351,7 @@ export default function Waybills() {
               onClick={() => setActiveTab('sales')}
               className={cn(
                 "px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
-                activeTab === 'sales' ? "bg-white text-indigo-700 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                activeTab === 'sales' ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-2xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
               )}
             >
               <ArrowUpRight className="w-3.5 h-3.5 text-indigo-600" />
@@ -333,7 +361,7 @@ export default function Waybills() {
               onClick={() => setActiveTab('purchase')}
               className={cn(
                 "px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
-                activeTab === 'purchase' ? "bg-white text-emerald-700 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                activeTab === 'purchase' ? "bg-white dark:bg-slate-900 text-emerald-700 shadow-2xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
               )}
             >
               <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
@@ -342,16 +370,26 @@ export default function Waybills() {
           </div>
 
           {/* Status Filter & Search */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <option value="all">Tüm Durumlar</option>
               <option value="issued">Sevk Edildi / Kesildi</option>
               <option value="draft">Taslak İrsaliyeler</option>
               <option value="cancelled">İptal Edilenler</option>
+            </select>
+
+            <select
+              value={invoicedFilter}
+              onChange={(e) => setInvoicedFilter(e.target.value as any)}
+              className="px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-purple-500/20"
+            >
+              <option value="all">Fatura: Tümü</option>
+              <option value="not_invoiced">Faturalanmamış ({pendingInvoicingCount})</option>
+              <option value="invoiced">Faturalanmış</option>
             </select>
 
             <div className="relative flex-1 md:w-72">
@@ -361,7 +399,7 @@ export default function Waybills() {
                 placeholder="İrsaliye no, cari, plaka, şoför..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
               {searchTerm && (
                 <button
@@ -377,25 +415,25 @@ export default function Waybills() {
       </div>
 
       {/* WAYBILLS DATA TABLE */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/75 border-b border-slate-200 text-[11px] font-black text-slate-500 uppercase tracking-wider">
-                <th className="px-5 py-3.5">İrsaliye Bilgileri</th>
-                <th className="px-5 py-3.5">Cari / Alıcı Firma</th>
-                <th className="px-5 py-3.5">Sipariş & Sevk Tarihi</th>
-                <th className="px-5 py-3.5">Nakliye / Taşıma</th>
-                <th className="px-5 py-3.5 text-center">Miktar</th>
-                <th className="px-5 py-3.5 text-right">Tutar</th>
-                <th className="px-5 py-3.5 text-center">Durum</th>
-                <th className="px-5 py-3.5 text-right">İşlemler</th>
+              <tr className="bg-slate-50 dark:bg-slate-800/50/90 border-b border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <th className="px-3.5 py-2.5">İrsaliye Bilgileri</th>
+                <th className="px-3.5 py-2.5">Cari / Alıcı Firma</th>
+                <th className="px-3.5 py-2.5">Sipariş & Sevk Tarihi</th>
+                <th className="px-3.5 py-2.5">Nakliye / Taşıma</th>
+                <th className="px-3.5 py-2.5 text-center">Miktar</th>
+                <th className="px-3.5 py-2.5 text-right">Tutar</th>
+                <th className="px-3.5 py-2.5 text-center">Durum</th>
+                <th className="px-3.5 py-2.5 text-right">İşlemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
               {filteredWaybills.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-10 text-center text-slate-400">
                     <Truck className="w-10 h-10 mx-auto mb-2 opacity-30 text-indigo-500" />
                     <p className="font-bold text-sm text-slate-600">Henüz kayıtlı sevk irsaliyesi bulunamadı.</p>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -407,34 +445,35 @@ export default function Waybills() {
                 filteredWaybills.map((waybill) => {
                   const contact = contacts?.find(c => c.id === waybill.contactId);
                   const isSales = waybill.type === 'sales';
+                  const isInvoiced = waybill.invoicedStatus === 'invoiced';
 
                   return (
                     <tr 
-                      key={waybill.id}
+                      key={`wb-row-${waybill.id}`}
                       className={cn(
-                        "hover:bg-slate-50/80 transition-colors",
+                        "hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors",
                         waybill.status === 'cancelled' ? "opacity-60 bg-rose-50/20" : ""
                       )}
                     >
                       {/* İrsaliye No & Tip */}
-                      <td className="px-5 py-4">
+                      <td className="px-3.5 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <div className={cn(
-                            "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs",
+                            "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs",
                             isSales ? "bg-indigo-50 text-indigo-600" : "bg-emerald-50 text-emerald-600"
                           )}>
-                            {isSales ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
+                            {isSales ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownLeft className="w-3.5 h-3.5" />}
                           </div>
                           <div>
-                            <span className="font-mono font-black text-slate-900 text-xs hover:text-indigo-600 cursor-pointer block" onClick={() => openViewModal(waybill.id!)}>
+                            <span className="font-mono font-black text-slate-900 dark:text-slate-100 text-xs hover:text-indigo-600 cursor-pointer block" onClick={() => openViewModal(waybill.id!)}>
                               {waybill.waybillNumber}
                             </span>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase">
+                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                                 {isSales ? 'Sevk İrsaliyesi' : 'Alış İrsaliyesi'}
                               </span>
                               {waybill.ettn && (
-                                <span className="text-[9px] font-mono text-slate-400 bg-slate-100 px-1 rounded">
+                                <span className="text-[9px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 rounded">
                                   e-İrsaliye
                                 </span>
                               )}
@@ -444,20 +483,20 @@ export default function Waybills() {
                       </td>
 
                       {/* Cari Bilgisi */}
-                      <td className="px-5 py-4">
-                        <div className="font-bold text-slate-900 uppercase">
+                      <td className="px-3.5 py-2.5">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 uppercase">
                           {contact?.name || 'Belirtilmedi'}
                         </div>
-                        <div className="text-[11px] text-slate-500 truncate max-w-xs mt-0.5">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5">
                           {waybill.deliveryAddress || contact?.shippingAddress || contact?.address || 'Merkez Depo'}
                         </div>
                       </td>
 
                       {/* Sipariş & Tarih */}
-                      <td className="px-5 py-4">
+                      <td className="px-3.5 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          <span className="font-semibold text-slate-700">
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">
                             {waybill.date ? new Date(waybill.date).toLocaleDateString('tr-TR') : '-'}
                           </span>
                         </div>
@@ -471,27 +510,27 @@ export default function Waybills() {
                       </td>
 
                       {/* Nakliye / Araç / Şoför */}
-                      <td className="px-5 py-4">
-                        <div className="font-mono font-bold text-slate-800 flex items-center gap-1">
+                      <td className="px-3.5 py-2.5">
+                        <div className="font-mono font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                           <Car className="w-3.5 h-3.5 text-slate-400" />
                           <span>{waybill.vehiclePlate || 'Plaka Yok'}</span>
                         </div>
-                        <div className="text-[11px] text-slate-500 truncate max-w-xs mt-0.5">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5">
                           {waybill.driverName ? `${waybill.driverName}` : (waybill.carrierTitle || '-')}
                         </div>
                       </td>
 
                       {/* Miktar */}
-                      <td className="px-5 py-4 text-center">
-                        <span className="font-black text-slate-900 text-xs">
+                      <td className="px-3.5 py-2.5 text-center">
+                        <span className="font-black text-slate-900 dark:text-slate-100 text-xs">
                           {waybill.totalQuantity || 0}
                         </span>
-                        <span className="text-[10px] text-slate-500 font-semibold block">Çift / Adet</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block">Çift / Adet</span>
                       </td>
 
                       {/* Tutar */}
-                      <td className="px-5 py-4 text-right">
-                        <div className="font-mono font-black text-slate-900 text-xs">
+                      <td className="px-3.5 py-2.5 text-right">
+                        <div className="font-mono font-black text-slate-900 dark:text-slate-100 text-xs">
                           {(waybill.grandTotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
                         </div>
                         <div className="text-[10px] text-slate-400 font-mono">
@@ -500,35 +539,83 @@ export default function Waybills() {
                       </td>
 
                       {/* Durum */}
-                      <td className="px-5 py-4 text-center">
-                        <span className={cn(
-                          "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1",
-                          waybill.status === 'issued' ? "bg-emerald-100 text-emerald-800" :
-                          waybill.status === 'cancelled' ? "bg-rose-100 text-rose-800" :
-                          "bg-slate-100 text-slate-700"
-                        )}>
-                          {waybill.status === 'issued' && <CheckCircle2 className="w-3 h-3" />}
-                          {waybill.status === 'issued' ? 'Sevk Edildi' :
-                           waybill.status === 'cancelled' ? 'İptal Edildi' : 'Taslak'}
-                        </span>
+                      <td className="px-3.5 py-2.5 text-center">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={cn(
+                            "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1",
+                            waybill.status === 'issued' ? "bg-emerald-100 text-emerald-800" :
+                            waybill.status === 'cancelled' ? "bg-rose-100 text-rose-800" :
+                            "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                          )}>
+                            {waybill.status === 'issued' && <CheckCircle2 className="w-3 h-3" />}
+                            {waybill.status === 'issued' ? 'Sevk Edildi' :
+                             waybill.status === 'cancelled' ? 'İptal Edildi' : 'Taslak'}
+                          </span>
+
+                          {waybill.status === 'issued' && (
+                            isInvoiced ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider bg-purple-100 text-purple-800 border border-purple-200 inline-flex items-center gap-1">
+                                <Receipt className="w-2.5 h-2.5" />
+                                {waybill.invoiceNumber || 'Faturalandı'}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                                Faturalanmadı
+                              </span>
+                            )
+                          )}
+                        </div>
                       </td>
 
                       {/* Aksiyonlar */}
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-3.5 py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {waybill.status === 'issued' && (
+                            <button
+                              disabled={isInvoiced}
+                              onClick={() => {
+                                if (isInvoiced) return;
+                                navigate(`/invoices?waybillId=${waybill.id}&contactId=${waybill.contactId}&type=${waybill.type}`);
+                              }}
+                              title={isInvoiced 
+                                ? `İrsaliye faturalandırılmıştır (${waybill.invoiceNumber || 'Fatura'}). Fatura iptal edilmedikçe tekrar faturalandırılamaz.` 
+                                : "Bu irsaliyeyi faturaya dönüştür"
+                              }
+                              className={cn(
+                                "px-2.5 py-1.5 rounded-lg transition-all border shadow-2xs flex items-center gap-1 text-xs font-bold",
+                                isInvoiced
+                                  ? "bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60 shadow-none"
+                                  : "text-white bg-indigo-600 hover:bg-indigo-700 border-transparent cursor-pointer hover:shadow-md"
+                              )}
+                            >
+                              <Receipt className="w-3.5 h-3.5" />
+                              <span>{isInvoiced ? 'Faturalandı' : 'Faturalandır'}</span>
+                            </button>
+                          )}
+
+                          {isInvoiced && waybill.invoiceNumber && (
+                            <button
+                              onClick={() => navigate(`/invoices?search=${encodeURIComponent(waybill.invoiceNumber || '')}`)}
+                              title={`Bağlı Faturayı Görüntüle: ${waybill.invoiceNumber}`}
+                              className="p-1.5 text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-all border border-purple-200 shadow-2xs flex items-center gap-1 text-xs font-bold cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-purple-600" />
+                            </button>
+                          )}
+
                           <button
                             onClick={() => openViewModal(waybill.id!)}
                             title="GİB e-İrsaliye Önizle & Yazdır"
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-200 shadow-2xs"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white dark:bg-slate-900 rounded-lg transition-all border border-transparent hover:border-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
 
                           {waybill.status === 'draft' && (
                             <button
                               onClick={() => handleApproveDraft(waybill)}
                               title="Resmileştir / Sevk Et"
-                              className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-200 shadow-2xs"
+                              className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-white dark:bg-slate-900 rounded-lg transition-all border border-transparent hover:border-slate-200 dark:border-slate-700 shadow-2xs"
                             >
                               <Check className="w-4 h-4" />
                             </button>
@@ -549,7 +636,7 @@ export default function Waybills() {
                             <button
                               onClick={() => openActionModalForWaybill(waybill)}
                               title={waybill.status === 'cancelled' ? "İptal Edilmiş İrsaliyeyi Kalıcı Olarak Temizle" : "Taslağı Sil"}
-                              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-200 shadow-2xs"
+                              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-white dark:bg-slate-900 rounded-lg transition-all border border-transparent hover:border-slate-200 dark:border-slate-700 shadow-2xs"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -898,7 +985,7 @@ function CreateWaybillModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl flex flex-col max-h-[96vh] overflow-hidden border border-slate-200">
+      <div className="relative w-full max-w-5xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl flex flex-col max-h-[96vh] overflow-hidden border border-slate-200 dark:border-slate-700">
         
         {/* Header */}
         <div className="bg-slate-900 text-white p-5 px-6 flex items-center justify-between border-b border-slate-800 shrink-0">
@@ -924,20 +1011,20 @@ function CreateWaybillModal({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 text-xs">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50 dark:bg-slate-800/50/50 text-xs">
           
           {/* Top Form Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs">
             {/* İrsaliye Tipi & Senaryo */}
             <div>
-              <label className="font-bold text-slate-700 block mb-1">İrsaliye Türü</label>
-              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
+              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">İrsaliye Türü</label>
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setType('sales')}
                   className={cn(
                     "py-1.5 rounded-lg font-bold text-xs transition-all",
-                    type === 'sales' ? "bg-white text-indigo-700 shadow-2xs" : "text-slate-600"
+                    type === 'sales' ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-2xs" : "text-slate-600"
                   )}
                 >
                   Sevk / Satış
@@ -947,7 +1034,7 @@ function CreateWaybillModal({
                   onClick={() => setType('purchase')}
                   className={cn(
                     "py-1.5 rounded-lg font-bold text-xs transition-all",
-                    type === 'purchase' ? "bg-white text-emerald-700 shadow-2xs" : "text-slate-600"
+                    type === 'purchase' ? "bg-white dark:bg-slate-900 text-emerald-700 shadow-2xs" : "text-slate-600"
                   )}
                 >
                   Alış / Gelen
@@ -957,11 +1044,11 @@ function CreateWaybillModal({
 
             {/* Senaryo */}
             <div>
-              <label className="font-bold text-slate-700 block mb-1">e-İrsaliye Senaryosu</label>
+              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">e-İrsaliye Senaryosu</label>
               <select
                 value={scenario}
                 onChange={(e) => setScenario(e.target.value as WaybillScenario)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="sevk">TEMEL SEVK İRSALİYESİ</option>
                 <option value="matbu">MATBU SEVK İRSALİYESİ</option>
@@ -973,28 +1060,28 @@ function CreateWaybillModal({
 
             {/* İrsaliye No & ETTN */}
             <div>
-              <label className="font-bold text-slate-700 block mb-1">İrsaliye Numarası</label>
+              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">İrsaliye Numarası</label>
               <input
                 type="text"
                 value={waybillNumber}
                 onChange={(e) => setWaybillNumber(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
             {/* Cari Müşteri / Tedarikçi */}
             <div className="md:col-span-2">
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">
                 {type === 'sales' ? 'Müşteri / Alıcı Cari' : 'Tedarikçi Cari'}
               </label>
               <select
                 value={contactId}
                 onChange={(e) => setContactId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900 dark:text-slate-100"
               >
                 <option value="">-- Cari Seçiniz --</option>
                 {contacts?.map(c => (
-                  <option key={c.id} value={c.id}>
+                  <option key={`wb-contact-opt-${c.id}`} value={c.id}>
                     {c.name} {c.companyTitle ? `(${c.companyTitle})` : ''} - {c.city || ''}
                   </option>
                 ))}
@@ -1011,7 +1098,7 @@ function CreateWaybillModal({
                   "w-full py-2 px-3 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all",
                   contactId 
                     ? "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs cursor-pointer"
-                    : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed"
                 )}
               >
                 <ShoppingBag className="w-4 h-4" />
@@ -1023,39 +1110,39 @@ function CreateWaybillModal({
 
             {/* Tarih Bilgileri */}
             <div>
-              <label className="font-bold text-slate-700 block mb-1">İrsaliye Tarihi</label>
+              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">İrsaliye Tarihi</label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Fiili Sevk Tarihi</label>
+              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">Fiili Sevk Tarihi</label>
               <input
                 type="date"
                 value={dispatchDate}
                 onChange={(e) => setDispatchDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Fiili Sevk Saati</label>
+              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">Fiili Sevk Saati</label>
               <input
                 type="time"
                 value={dispatchTime}
                 onChange={(e) => setDispatchTime(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
           </div>
 
           {/* Logistics & Carrier Box */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2 text-indigo-900 font-bold border-b border-slate-100 pb-2">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3">
+            <div className="flex items-center gap-2 text-indigo-900 font-bold border-b border-slate-100 dark:border-slate-800 pb-2">
               <Car className="w-4 h-4 text-indigo-600" />
               <span>Taşıyıcı & Lojistik Sevk Bilgileri (GİB e-İrsaliye Zorunlu Alanları)</span>
             </div>
@@ -1068,7 +1155,7 @@ function CreateWaybillModal({
                   placeholder="Örn: Yurtiçi Kargo, MNG, Özlem Lojistik"
                   value={carrierTitle}
                   onChange={(e) => setCarrierTitle(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                 />
               </div>
 
@@ -1079,7 +1166,7 @@ function CreateWaybillModal({
                   placeholder="Örn: 34 YK 8842"
                   value={vehiclePlate}
                   onChange={(e) => setVehiclePlate(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono uppercase"
+                  className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono uppercase"
                 />
               </div>
 
@@ -1090,7 +1177,7 @@ function CreateWaybillModal({
                   placeholder="Örn: Ahmet Yılmaz"
                   value={driverName}
                   onChange={(e) => setDriverName(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                 />
               </div>
 
@@ -1101,7 +1188,7 @@ function CreateWaybillModal({
                   placeholder="11 haneli TCKN"
                   value={driverTc}
                   onChange={(e) => setDriverTc(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono"
+                  className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono"
                 />
               </div>
 
@@ -1114,18 +1201,18 @@ function CreateWaybillModal({
                   placeholder="Sevkiyatın yapılacağı şantiye, fabrika veya depo adresi"
                   value={deliveryAddress}
                   onChange={(e) => setDeliveryAddress(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                 />
               </div>
             </div>
           </div>
 
           {/* LINE ITEMS TABLE */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-            <div className="p-3 px-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs overflow-hidden">
+            <div className="p-3 px-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-indigo-600" />
-                <span className="font-black text-slate-800 text-xs">Sevk Edilecek Mal / Hizmet Kalemleri</span>
+                <span className="font-black text-slate-800 dark:text-slate-200 text-xs">Sevk Edilecek Mal / Hizmet Kalemleri</span>
                 <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold text-[10px]">
                   {items.length} Kalem
                 </span>
@@ -1133,7 +1220,7 @@ function CreateWaybillModal({
               <button
                 type="button"
                 onClick={addBlankItem}
-                className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Manuel Satır Ekle</span>
@@ -1143,7 +1230,7 @@ function CreateWaybillModal({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-100/75 border-b border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                  <tr className="bg-slate-100 dark:bg-slate-800/75 border-b border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     <th className="p-2.5 w-10 text-center">#</th>
                     <th className="p-2.5 min-w-[200px]">Ürün / Hizmet</th>
                     <th className="p-2.5 w-24">Renk / Beden</th>
@@ -1164,17 +1251,17 @@ function CreateWaybillModal({
                     </tr>
                   ) : (
                     items.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
+                      <tr key={`wb-item-${item.productId || 'p'}-${idx}`} className="hover:bg-slate-50 dark:bg-slate-800/50/50">
                         <td className="p-2.5 text-center text-slate-400 font-bold">{idx + 1}</td>
                         <td className="p-2.5">
                           <select
                             value={item.productId || ''}
                             onChange={(e) => updateItem(idx, 'productId', e.target.value)}
-                            className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded font-semibold text-slate-800"
+                            className="w-full p-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded font-semibold text-slate-800 dark:text-slate-200"
                           >
                             <option value="">-- Ürün Seç --</option>
                             {products?.map(p => (
-                              <option key={p.id} value={p.id}>
+                              <option key={`wb-prod-opt-${p.id}`} value={p.id}>
                                 {p.code} - {p.name}
                               </option>
                             ))}
@@ -1187,14 +1274,14 @@ function CreateWaybillModal({
                               placeholder="Renk"
                               value={item.color || ''}
                               onChange={(e) => updateItem(idx, 'color', e.target.value)}
-                              className="w-1/2 p-1.5 bg-slate-50 border border-slate-200 rounded text-center"
+                              className="w-1/2 p-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-center"
                             />
                             <input
                               type="text"
                               placeholder="Beden"
                               value={item.size || ''}
                               onChange={(e) => updateItem(idx, 'size', e.target.value)}
-                              className="w-1/2 p-1.5 bg-slate-50 border border-slate-200 rounded text-center"
+                              className="w-1/2 p-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-center"
                             />
                           </div>
                         </td>
@@ -1204,14 +1291,14 @@ function CreateWaybillModal({
                             min="1"
                             value={item.quantity}
                             onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))}
-                            className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded font-bold text-center"
+                            className="w-full p-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded font-bold text-center"
                           />
                         </td>
                         <td className="p-2.5">
                           <select
                             value={item.unit}
                             onChange={(e) => updateItem(idx, 'unit', e.target.value)}
-                            className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded text-center"
+                            className="w-full p-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-center"
                           >
                             <option value="Çift">Çift</option>
                             <option value="Adet">Adet</option>
@@ -1226,14 +1313,14 @@ function CreateWaybillModal({
                             step="0.01"
                             value={item.unitPrice}
                             onChange={(e) => updateItem(idx, 'unitPrice', Number(e.target.value))}
-                            className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded text-right font-mono"
+                            className="w-full p-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-right font-mono"
                           />
                         </td>
                         <td className="p-2.5">
                           <select
                             value={item.taxRate}
                             onChange={(e) => updateItem(idx, 'taxRate', Number(e.target.value))}
-                            className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded text-center"
+                            className="w-full p-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-center"
                           >
                             <option value={0}>%0</option>
                             <option value={1}>%1</option>
@@ -1241,7 +1328,7 @@ function CreateWaybillModal({
                             <option value={20}>%20</option>
                           </select>
                         </td>
-                        <td className="p-2.5 text-right font-mono font-black text-slate-900">
+                        <td className="p-2.5 text-right font-mono font-black text-slate-900 dark:text-slate-100">
                           {item.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
                         </td>
                         <td className="p-2.5 text-center">
@@ -1264,19 +1351,19 @@ function CreateWaybillModal({
           {/* Bottom Summary & Notes */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-                <label className="font-bold text-slate-700 block mb-1">Sevk & Lojistik Notları</label>
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">Sevk & Lojistik Notları</label>
                 <textarea
                   rows={3}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Şoföre talimatlar, koli no, ambalaj durumu veya teslimat özel notları..."
-                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
                 />
               </div>
 
               {/* Stok Hareketi Checkbox */}
-              <div className="bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between">
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -1285,7 +1372,7 @@ function CreateWaybillModal({
                     onChange={(e) => setIsStockDeducted(e.target.checked)}
                     className="w-4 h-4 text-indigo-600 rounded border-slate-300"
                   />
-                  <label htmlFor="stockDeduct" className="font-bold text-slate-800 text-xs cursor-pointer">
+                  <label htmlFor="stockDeduct" className="font-bold text-slate-800 dark:text-slate-200 text-xs cursor-pointer">
                     Stok Hareketi Otomatik Düşülsün / Eklensin
                   </label>
                 </div>
@@ -1294,10 +1381,10 @@ function CreateWaybillModal({
             </div>
 
             {/* Calculations Box */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2 font-mono text-xs">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2 font-mono text-xs">
               <div className="flex justify-between text-slate-600">
                 <span className="font-sans font-bold">Toplam Sevk Miktarı:</span>
-                <span className="font-black text-slate-900 text-sm">{totalQuantity} Çift</span>
+                <span className="font-black text-slate-900 dark:text-slate-100 text-sm">{totalQuantity} Çift</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Ara Toplam (KDV Hariç):</span>
@@ -1309,11 +1396,11 @@ function CreateWaybillModal({
                   <span className="font-bold">-{discountTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</span>
                 </div>
               )}
-              <div className="flex justify-between text-slate-600 border-b border-slate-100 pb-2">
+              <div className="flex justify-between text-slate-600 border-b border-slate-100 dark:border-slate-800 pb-2">
                 <span>Hesaplanan KDV:</span>
                 <span className="font-bold">{taxTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</span>
               </div>
-              <div className="flex justify-between text-sm font-black text-slate-900 pt-1">
+              <div className="flex justify-between text-sm font-black text-slate-900 dark:text-slate-100 pt-1">
                 <span className="font-sans">GENEL TOPLAM:</span>
                 <span className="text-indigo-600 font-black">
                   {grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
@@ -1359,11 +1446,11 @@ function CreateWaybillModal({
         {/* ORDER SELECTOR MODAL */}
         {isOrderSelectorOpen && (
           <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-xl max-h-[80vh] flex flex-col shadow-2xl border border-slate-200">
-              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-xl max-h-[80vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-700">
+              <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-indigo-600" />
-                  <h4 className="font-bold text-sm text-slate-900">Açık Sipariş Kalemlerini Aktar</h4>
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">Açık Sipariş Kalemlerini Aktar</h4>
                 </div>
                 <button 
                   onClick={() => setIsOrderSelectorOpen(false)}
@@ -1382,20 +1469,20 @@ function CreateWaybillModal({
                 ) : (
                   pendingOrders.map(ord => (
                     <div 
-                      key={ord.id}
-                      className="p-3 border border-slate-200 rounded-xl hover:border-indigo-300 hover:bg-indigo-50/30 transition-all cursor-pointer space-y-2"
+                      key={`wb-pending-ord-${ord.id}`}
+                      className="p-3 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-indigo-300 hover:bg-indigo-50/30 transition-all cursor-pointer space-y-2"
                       onClick={() => importOrderItems(ord)}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-bold text-indigo-700">{ord.orderNumber}</span>
-                        <span className="text-[10px] text-slate-500 font-semibold">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
                           Tarih: {new Date(ord.date).toLocaleDateString('tr-TR')}
                         </span>
                       </div>
-                      <div className="text-xs text-slate-700">
+                      <div className="text-xs text-slate-700 dark:text-slate-200">
                         {ord.items?.length || 0} kalem ürün sevk edilmeyi bekliyor
                       </div>
-                      <div className="flex justify-between items-center text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                      <div className="flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
                         <span>Kalan Miktar: {ord.items?.reduce((s: number, i: any) => s + (i.remainingQuantity || i.quantity), 0)} Çift</span>
                         <span className="text-indigo-600 font-bold">Bu Siparişi Aktar →</span>
                       </div>
@@ -1453,7 +1540,7 @@ function ActionWaybillModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div className="p-4 bg-slate-900 text-white flex justify-between items-center">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-rose-400" />
@@ -1463,6 +1550,18 @@ function ActionWaybillModal({
         </div>
 
         <div className="p-5 space-y-4 text-xs">
+          {waybill.invoicedStatus === 'invoiced' && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Bu İrsaliye Faturalandırılmıştır!</p>
+                <p className="text-[11px] text-rose-700 mt-0.5">
+                  Bağlı Fatura No: <strong>{waybill.invoiceNumber || 'Fatura Kesilmiş'}</strong>. İrsaliyeyi iptal etmek veya silmek için lütfen önce ilgili faturayı iptal ediniz.
+                </p>
+              </div>
+            </div>
+          )}
+
           {waybill.status === 'issued' ? (
             <>
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900">
@@ -1473,27 +1572,30 @@ function ActionWaybillModal({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">İptal Sebebi (Opsiyonel)</label>
+                <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">İptal Sebebi (Opsiyonel)</label>
                 <input
                   type="text"
                   value={reason}
+                  disabled={waybill.invoicedStatus === 'invoiced'}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Örn: Müşteri siparişi revize etti / Sevkiyat ertelendi"
-                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs disabled:opacity-50"
                 />
               </div>
 
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={handleCancel}
-                  className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+                  disabled={waybill.invoicedStatus === 'invoiced'}
+                  className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
                 >
                   <Ban className="w-4 h-4" />
                   <span>İrsaliyeyi İptal Et</span>
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-all"
+                  disabled={waybill.invoicedStatus === 'invoiced'}
+                  className="px-3 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 font-bold rounded-xl transition-all"
                   title="Kalıcı Olarak Sil"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1506,7 +1608,7 @@ function ActionWaybillModal({
                 Bu irsaliye taslak veya iptal durumundadır. Kaydı kalıcı olarak veritabanından temizlemek istiyor musunuz?
               </p>
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={onClose} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Vazgeç</button>
+                <button onClick={onClose} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl">Vazgeç</button>
                 <button onClick={handleDelete} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl flex items-center gap-1.5">
                   <Trash2 className="w-4 h-4" />
                   <span>Kalıcı Olarak Sil</span>
@@ -1555,7 +1657,7 @@ function ResetWaybillsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div className="p-4 bg-rose-600 text-white flex justify-between items-center">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-white" />
@@ -1569,8 +1671,8 @@ function ResetWaybillsModal({
             Test ve kurulum aşamasında girilen tüm sevk ve alış irsaliyelerini topluca temizler.
           </p>
 
-          <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-            <label className="flex items-center gap-2 font-bold text-slate-800 cursor-pointer">
+          <div className="space-y-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+            <label className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
               <input 
                 type="checkbox" 
                 checked={resetOrders} 
@@ -1579,7 +1681,7 @@ function ResetWaybillsModal({
               />
               <span>Siparişlerin Sevk Miktarını ve Durumunu Geri Yükle</span>
             </label>
-            <label className="flex items-center gap-2 font-bold text-slate-800 cursor-pointer">
+            <label className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
               <input 
                 type="checkbox" 
                 checked={resetStock} 
@@ -1591,7 +1693,7 @@ function ResetWaybillsModal({
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <button onClick={onClose} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Vazgeç</button>
+            <button onClick={onClose} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl">Vazgeç</button>
             <button 
               disabled={isSubmitting}
               onClick={handleReset} 

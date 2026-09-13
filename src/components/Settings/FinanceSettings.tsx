@@ -63,7 +63,7 @@ export default function FinanceSettings({ settings, onSave }: FinanceSettingsPro
       )}
 
       {/* SECTION 1: FİNANSAL ALARMLAR VE PARA BİRİMİ */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -78,11 +78,11 @@ export default function FinanceSettings({ settings, onSave }: FinanceSettingsPro
 
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Temel Para Birimi</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Temel Para Birimi</label>
             <select
               value={currency}
               onChange={e => setCurrency(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             >
               <option value="TRY">Türk Lirası (₺ - TRY)</option>
               <option value="USD">Amerikan Doları ($ - USD)</option>
@@ -92,14 +92,14 @@ export default function FinanceSettings({ settings, onSave }: FinanceSettingsPro
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Çek / Senet Vade Alarm Eşiği (Gün Önce)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Çek / Senet Vade Alarm Eşiği (Gün Önce)</label>
             <input
               type="number"
               min="1"
               max="60"
               value={alertDays}
               onChange={e => setAlertDays(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Vadesine bu kadar gün kalan portföydeki çekler sarı/kırmızı uyarı listesine alınır.</span>
           </div>
@@ -107,7 +107,7 @@ export default function FinanceSettings({ settings, onSave }: FinanceSettingsPro
       </div>
 
       {/* SECTION 2: TDHP MUHASEBE HESAP KODU EŞLEŞTİRMELERİ */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -122,73 +122,73 @@ export default function FinanceSettings({ settings, onSave }: FinanceSettingsPro
 
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Müşteri Cari Hesabı (Alıcılar)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Müşteri Cari Hesabı (Alıcılar)</label>
             <input
               type="text"
               value={custCode}
               onChange={e => setCustCode(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Standart TDHP 120 Grubu</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tedarikçi Cari Hesabı (Satıcılar)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Tedarikçi Cari Hesabı (Satıcılar)</label>
             <input
               type="text"
               value={suppCode}
               onChange={e => setSuppCode(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Standart TDHP 320 Grubu</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mamul Stok Hesabı</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Mamul Stok Hesabı</label>
             <input
               type="text"
               value={finishedStockCode}
               onChange={e => setFinishedStockCode(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Standart TDHP 157 veya 152 Grubu</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hammadde Stok Hesabı</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Hammadde Stok Hesabı</label>
             <input
               type="text"
               value={rawStockCode}
               onChange={e => setRawStockCode(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Standart TDHP 150 İlk Madde ve Malzeme</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Satış Gelirleri Hesabı</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Satış Gelirleri Hesabı</label>
             <input
               type="text"
               value={salesRevenueCode}
               onChange={e => setSalesRevenueCode(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Standart TDHP 600 Yurtiçi Satışlar</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hesaplanan KDV (Satış)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Hesaplanan KDV (Satış)</label>
             <input
               type="text"
               value={vatCalcCode}
               onChange={e => setVatCalcCode(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Standart TDHP 391 Grubu</span>
           </div>
         </div>
 
-        <div className="p-6 bg-white border-t border-slate-200 flex justify-end">
+        <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex justify-end">
           <button
             type="submit"
             disabled={isSaving}

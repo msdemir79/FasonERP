@@ -374,6 +374,8 @@ export interface Invoice {
   contactId: number;             // Müşteri veya Tedarikçi
   orderId?: number;              // Bağlı Sipariş (opsiyonel)
   orderNumber?: string;
+  waybillId?: number;            // Bağlı İrsaliye (opsiyonel)
+  waybillNumber?: string;        // Bağlı İrsaliye No
   date: Date;                    // Fatura Tarihi
   dueDate?: Date;                // Vade Tarihi
   ettn?: string;                 // e-Fatura UUID / ETTN
@@ -478,6 +480,8 @@ export interface InventoryLog {
   quantity: number;
   date: Date;
   description: string;
+  color?: string;
+  size?: string;
 }
 
 // ==========================================
@@ -888,5 +892,43 @@ export interface AuditLog {
   ipAddress?: string;
   timestamp: Date;
 }
+
+export interface AccountStatementItem {
+  id?: number;
+  date: Date | string;
+  documentNo?: string;
+  type: string;
+  typeLabel: string;
+  description: string;
+  contactName?: string;
+  debit: number;   // Giriş (Tahsilat / Yatırılan)
+  credit: number;  // Çıkış (Tediye / Çekilen)
+  balance: number; // Kümülatif Yürüyen Bakiye
+  sourceId?: number;
+  sourceType?: string;
+}
+
+export interface AccountStatement {
+  accountCode: string;
+  accountName: string;
+  currency: string;
+  initialBalance: number;
+  totalDebit: number;
+  totalCredit: number;
+  closingBalance: number;
+  startDate?: string;
+  endDate?: string;
+  items: AccountStatementItem[];
+}
+
+export interface CheckMovementReportItem {
+  check: CheckNote;
+  contactName?: string;
+  bankAccountName?: string;
+  cashBoxName?: string;
+  agingCategory: 'overdue' | '0-30' | '31-60' | '61-90' | '90+';
+  daysRemaining: number;
+}
+
 
 

@@ -101,7 +101,7 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
   return (
     <div className="space-y-6">
       {/* Top Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="relative w-64">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -115,9 +115,9 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-500">Bekleyen: <b className="text-amber-600 font-mono">₺{totalPending.toLocaleString('tr-TR')}</b></span>
+            <span className="text-slate-500 dark:text-slate-400">Bekleyen: <b className="text-amber-600 font-mono">₺{totalPending.toLocaleString('tr-TR')}</b></span>
             <span className="text-slate-300">|</span>
-            <span className="text-slate-500">Ödenen/Mahsup: <b className="text-emerald-600 font-mono">₺{totalPaid.toLocaleString('tr-TR')}</b></span>
+            <span className="text-slate-500 dark:text-slate-400">Ödenen/Mahsup: <b className="text-emerald-600 font-mono">₺{totalPaid.toLocaleString('tr-TR')}</b></span>
           </div>
 
           <button
@@ -134,9 +134,9 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
       </div>
 
       {/* Advances Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
-          <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+          <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-indigo-600" />
             Personel Avans Talepleri & Mahsup Listesi
           </h3>
@@ -145,7 +145,7 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+              <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
                 <th className="p-3">Personel</th>
                 <th className="p-3">Talep Tarihi</th>
                 <th className="p-3">Mahsup Dönemi</th>
@@ -164,14 +164,14 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
                 </tr>
               ) : (
                 filteredAdvances.map((adv) => (
-                  <tr key={adv.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-3 font-bold text-slate-800">{adv.employeeName}</td>
+                  <tr key={adv.id} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors">
+                    <td className="p-3 font-bold text-slate-800 dark:text-slate-200">{adv.employeeName}</td>
                     <td className="p-3 text-slate-600">{new Date(adv.date).toLocaleDateString('tr-TR')}</td>
-                    <td className="p-3 font-mono text-slate-700">{adv.month}/{adv.year}</td>
+                    <td className="p-3 font-mono text-slate-700 dark:text-slate-200">{adv.month}/{adv.year}</td>
                     <td className="p-3 text-right font-mono font-bold text-rose-600">
                       ₺{adv.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="p-3 text-slate-500 max-w-xs truncate">{adv.description || '-'}</td>
+                    <td className="p-3 text-slate-500 dark:text-slate-400 max-w-xs truncate">{adv.description || '-'}</td>
                     <td className="p-3 text-center">
                       {adv.status === 'paid' && (
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -210,19 +210,19 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
       {/* New Advance Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-base text-slate-800">Yeni Personel Avans Girişi</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Yeni Personel Avans Girişi</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
 
             <form onSubmit={handleCreateAdvance} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Personel *</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">Personel *</label>
                 <select
                   value={selectedEmpId}
                   onChange={(e) => setSelectedEmpId(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-slate-900"
                 >
                   {employees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
@@ -233,7 +233,7 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Avans Tutarı (₺) *</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">Avans Tutarı (₺) *</label>
                 <input
                   type="number"
                   min="100"
@@ -246,7 +246,7 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Ödeme / Talep Tarihi</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">Ödeme / Talep Tarihi</label>
                 <input
                   type="date"
                   required
@@ -257,7 +257,7 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Açıklama / Not</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 uppercase">Açıklama / Not</label>
                 <textarea
                   rows={2}
                   value={reason}
@@ -267,11 +267,11 @@ export default function AdvanceTab({ employees, onAdvancesUpdated }: AdvanceTabP
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:bg-slate-800 rounded-lg"
                 >
                   Vazgeç
                 </button>

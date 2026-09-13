@@ -72,7 +72,7 @@ export default function ContactBalanceReportModal({
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
           >
             <Download className="w-3.5 h-3.5" />
             Excel / CSV
@@ -91,10 +91,10 @@ export default function ContactBalanceReportModal({
         {/* Header Report Card */}
         <div className="border-b-2 border-slate-900 pb-4 flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
-            <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">
+            <h2 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-slate-100">
               GENEL CARİ BAKIYE & RİSK DURUM RAPORU
             </h2>
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Tüm müşteriler ve tedarikçilerin konsolide borç/alacak ve risk listesi.
             </p>
             <p className="text-[11px] text-slate-400 font-mono mt-1">
@@ -125,10 +125,10 @@ export default function ContactBalanceReportModal({
         </div>
 
         {/* Report Table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                 <tr>
                   <th className="px-3 py-2.5 font-bold text-slate-600 uppercase tracking-wider w-24">Cari Kodu</th>
                   <th className="px-3 py-2.5 font-bold text-slate-600 uppercase tracking-wider">Cari / Firma Ünvanı</th>
@@ -144,12 +144,12 @@ export default function ContactBalanceReportModal({
                 {contacts.map((c) => {
                   const isRiskExceeded = c.creditLimit && c.balance > c.creditLimit;
                   return (
-                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={c.id} className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors">
                       <td className="px-3 py-2 font-mono font-bold text-indigo-700 whitespace-nowrap">
                         {c.code || `CAR-${c.id}`}
                       </td>
                       <td className="px-3 py-2">
-                        <div className="font-bold text-slate-900 uppercase tracking-tight">{c.name}</div>
+                        <div className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">{c.name}</div>
                         {c.taxNumber && (
                           <div className="text-[10px] font-mono text-slate-400">VKN: {c.taxNumber}</div>
                         )}
@@ -165,21 +165,21 @@ export default function ContactBalanceReportModal({
                         </span>
                       </td>
                       <td className="px-3 py-2">
-                        <div className="text-slate-800 font-semibold">{c.contactPerson || '-'}</div>
-                        <div className="text-[10px] font-mono text-slate-500">{c.phone || c.mobile || ''}</div>
+                        <div className="text-slate-800 dark:text-slate-200 font-semibold">{c.contactPerson || '-'}</div>
+                        <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{c.phone || c.mobile || ''}</div>
                       </td>
-                      <td className="px-3 py-2 text-slate-700 font-medium">
+                      <td className="px-3 py-2 text-slate-700 dark:text-slate-200 font-medium">
                         {c.city || '-'}
                       </td>
-                      <td className="px-3 py-2 text-right font-mono font-bold text-slate-700">
+                      <td className="px-3 py-2 text-right font-mono font-bold text-slate-700 dark:text-slate-200">
                         {c.paymentTermDays ? `${c.paymentTermDays} Gün` : 'Peşin'}
                       </td>
-                      <td className="px-3 py-2 text-right font-mono text-slate-700">
+                      <td className="px-3 py-2 text-right font-mono text-slate-700 dark:text-slate-200">
                         {c.creditLimit ? `₺${c.creditLimit.toLocaleString()}` : '-'}
                       </td>
                       <td className={cn(
                         "px-3 py-2 text-right font-mono font-black whitespace-nowrap",
-                        c.balance > 0 ? "text-emerald-700" : c.balance < 0 ? "text-rose-700" : "text-slate-500"
+                        c.balance > 0 ? "text-emerald-700" : c.balance < 0 ? "text-rose-700" : "text-slate-500 dark:text-slate-400"
                       )}>
                         <div className="flex items-center justify-end gap-1">
                           {isRiskExceeded && (
@@ -199,16 +199,16 @@ export default function ContactBalanceReportModal({
                   );
                 })}
               </tbody>
-              <tfoot className="bg-slate-100 border-t-2 border-slate-300 font-bold">
+              <tfoot className="bg-slate-100 dark:bg-slate-800 border-t-2 border-slate-300 font-bold">
                 <tr>
-                  <td colSpan={5} className="px-3 py-3 text-slate-800 uppercase tracking-wider text-right">
+                  <td colSpan={5} className="px-3 py-3 text-slate-800 dark:text-slate-200 uppercase tracking-wider text-right">
                     GENEL TOPLAM:
                   </td>
-                  <td className="px-3 py-3 text-right font-mono text-slate-700">-</td>
-                  <td className="px-3 py-3 text-right font-mono text-slate-700">-</td>
+                  <td className="px-3 py-3 text-right font-mono text-slate-700 dark:text-slate-200">-</td>
+                  <td className="px-3 py-3 text-right font-mono text-slate-700 dark:text-slate-200">-</td>
                   <td className={cn(
                     "px-3 py-3 text-right font-mono font-black text-sm",
-                    netBalance > 0 ? "text-emerald-700" : netBalance < 0 ? "text-rose-700" : "text-slate-800"
+                    netBalance > 0 ? "text-emerald-700" : netBalance < 0 ? "text-rose-700" : "text-slate-800 dark:text-slate-200"
                   )}>
                     ₺{Math.abs(netBalance).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                     <span className="text-xs ml-1 font-semibold">

@@ -126,10 +126,10 @@ export default function MizanPrintModal({ isOpen, onClose, mizanRows, options }:
 
   return (
     <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-6xl shadow-2xl border border-slate-200 flex flex-col max-h-[96vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-150">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-6xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[96vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-150">
         
         {/* TOP CONTROL BAR (Hidden on print) */}
-        <div className="p-3 sm:p-4 border-b border-slate-200 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-emerald-500/20 border border-emerald-400/30 rounded-xl flex items-center justify-center text-emerald-400">
               <Printer className="w-5 h-5" />
@@ -216,10 +216,10 @@ export default function MizanPrintModal({ isOpen, onClose, mizanRows, options }:
         </div>
 
         {/* PRINTABLE CANVAS CONTAINER */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100/80">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100 dark:bg-slate-800/80">
           <div 
             ref={printContentRef}
-            className="bg-white mx-auto shadow-md border border-slate-300 p-6 sm:p-8 text-slate-900 rounded-sm"
+            className="bg-white dark:bg-slate-900 mx-auto shadow-md border border-slate-300 p-6 sm:p-8 text-slate-900 dark:text-slate-100 rounded-sm"
             style={{ maxWidth: orientation === 'landscape' ? '1080px' : '820px' }}
           >
             {/* 1. KURUMSAL VE RAPOR BAŞLIĞI */}
@@ -227,7 +227,7 @@ export default function MizanPrintModal({ isOpen, onClose, mizanRows, options }:
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div className="flex items-center gap-3">
                   {companySettings?.logo ? (
-                    <div className="w-12 h-12 rounded bg-white border border-slate-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-12 h-12 rounded bg-white dark:bg-slate-900 border border-slate-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
                       <img src={companySettings.logo} alt={companySettings.companyName} className="max-w-full max-h-full object-contain" />
                     </div>
                   ) : null}
@@ -242,12 +242,12 @@ export default function MizanPrintModal({ isOpen, onClose, mizanRows, options }:
                       {companySettings?.address || 'İkitelli OSB Mah. Aykosan Sanayi Sitesi 4. Ada A Blok No: 12-14 Başakşehir / İSTANBUL'}
                     </p>
                     <p className="text-[11px] text-slate-600">
-                      <span className="font-semibold text-slate-800">Vergi Dairesi:</span> {companySettings?.taxOffice || 'İkitelli V.D.'} &bull; <span className="font-semibold text-slate-800">VKN:</span> {companySettings?.taxNumber || '7320491820'} &bull; <span className="font-semibold text-slate-800">Ticaret Sicil No:</span> {companySettings?.tradeRegistryNo || '948210'}
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">Vergi Dairesi:</span> {companySettings?.taxOffice || 'İkitelli V.D.'} &bull; <span className="font-semibold text-slate-800 dark:text-slate-200">VKN:</span> {companySettings?.taxNumber || '7320491820'} &bull; <span className="font-semibold text-slate-800 dark:text-slate-200">Ticaret Sicil No:</span> {companySettings?.tradeRegistryNo || '948210'}
                     </p>
                   </div>
                 </div>
 
-                <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200">
+                <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200 dark:border-slate-700">
                   <span className="inline-block bg-slate-900 text-white font-black text-xs px-3 py-1 uppercase tracking-wider rounded">
                     GENEL MİZAN CETVELİ
                   </span>
@@ -260,27 +260,27 @@ export default function MizanPrintModal({ isOpen, onClose, mizanRows, options }:
               </div>
 
               {/* Rapor Filtre ve Kapsam Bilgisi */}
-              <div className="mt-3 pt-2.5 border-t border-slate-200 flex flex-wrap items-center justify-between text-[11px] text-slate-600 gap-2 bg-slate-50 p-2 rounded">
+              <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between text-[11px] text-slate-600 gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded">
                 <div>
-                  <span className="font-bold text-slate-800">Rapor Kapsamı:</span> {options?.onlyWithBalance ? 'Yalnızca Bakiyesi Bulunan Hesaplar' : 'Tüm Hesaplar (Bakiyeli ve Bakiyesiz)'}
+                  <span className="font-bold text-slate-800 dark:text-slate-200">Rapor Kapsamı:</span> {options?.onlyWithBalance ? 'Yalnızca Bakiyesi Bulunan Hesaplar' : 'Tüm Hesaplar (Bakiyeli ve Bakiyesiz)'}
                 </div>
                 <div>
-                  <span className="font-bold text-slate-800">Filtre Seviyesi:</span> {levelLabels[options?.levelFilter || 'all'] || 'Tümü'}
+                  <span className="font-bold text-slate-800 dark:text-slate-200">Filtre Seviyesi:</span> {levelLabels[options?.levelFilter || 'all'] || 'Tümü'}
                 </div>
               </div>
             </div>
 
             {/* 2. ÖZET İSTATİSTİK ŞERİDİ */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5 text-xs">
-              <div className="border border-slate-300 rounded p-2 bg-slate-50">
-                <div className="text-[10px] uppercase font-bold text-slate-500">Toplam Borç Hareketi</div>
-                <div className="text-sm font-mono font-bold text-slate-900 mt-0.5">
+              <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50">
+                <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Toplam Borç Hareketi</div>
+                <div className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                   ₺{totalDebit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </div>
               </div>
-              <div className="border border-slate-300 rounded p-2 bg-slate-50">
-                <div className="text-[10px] uppercase font-bold text-slate-500">Toplam Alacak Hareketi</div>
-                <div className="text-sm font-mono font-bold text-slate-900 mt-0.5">
+              <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50">
+                <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Toplam Alacak Hareketi</div>
+                <div className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                   ₺{totalCredit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </div>
               </div>
@@ -326,26 +326,26 @@ export default function MizanPrintModal({ isOpen, onClose, mizanRows, options }:
                       const isSub = r.level === 4;
                       const isMuavin = r.level >= 5;
 
-                      let rowClass = "hover:bg-slate-50";
+                      let rowClass = "hover:bg-slate-50 dark:bg-slate-800/50";
                       let codePadding = "";
                       let namePadding = "";
 
                       if (isClass) {
                         rowClass = "bg-slate-800 text-white font-black";
                       } else if (isGroup) {
-                        rowClass = "bg-slate-100 font-bold text-slate-950";
+                        rowClass = "bg-slate-100 dark:bg-slate-800 font-bold text-slate-950";
                         codePadding = "pl-2";
                         namePadding = "pl-2";
                       } else if (isMain) {
-                        rowClass = "bg-white font-bold text-slate-900";
+                        rowClass = "bg-white dark:bg-slate-900 font-bold text-slate-900 dark:text-slate-100";
                         codePadding = "pl-3";
                         namePadding = "pl-4";
                       } else if (isSub) {
-                        rowClass = "bg-white text-slate-700";
+                        rowClass = "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200";
                         codePadding = "pl-4";
                         namePadding = "pl-6";
                       } else if (isMuavin) {
-                        rowClass = "bg-slate-50/50 text-slate-800";
+                        rowClass = "bg-slate-50 dark:bg-slate-800/50/50 text-slate-800 dark:text-slate-200";
                         codePadding = "pl-6";
                         namePadding = "pl-8";
                       }
@@ -399,30 +399,30 @@ export default function MizanPrintModal({ isOpen, onClose, mizanRows, options }:
 
             {/* 4. İMZA VE ONAY ALANLARI */}
             <div className="mt-8 pt-4 border-t-2 border-slate-300 grid grid-cols-3 gap-6 text-center text-xs">
-              <div className="p-3 border border-slate-300 rounded bg-slate-50/50">
-                <div className="font-bold text-slate-800 uppercase tracking-wide">DÜZENLEYEN</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Muhasebe Yetkilisi</div>
+              <div className="p-3 border border-slate-300 rounded bg-slate-50 dark:bg-slate-800/50/50">
+                <div className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">DÜZENLEYEN</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Muhasebe Yetkilisi</div>
                 <div className="h-14 mt-2 border-b border-dashed border-slate-400"></div>
                 <div className="text-[10px] text-slate-400 mt-1">İmza / Kaşe</div>
               </div>
 
-              <div className="p-3 border border-slate-300 rounded bg-slate-50/50">
-                <div className="font-bold text-slate-800 uppercase tracking-wide">KONTROL EDEN</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Mali Müşavir / SMMM</div>
+              <div className="p-3 border border-slate-300 rounded bg-slate-50 dark:bg-slate-800/50/50">
+                <div className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">KONTROL EDEN</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Mali Müşavir / SMMM</div>
                 <div className="h-14 mt-2 border-b border-dashed border-slate-400"></div>
                 <div className="text-[10px] text-slate-400 mt-1">İmza / Kaşe</div>
               </div>
 
-              <div className="p-3 border border-slate-300 rounded bg-slate-50/50">
-                <div className="font-bold text-slate-800 uppercase tracking-wide">ONAYLAYAN</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Şirket Müdürü / Yönetim</div>
+              <div className="p-3 border border-slate-300 rounded bg-slate-50 dark:bg-slate-800/50/50">
+                <div className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">ONAYLAYAN</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Şirket Müdürü / Yönetim</div>
                 <div className="h-14 mt-2 border-b border-dashed border-slate-400"></div>
                 <div className="text-[10px] text-slate-400 mt-1">İmza / Kaşe</div>
               </div>
             </div>
 
             {/* 5. DİPNOT */}
-            <div className="mt-4 text-[9px] text-slate-500 flex justify-between items-center border-t border-slate-200 pt-2">
+            <div className="mt-4 text-[9px] text-slate-500 dark:text-slate-400 flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-2">
               <span>ProERP Entegre Muhasebe ve Üretim Sistemi &bull; Tek Düzen Hesap Planı Resmi Mizan Çıktısı</span>
               <span>213 Sayılı V.U.K. Standartlarına Uygundur</span>
             </div>

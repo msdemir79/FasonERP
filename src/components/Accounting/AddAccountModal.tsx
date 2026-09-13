@@ -60,7 +60,7 @@ export default function AddAccountModal({ isOpen, onClose, parentAccounts, onSuc
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
         <div className="flex items-center justify-between border-b pb-3">
           <h2 className="text-lg font-bold text-gray-900">Yeni Alt / Muavin Hesap Aç</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -79,10 +79,10 @@ export default function AddAccountModal({ isOpen, onClose, parentAccounts, onSuc
                 setParentCode(e.target.value);
                 setCode(`${e.target.value}.`);
               }}
-              className="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white font-medium"
+              className="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900 font-medium"
             >
               {parentAccounts.filter(p => p.level === 3).map((p) => (
-                <option key={p.id} value={p.code}>
+                <option key={`parent-acc-${p.code}`} value={p.code}>
                   {p.code} - {p.name}
                 </option>
               ))}
@@ -125,7 +125,7 @@ export default function AddAccountModal({ isOpen, onClose, parentAccounts, onSuc
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white"
+                className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900"
               >
                 <option value="TRY">TRY (₺)</option>
                 <option value="USD">USD ($)</option>

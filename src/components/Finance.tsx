@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { turkishIncludes } from '../lib/turkishUtils';
 import { 
   Plus, 
   Search, 
@@ -28,7 +29,8 @@ import {
   Edit3,
   Trash2,
   BarChart3,
-  ExternalLink
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
@@ -38,6 +40,9 @@ import PageHeader from './PageHeader';
 import EditCashBoxModal from './Finance/EditCashBoxModal';
 import EditBankAccountModal from './Finance/EditBankAccountModal';
 import DeleteFinanceModal from './Finance/DeleteFinanceModal';
+import CashStatementModal from './Finance/CashStatementModal';
+import BankStatementModal from './Finance/BankStatementModal';
+import CheckHistoryModal from './Finance/CheckHistoryModal';
 import FinanceReport from './Reports/FinanceReport';
 import type { 
   CollectionReceipt, 
@@ -71,6 +76,11 @@ export default function Finance() {
   const [isBankAccountModalOpen, setIsBankAccountModalOpen] = useState(false);
   const [isCheckModalOpen, setIsCheckModalOpen] = useState(false);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<CollectionReceipt | null>(null);
+
+  // Statement & History Modals
+  const [selectedCashBoxForStatement, setSelectedCashBoxForStatement] = useState<CashBox | null>(null);
+  const [selectedBankAccountForStatement, setSelectedBankAccountForStatement] = useState<BankAccount | null>(null);
+  const [selectedCheckForHistory, setSelectedCheckForHistory] = useState<CheckNote | null>(null);
 
   // Düzenleme ve Silme Modal Durumları (Kasa & Banka)
   const [editingCashBox, setEditingCashBox] = useState<CashBox | null>(null);
@@ -167,8 +177,8 @@ export default function Finance() {
     if (filterReceiptType !== 'all' && r.type !== filterReceiptType) return false;
     if (filterInstrument !== 'all' && r.instrument !== filterInstrument) return false;
     if (searchTerm) {
-      const matchText = `${r.receiptNumber} ${r.contactName} ${r.description}`.toLowerCase();
-      if (!matchText.includes(searchTerm.toLowerCase())) return false;
+      const matchText = `${r.receiptNumber} ${r.contactName} ${r.description}`;
+      if (!turkishIncludes(matchText, searchTerm)) return false;
     }
     return true;
   });
@@ -178,8 +188,8 @@ export default function Finance() {
     if (filterCheckType !== 'all' && c.type !== filterCheckType) return false;
     if (filterCheckStatus !== 'all' && c.status !== filterCheckStatus) return false;
     if (searchTerm) {
-      const matchText = `${c.portfolioNumber} ${c.serialNumber} ${c.drawer} ${c.contactName} ${c.bankName || ''}`.toLowerCase();
-      if (!matchText.includes(searchTerm.toLowerCase())) return false;
+      const matchText = `${c.portfolioNumber} ${c.serialNumber} ${c.drawer} ${c.contactName} ${c.bankName || ''}`;
+      if (!turkishIncludes(matchText, searchTerm)) return false;
     }
     return true;
   });
@@ -451,7 +461,7 @@ export default function Finance() {
       {/* Financial KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Kasa */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Toplam Nakit Kasa</span>
             <span className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
@@ -463,7 +473,7 @@ export default function Finance() {
         </div>
 
         {/* Banka */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Toplam Banka Mevduatı</span>
             <span className="p-2 rounded-lg bg-blue-50 text-blue-600">
@@ -475,7 +485,7 @@ export default function Finance() {
         </div>
 
         {/* Portföydeki Alınan Çekler */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Portföydeki Çekler</span>
             <span className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
@@ -487,7 +497,7 @@ export default function Finance() {
         </div>
 
         {/* Verilen Çekler */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ödenecek Firma Çekleri</span>
             <span className="p-2 rounded-lg bg-amber-50 text-amber-600">
@@ -587,7 +597,7 @@ export default function Finance() {
       {/* TAB CONTENT: Receipts */}
       {activeTab === 'receipts' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-lg border border-gray-200">
             <div className="flex items-center gap-2 flex-1 max-w-md">
               <Search className="w-4 h-4 text-gray-400" />
               <input
@@ -603,7 +613,7 @@ export default function Finance() {
               <select
                 value={filterReceiptType}
                 onChange={(e) => setFilterReceiptType(e.target.value as any)}
-                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white dark:bg-slate-900 text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
                 <option value="all">Tüm Makbuzlar</option>
                 <option value="collection">Sadece Tahsilat (Giriş)</option>
@@ -613,7 +623,7 @@ export default function Finance() {
               <select
                 value={filterInstrument}
                 onChange={(e) => setFilterInstrument(e.target.value)}
-                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white dark:bg-slate-900 text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
                 <option value="all">Tüm Ödeme Araçları</option>
                 <option value="cash">Nakit (Kasa)</option>
@@ -624,7 +634,7 @@ export default function Finance() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50 text-gray-600 font-semibold">
@@ -725,7 +735,7 @@ export default function Finance() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {cashBoxes.map((box) => (
-              <div key={box.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div key={box.id} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded">
@@ -755,8 +765,17 @@ export default function Finance() {
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
+                      onClick={() => setSelectedCashBoxForStatement(box)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
+                      title="Kasa ekstresi ve hareket raporu"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                      Ekstre
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setEditingCashBox(box)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-700 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 border border-slate-200 dark:border-slate-700 hover:border-indigo-200 rounded-lg transition-colors cursor-pointer"
                       title="Kasa kartı ve bakiyesini düzenle"
                     >
                       <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
@@ -796,7 +815,7 @@ export default function Finance() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {bankAccounts.map((acc) => (
-              <div key={acc.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div key={acc.id} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm text-gray-900 flex items-center gap-1.5">
@@ -825,8 +844,17 @@ export default function Finance() {
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
+                      onClick={() => setSelectedBankAccountForStatement(acc)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+                      title="Banka hesap ekstresi ve hareket raporu"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-blue-600" />
+                      Ekstre
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setEditingBankAccount(acc)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-700 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 border border-slate-200 dark:border-slate-700 hover:border-indigo-200 rounded-lg transition-colors cursor-pointer"
                       title="Banka hesabı ve bakiyesini düzenle"
                     >
                       <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
@@ -853,7 +881,7 @@ export default function Finance() {
       {/* TAB CONTENT: Checks & Notes Portfolio */}
       {activeTab === 'checks' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-lg border border-gray-200">
             <div className="flex items-center gap-2 flex-1 max-w-md">
               <Search className="w-4 h-4 text-gray-400" />
               <input
@@ -869,7 +897,7 @@ export default function Finance() {
               <select
                 value={filterCheckType}
                 onChange={(e) => setFilterCheckType(e.target.value)}
-                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-700"
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white dark:bg-slate-900 text-gray-700"
               >
                 <option value="all">Tüm Çek/Senet Türleri</option>
                 <option value="received_check">Alınan Çek (Müşteri)</option>
@@ -881,7 +909,7 @@ export default function Finance() {
               <select
                 value={filterCheckStatus}
                 onChange={(e) => setFilterCheckStatus(e.target.value)}
-                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-700"
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white dark:bg-slate-900 text-gray-700"
               >
                 <option value="all">Tüm Durumlar</option>
                 <option value="portfolio">Cüzdanda (Portföy)</option>
@@ -890,10 +918,20 @@ export default function Finance() {
                 <option value="endorsed">Ciro Edildi</option>
                 <option value="bounced">Karşılıksız</option>
               </select>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('reports')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
+                title="Çek ve Senet Raporu & Yaşlandırma Ekstresi"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="hidden sm:inline">Çek/Senet Raporu</span>
+              </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50 text-gray-600 font-semibold">
@@ -951,19 +989,30 @@ export default function Finance() {
                             {getCheckStatusBadge(chk.status)}
                           </td>
                           <td className="py-3 px-4 text-right">
-                            {chk.status === 'portfolio' || chk.status === 'bank_collection' ? (
+                            <div className="flex items-center justify-end gap-1.5">
                               <button
-                                onClick={() => {
-                                  setSelectedCheckForAction(chk);
-                                  setCheckActionType('collect');
-                                }}
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded transition-colors"
+                                type="button"
+                                onClick={() => setSelectedCheckForHistory(chk)}
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-700 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded transition-colors cursor-pointer"
+                                title="Çek hareket geçmişi ve bordro kartı"
                               >
-                                Durum Güncelle
+                                <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                                <span className="hidden md:inline">Hareketler</span>
                               </button>
-                            ) : (
-                              <span className="text-xs text-gray-400">Tamamlandı</span>
-                            )}
+                              {chk.status === 'portfolio' || chk.status === 'bank_collection' ? (
+                                <button
+                                  onClick={() => {
+                                    setSelectedCheckForAction(chk);
+                                    setCheckActionType('collect');
+                                  }}
+                                  className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded transition-colors cursor-pointer"
+                                >
+                                  Durum Güncelle
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400">Tamamlandı</span>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -984,7 +1033,7 @@ export default function Finance() {
       {/* MODAL: Yeni Tahsilat / Tediye Makbuzu */}
       {isReceiptModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl max-w-xl w-full p-6 space-y-5 my-8">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-xl w-full p-6 space-y-5 my-8">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 {receiptType === 'collection' ? (
@@ -1029,7 +1078,7 @@ export default function Finance() {
                   <select
                     value={receiptInstrument}
                     onChange={(e) => setReceiptInstrument(e.target.value as any)}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white"
+                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900"
                   >
                     <option value="cash">Nakit (Kasa)</option>
                     <option value="bank">Banka (Havale / EFT)</option>
@@ -1048,7 +1097,7 @@ export default function Finance() {
                   required
                   value={receiptContactId}
                   onChange={(e) => setReceiptContactId(Number(e.target.value))}
-                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white"
+                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900"
                 >
                   <option value="">Cari Hesap Seçiniz...</option>
                   {contacts.map((c) => (
@@ -1068,7 +1117,7 @@ export default function Finance() {
                   <select
                     value={receiptCashBoxId}
                     onChange={(e) => setReceiptCashBoxId(Number(e.target.value))}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white"
+                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900"
                   >
                     {cashBoxes.map((b) => (
                       <option key={b.id} value={b.id}>
@@ -1087,7 +1136,7 @@ export default function Finance() {
                   <select
                     value={receiptBankAccountId}
                     onChange={(e) => setReceiptBankAccountId(Number(e.target.value))}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white"
+                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900"
                   >
                     {bankAccounts.map((b) => (
                       <option key={b.id} value={b.id}>
@@ -1175,7 +1224,7 @@ export default function Finance() {
                   <select
                     value={receiptInvoiceId}
                     onChange={(e) => setReceiptInvoiceId(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white truncate"
+                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900 truncate"
                   >
                     <option value="">Fatura Bağımsız</option>
                     {invoices
@@ -1227,7 +1276,7 @@ export default function Finance() {
       {/* MODAL: Virman Transferi */}
       {isVirmanModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-5">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-lg w-full p-6 space-y-5">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
@@ -1253,7 +1302,7 @@ export default function Finance() {
                         setVirmanFromType(e.target.value as any);
                         setVirmanFromId('');
                       }}
-                      className="w-full text-xs border border-gray-300 rounded p-2 bg-white"
+                      className="w-full text-xs border border-gray-300 rounded p-2 bg-white dark:bg-slate-900"
                     >
                       <option value="cash">Kasa (Nakit)</option>
                       <option value="bank">Banka Hesabı</option>
@@ -1265,7 +1314,7 @@ export default function Finance() {
                       required
                       value={virmanFromId}
                       onChange={(e) => setVirmanFromId(Number(e.target.value))}
-                      className="w-full text-xs border border-gray-300 rounded p-2 bg-white"
+                      className="w-full text-xs border border-gray-300 rounded p-2 bg-white dark:bg-slate-900"
                     >
                       <option value="">Seçiniz...</option>
                       {virmanFromType === 'cash' ? (
@@ -1293,7 +1342,7 @@ export default function Finance() {
                         setVirmanToType(e.target.value as any);
                         setVirmanToId('');
                       }}
-                      className="w-full text-xs border border-gray-300 rounded p-2 bg-white"
+                      className="w-full text-xs border border-gray-300 rounded p-2 bg-white dark:bg-slate-900"
                     >
                       <option value="bank">Banka Hesabı</option>
                       <option value="cash">Kasa (Nakit)</option>
@@ -1305,7 +1354,7 @@ export default function Finance() {
                       required
                       value={virmanToId}
                       onChange={(e) => setVirmanToId(Number(e.target.value))}
-                      className="w-full text-xs border border-gray-300 rounded p-2 bg-white"
+                      className="w-full text-xs border border-gray-300 rounded p-2 bg-white dark:bg-slate-900"
                     >
                       <option value="">Seçiniz...</option>
                       {virmanToType === 'cash' ? (
@@ -1373,7 +1422,7 @@ export default function Finance() {
       {/* MODAL: Çek Durum Değiştirme (Tahsilat / Ciro) */}
       {selectedCheckForAction && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-5">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-5">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-bold text-gray-900">
                 Çek Durum İşlemi: {selectedCheckForAction.portfolioNumber}
@@ -1400,7 +1449,7 @@ export default function Finance() {
                 <select
                   value={checkActionType}
                   onChange={(e) => setCheckActionType(e.target.value as any)}
-                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white"
+                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900"
                 >
                   <option value="collect">Tahsil Et (Nakit veya Bankaya Yatır)</option>
                   <option value="endorse">Ciro Et (Tedarikçiye Devret)</option>
@@ -1417,7 +1466,7 @@ export default function Finance() {
                   <select
                     value={checkTargetBankId}
                     onChange={(e) => setCheckTargetBankId(Number(e.target.value))}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white"
+                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900"
                   >
                     <option value="">Banka Seçiniz...</option>
                     {bankAccounts.map(b => (
@@ -1436,7 +1485,7 @@ export default function Finance() {
                     required
                     value={checkEndorseContactId}
                     onChange={(e) => setCheckEndorseContactId(Number(e.target.value))}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white"
+                    className="w-full text-sm border border-gray-300 rounded-lg p-2.5 bg-white dark:bg-slate-900"
                   >
                     <option value="">Tedarikçi Seçiniz...</option>
                     {contacts.filter(c => c.type === 'supplier' || c.type === 'both').map(c => (
@@ -1482,7 +1531,7 @@ export default function Finance() {
       {/* MODAL: Yeni Kasa Tanımlama */}
       {isCashBoxModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-bold text-gray-900">Yeni Kasa Tanımla</h2>
               <button onClick={() => setIsCashBoxModalOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -1564,7 +1613,7 @@ export default function Finance() {
       {/* MODAL: Yeni Banka Hesabı Tanımlama */}
       {isBankAccountModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-bold text-gray-900">Yeni Banka Hesabı Tanımla</h2>
               <button onClick={() => setIsBankAccountModalOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -1648,7 +1697,7 @@ export default function Finance() {
       {/* PRINT PREVIEW MODAL: Makbuz Yazdır */}
       {selectedReceiptForPrint && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8 space-y-6 my-8 print:p-0 print:m-0 print:shadow-none">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-2xl w-full p-8 space-y-6 my-8 print:p-0 print:m-0 print:shadow-none">
             <div className="flex items-center justify-between border-b pb-4 print:hidden">
               <span className="text-sm font-semibold text-gray-500">Resmi Makbuz Çıktısı</span>
               <div className="flex items-center gap-2">
@@ -1673,7 +1722,7 @@ export default function Finance() {
               <div className="flex justify-between items-start border-b-2 border-gray-800 pb-4 gap-4">
                 <div className="flex items-center gap-3">
                   {companySettings?.logo ? (
-                    <div className="w-12 h-12 rounded bg-white border border-gray-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-12 h-12 rounded bg-white dark:bg-slate-900 border border-gray-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
                       <img src={companySettings.logo} alt={companySettings.companyName} className="max-w-full max-h-full object-contain" />
                     </div>
                   ) : null}
@@ -1747,20 +1796,54 @@ export default function Finance() {
       />
 
       {/* MODAL: Kasa / Banka Silme Onayı */}
-      <DeleteFinanceModal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        type={deleteTarget?.type || 'cash'}
-        target={deleteTarget?.target || null}
-        receiptCount={
-          deleteTarget
-            ? deleteTarget.type === 'cash'
-              ? receipts.filter(r => r.cashBoxId === deleteTarget.target.id).length
-              : receipts.filter(r => r.bankAccountId === deleteTarget.target.id).length
-            : 0
-        }
-        onConfirm={handleConfirmDelete}
-      />
+      {deleteTarget && (
+        <DeleteFinanceModal
+          isOpen={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          type={deleteTarget?.type || 'cash'}
+          target={deleteTarget?.target || null}
+          receiptCount={
+            deleteTarget?.target?.id
+              ? deleteTarget.type === 'cash'
+                ? receipts.filter(r => r && r.cashBoxId === deleteTarget.target!.id).length
+                : receipts.filter(r => r && r.bankAccountId === deleteTarget.target!.id).length
+              : 0
+          }
+          onConfirm={handleConfirmDelete}
+        />
+      )}
+
+      {/* MODAL: Kasa Hareket Raporu & Ekstresi */}
+      {selectedCashBoxForStatement && (
+        <CashStatementModal
+          isOpen={!!selectedCashBoxForStatement}
+          onClose={() => setSelectedCashBoxForStatement(null)}
+          cashBox={selectedCashBoxForStatement}
+        />
+      )}
+
+      {/* MODAL: Banka Hesap Hareket Raporu & Ekstresi */}
+      {selectedBankAccountForStatement && (
+        <BankStatementModal
+          isOpen={!!selectedBankAccountForStatement}
+          onClose={() => setSelectedBankAccountForStatement(null)}
+          bankAccount={selectedBankAccountForStatement}
+        />
+      )}
+
+      {/* MODAL: Çek / Senet Kartı ve Hareket Geçmişi */}
+      {selectedCheckForHistory && (
+        <CheckHistoryModal
+          isOpen={!!selectedCheckForHistory}
+          onClose={() => setSelectedCheckForHistory(null)}
+          check={selectedCheckForHistory}
+          onActionRequest={(check, action) => {
+            setSelectedCheckForHistory(null);
+            setSelectedCheckForAction(check);
+            setCheckActionType(action);
+          }}
+        />
+      )}
     </div>
   );
 }

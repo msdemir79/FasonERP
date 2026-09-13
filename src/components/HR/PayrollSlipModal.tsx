@@ -190,17 +190,17 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
 
   return (
     <div 
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs p-2 sm:p-4 md:p-6 flex justify-center items-center print:p-0 print:bg-white print:static print:overflow-visible"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs p-2 sm:p-4 md:p-6 flex justify-center items-center print:p-0 print:bg-white dark:bg-slate-900 print:static print:overflow-visible"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[96vh] overflow-hidden border border-slate-200 print:border-none print:shadow-none print:my-0 print:max-h-none animate-in fade-in zoom-in-95 flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[96vh] overflow-hidden border border-slate-200 dark:border-slate-700 print:border-none print:shadow-none print:my-0 print:max-h-none animate-in fade-in zoom-in-95 flex flex-col">
         
         {/* Sticky Modal Header (Ekranın üstünde sabit, yazdırmada gizli) */}
-        <div className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-200 bg-white z-30 print:hidden shadow-xs">
+        <div className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 z-30 print:hidden shadow-xs">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-sm sm:text-base text-slate-800">Şeffaf Ücret Hesap Pusulası (Bordro Zarfı)</h3>
+            <h3 className="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-200">Şeffaf Ücret Hesap Pusulası (Bordro Zarfı)</h3>
             <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold ${
               isSgk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
             }`}>
@@ -219,7 +219,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
             </button>
             <button
               onClick={onClose}
-              className="flex items-center gap-1 px-3 py-1.5 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold transition-colors border border-slate-300 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg text-xs font-bold transition-colors border border-slate-300 cursor-pointer"
               title="Kapat (Esc)"
             >
               <X className="w-4 h-4" />
@@ -229,20 +229,20 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
         </div>
 
         {/* Printable Slip Content with internal scrolling */}
-        <div className="p-5 sm:p-8 space-y-5 text-slate-900 bg-white overflow-y-auto flex-1 print:overflow-visible print:p-2 print:space-y-4" id="printable-payroll-slip">
+        <div className="p-5 sm:p-8 space-y-5 text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 overflow-y-auto flex-1 print:overflow-visible print:p-2 print:space-y-4" id="printable-payroll-slip">
           
           {/* 1. Kurumsal ve Belge Başlığı */}
           <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-4 gap-4">
             <div>
               <div className="flex items-center gap-3">
                 {compLogo ? (
-                  <div className="w-10 h-10 rounded bg-white border border-slate-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                  <div className="w-10 h-10 rounded bg-white dark:bg-slate-900 border border-slate-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
                     <img src={compLogo} alt={compName} className="max-w-full max-h-full object-contain" />
                   </div>
                 ) : (
                   <Building2 className="w-5 h-5 text-indigo-700 print:text-black shrink-0" />
                 )}
-                <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-900">
+                <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-900 dark:text-slate-100">
                   {compTitle}
                 </h2>
               </div>
@@ -250,51 +250,51 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
               <p className="text-xs text-slate-600 font-mono">Vergi Dairesi: {compTaxOffice} VKN: {compTaxNumber} | SGK İşyeri Sicil: 2.1029384.034.34.45</p>
             </div>
             <div className="sm:text-right shrink-0">
-              <div className="inline-block border-2 border-slate-900 px-3 py-1 text-xs sm:text-sm font-black uppercase bg-slate-100 print:bg-transparent">
+              <div className="inline-block border-2 border-slate-900 px-3 py-1 text-xs sm:text-sm font-black uppercase bg-slate-100 dark:bg-slate-800 print:bg-transparent">
                 ÜCRET HESAP PUSULASI
               </div>
-              <p className="text-xs font-bold text-slate-800 mt-1.5">
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1.5">
                 Hesap Dönemi: <span className="text-indigo-700 print:text-black font-black">{MONTH_NAMES[payroll.month - 1]} {payroll.year}</span>
               </p>
-              <p className="text-[10px] text-slate-500 italic mt-0.5">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 italic mt-0.5">
                 4857 Sayılı İş Kanunu Madde 37 Uyarınca Düzenlenmiştir
               </p>
             </div>
           </div>
 
           {/* 2. Personel ve Sözleşme Bilgileri Kartı */}
-          <div className="bg-slate-50/80 rounded-xl border border-slate-200 p-3.5 sm:p-4 text-xs">
-            <div className="text-[11px] font-black uppercase tracking-wider text-slate-700 border-b border-slate-200 pb-1.5 mb-2.5 flex items-center justify-between">
+          <div className="bg-slate-50 dark:bg-slate-800/50/80 rounded-xl border border-slate-200 dark:border-slate-700 p-3.5 sm:p-4 text-xs">
+            <div className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-1.5 mb-2.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-indigo-600 print:text-black" />
                 Personel & Sözleşme / Ücret Bilgileri
               </span>
-              <span className="text-slate-500 font-normal">Sicil No: <b className="font-mono text-slate-900">{payroll.employeeCode}</b></span>
+              <span className="text-slate-500 dark:text-slate-400 font-normal">Sicil No: <b className="font-mono text-slate-900 dark:text-slate-100">{payroll.employeeCode}</b></span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-slate-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-slate-800 dark:text-slate-200">
               <div>
-                <span className="text-slate-500 block text-[11px]">Adı Soyadı:</span>
-                <span className="font-bold text-sm text-slate-900">{payroll.employeeName}</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Adı Soyadı:</span>
+                <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{payroll.employeeName}</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[11px]">T.C. Kimlik No:</span>
-                <span className="font-mono font-bold text-slate-900">{employee?.tcNo || '-'}</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">T.C. Kimlik No:</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{employee?.tcNo || '-'}</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[11px]">Departman & Görev:</span>
-                <span className="font-bold text-slate-900">{payroll.department} - {employee?.position || 'Çalışan'}</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Departman & Görev:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">{payroll.department} - {employee?.position || 'Çalışan'}</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[11px]">SGK Statüsü:</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">SGK Statüsü:</span>
                 <span className={`font-bold ${isSgk ? 'text-emerald-700' : 'text-amber-800'}`}>
                   {isSgk ? "4/a Sigortalı (SGK'lı)" : "Harici / Günlük Yevmiyeli"}
                 </span>
               </div>
 
               {/* İkinci Satır: Ücret ve Sözleşme Koşulları */}
-              <div className="border-t border-slate-200/60 pt-2">
-                <span className="text-slate-500 block text-[11px]">Sözleşme Taban Ücreti:</span>
+              <div className="border-t border-slate-200 dark:border-slate-700/60 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Sözleşme Taban Ücreti:</span>
                 <span className="font-mono font-bold text-indigo-900 print:text-black">
                   ₺{agreedBaseSalary.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                   <span className="text-[10px] font-normal text-slate-600 block">
@@ -302,23 +302,23 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
                   </span>
                 </span>
               </div>
-              <div className="border-t border-slate-200/60 pt-2">
-                <span className="text-slate-500 block text-[11px]">Günlük Birim Hak Ediş:</span>
-                <span className="font-mono font-bold text-slate-900">
+              <div className="border-t border-slate-200 dark:border-slate-700/60 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Günlük Birim Hak Ediş:</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
                   ₺{dailyRate.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} / Gün
                 </span>
-                <span className="text-[10px] text-slate-500 block">{isDaily ? 'Yevmiye Tutarı' : 'Aylık Maaş ÷ 30 Gün'}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{isDaily ? 'Yevmiye Tutarı' : 'Aylık Maaş ÷ 30 Gün'}</span>
               </div>
-              <div className="border-t border-slate-200/60 pt-2">
-                <span className="text-slate-500 block text-[11px]">Fazla Mesai Saat Ücreti:</span>
-                <span className="font-mono font-bold text-slate-900">
+              <div className="border-t border-slate-200 dark:border-slate-700/60 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Fazla Mesai Saat Ücreti:</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
                   ₺{hourlyOvertimeRate.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} / Saat
                 </span>
-                <span className="text-[10px] text-slate-500 block">%50 Zamlı (1.5x Katsayı)</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">%50 Zamlı (1.5x Katsayı)</span>
               </div>
-              <div className="border-t border-slate-200/60 pt-2">
-                <span className="text-slate-500 block text-[11px]">Ödeme Kanalı:</span>
-                <span className="font-bold text-slate-900">
+              <div className="border-t border-slate-200 dark:border-slate-700/60 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Ödeme Kanalı:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">
                   {employee?.paymentMethod === 'bank' ? (
                     <span className="text-indigo-700 print:text-black">
                       Banka ({employee?.bankName || 'Banka'})
@@ -328,7 +328,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
                   )}
                 </span>
                 {employee?.iban && (
-                  <span className="text-[10px] font-mono text-slate-500 block truncate" title={employee.iban}>
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 block truncate" title={employee.iban}>
                     {employee.iban}
                   </span>
                 )}
@@ -339,7 +339,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
           {/* 3. Puantaj ve Takvim Cetveli Özeti */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-indigo-600 print:text-black" />
                 Dönem Puantaj & Gün Dökümü Cetveli
               </h4>
@@ -364,12 +364,12 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
                 <span className="text-base font-black font-mono text-sky-900">{payroll.paidLeaveDays}</span>
                 <span className="text-[10px] text-sky-600 block">Gün (Hak Edildi)</span>
               </div>
-              <div className={`border rounded-lg p-2.5 text-center ${absentDays > 0 ? 'bg-rose-50 border-rose-300' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`border rounded-lg p-2.5 text-center ${absentDays > 0 ? 'bg-rose-50 border-rose-300' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'}`}>
                 <span className="text-[10px] text-rose-800 uppercase font-bold block">Devamsızlık (D)</span>
                 <span className={`text-base font-black font-mono ${absentDays > 0 ? 'text-rose-700' : 'text-slate-400'}`}>{absentDays}</span>
                 <span className="text-[10px] text-rose-600 block">{absentDays > 0 ? 'Maaştan Kesildi' : 'Yok'}</span>
               </div>
-              <div className={`border rounded-lg p-2.5 text-center ${unpaidLeaveDays > 0 ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`border rounded-lg p-2.5 text-center ${unpaidLeaveDays > 0 ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'}`}>
                 <span className="text-[10px] text-amber-800 uppercase font-bold block">Ücretsiz İzin</span>
                 <span className={`text-base font-black font-mono ${unpaidLeaveDays > 0 ? 'text-amber-700' : 'text-slate-400'}`}>{unpaidLeaveDays}</span>
                 <span className="text-[10px] text-amber-600 block">{unpaidLeaveDays > 0 ? 'Maaştan Kesildi' : 'Yok'}</span>
@@ -383,7 +383,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
           </div>
 
           {/* 4. "MAAŞIM NEDEN VE NASIL HESAPLANDI?" ŞEFFAF MUTABAKAT TABLOSU (Çalışanın tüm sorularını cevaplar) */}
-          <div className="border-2 border-slate-900 rounded-xl overflow-hidden bg-white shadow-2xs">
+          <div className="border-2 border-slate-900 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
             <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-amber-400" />
@@ -396,10 +396,10 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
               </span>
             </div>
 
-            <div className="p-3.5 sm:p-4 text-xs space-y-2.5 bg-slate-50/50">
+            <div className="p-3.5 sm:p-4 text-xs space-y-2.5 bg-slate-50 dark:bg-slate-800/50/50">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 font-bold text-[11px]">
+                  <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold text-[11px]">
                     <th className="text-left pb-1.5">İşlem / Kalem</th>
                     <th className="text-left pb-1.5">Açıklama & Gerekçe</th>
                     <th className="text-right pb-1.5">Hesaplama Formülü</th>
@@ -409,7 +409,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
                 <tbody className="divide-y divide-slate-200/70 font-mono">
                   {/* Taban Maaş */}
                   <tr>
-                    <td className="py-1.5 text-left font-sans font-bold text-slate-900 flex items-center gap-1.5">
+                    <td className="py-1.5 text-left font-sans font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                       <PlusCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       {isDaily ? 'Temel Yevmiye Hak Edişi' : 'Sözleşme Taban Maaşı'}
                     </td>
@@ -418,7 +418,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
                         ? `${payroll.daysWorked} fiili gün + ${payroll.paidLeaveDays} gün ücretli izin karşılığı` 
                         : 'Tam ay çalışma standardı (30 gün)'}
                     </td>
-                    <td className="py-1.5 text-right text-slate-500">
+                    <td className="py-1.5 text-right text-slate-500 dark:text-slate-400">
                       {isDaily ? `${paidDays} gün × ₺${dailyRate.toLocaleString('tr-TR')}` : 'Aylık Standart'}
                     </td>
                     <td className="py-1.5 text-right font-bold text-emerald-700">
@@ -466,12 +466,12 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
 
                   {/* Eksik Gün Yoksa Bilgi Satırı */}
                   {totalMissingDays === 0 && !isDaily && (
-                    <tr className="text-slate-500">
+                    <tr className="text-slate-500 dark:text-slate-400">
                       <td className="py-1 text-left font-sans flex items-center gap-1.5 text-emerald-700">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         Eksik Gün Kesintisi
                       </td>
-                      <td className="py-1 text-left font-sans text-slate-500" colSpan={2}>
+                      <td className="py-1 text-left font-sans text-slate-500 dark:text-slate-400" colSpan={2}>
                         Devamsızlık veya ücretsiz izin bulunmamaktadır (Tam çalışma)
                       </td>
                       <td className="py-1 text-right text-slate-400">₺0,00</td>
@@ -507,7 +507,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
                       <td className="py-1.5 text-left font-sans text-slate-600">
                         Performans primi veya yol/yemek yardımı
                       </td>
-                      <td className="py-1.5 text-right text-slate-500">-</td>
+                      <td className="py-1.5 text-right text-slate-500 dark:text-slate-400">-</td>
                       <td className="py-1.5 text-right font-bold text-emerald-700">
                         +₺{payroll.bonusPay.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                       </td>
@@ -517,14 +517,14 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
                   {/* SGK & Yasal Kesintiler (SGK'lı ise) */}
                   {isSgk && payroll.totalLegalDeductions > 0 && (
                     <tr>
-                      <td className="py-1.5 text-left font-sans font-bold text-slate-800 flex items-center gap-1.5">
-                        <MinusCircle className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <td className="py-1.5 text-left font-sans font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <MinusCircle className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                         Yasal Kesintiler (SGK + Vergi)
                       </td>
                       <td className="py-1.5 text-left font-sans text-slate-600">
                         SGK İşçi (%14) + İşsizlik (%1) + Gelir & Damga Vergisi (İstisna sonrası)
                       </td>
-                      <td className="py-1.5 text-right text-slate-500">Yasal Mevzuat</td>
+                      <td className="py-1.5 text-right text-slate-500 dark:text-slate-400">Yasal Mevzuat</td>
                       <td className="py-1.5 text-right font-bold text-rose-700">
                         -₺{payroll.totalLegalDeductions.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                       </td>
@@ -564,12 +564,12 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
               </table>
 
               {/* İK Bilgilendirme Notu (Friendly HR Memo) */}
-              <div className="bg-indigo-50/70 border border-indigo-200 rounded-lg p-3 text-slate-800 text-[11px] leading-relaxed">
+              <div className="bg-indigo-50/70 border border-indigo-200 rounded-lg p-3 text-slate-800 dark:text-slate-200 text-[11px] leading-relaxed">
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-indigo-700 shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold text-indigo-900 block mb-0.5">İnsan Kaynakları Açıklama & Mutabakat Notu:</span>
-                    <p className="text-slate-700">
+                    <p className="text-slate-700 dark:text-slate-200">
                       {isDaily ? (
                         <>
                           Sayın <b>{payroll.employeeName}</b>; bu dönem günlük <b>₺{dailyRate.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</b> anlaşılan yevmiye üzerinden, puantajınızda kayıtlı <b>{payroll.daysWorked} gün fiili çalışma</b>{payroll.paidLeaveDays > 0 ? ` ve ${payroll.paidLeaveDays} gün ücretli izin` : ''} karşılığı temel kazanç hesaplanmıştır.{' '}
@@ -609,29 +609,29 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
           {/* 5. Ayrıntılı Yasal Kazançlar ve Kesintiler Tabloları (Çift Kolon) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             {/* Sol: Kazançlar (Hak Edişler) */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <div className="bg-slate-100 font-bold px-3.5 py-2 border-b border-slate-200 text-slate-800 uppercase flex items-center justify-between">
+            <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+              <div className="bg-slate-100 dark:bg-slate-800 font-bold px-3.5 py-2 border-b border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 uppercase flex items-center justify-between">
                 <span>Kazançlar (Hak Edişler)</span>
-                <span className="text-[10px] text-slate-500 font-normal">Gelir Kalemleri</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">Gelir Kalemleri</span>
               </div>
               <div className="p-3 space-y-2">
-                <div className="flex justify-between py-1 border-b border-slate-100">
+                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-slate-600">Normal Çalışma Ücreti ({payroll.daysWorked} Gün):</span>
                   <span className="font-mono font-bold">₺{payroll.basePay.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
+                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-slate-600">Fazla Mesai Ücreti ({payroll.overtimeHours} Saat):</span>
                   <span className="font-mono font-bold text-indigo-700">
                     {payroll.overtimePay > 0 ? `₺${payroll.overtimePay.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : '₺0,00'}
                   </span>
                 </div>
                 {payroll.bonusPay > 0 && (
-                  <div className="flex justify-between py-1 border-b border-slate-100">
+                  <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                     <span className="text-slate-600">Prim / İkramiye / Yol:</span>
                     <span className="font-mono font-bold text-emerald-700">₺{payroll.bonusPay.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 )}
-                <div className="flex justify-between py-2 font-black text-slate-900 border-t border-slate-300 bg-slate-50 px-2 rounded">
+                <div className="flex justify-between py-2 font-black text-slate-900 dark:text-slate-100 border-t border-slate-300 bg-slate-50 dark:bg-slate-800/50 px-2 rounded">
                   <span>Toplam Tahakkuk Eden Kazanç:</span>
                   <span className="font-mono text-sm">₺{payroll.totalGrossPay.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                 </div>
@@ -639,52 +639,52 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
             </div>
 
             {/* Sağ: Kesintiler (Yasal ve Şirket) */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <div className="bg-slate-100 font-bold px-3.5 py-2 border-b border-slate-200 text-slate-800 uppercase flex items-center justify-between">
+            <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+              <div className="bg-slate-100 dark:bg-slate-800 font-bold px-3.5 py-2 border-b border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 uppercase flex items-center justify-between">
                 <span>Kesintiler (Yasal & Mahsup)</span>
-                <span className="text-[10px] text-slate-500 font-normal">Gider Kalemleri</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">Gider Kalemleri</span>
               </div>
               <div className="p-3 space-y-2">
                 {isSgk ? (
                   <>
-                    <div className="flex justify-between py-1 border-b border-slate-100">
+                    <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                       <span className="text-slate-600">SGK İşçi Primi (%14):</span>
                       <span className="font-mono font-bold text-rose-600">-₺{payroll.employeeSgkShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-slate-100">
+                    <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                       <span className="text-slate-600">İşsizlik Sigortası Primi (%1):</span>
                       <span className="font-mono font-bold text-rose-600">-₺{payroll.employeeUnemploymentShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-slate-100">
+                    <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                       <span className="text-slate-600">Gelir Vergisi (İstisna Düşülmüş):</span>
                       <span className="font-mono font-bold text-rose-600">-₺{payroll.incomeTax.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-slate-100">
+                    <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                       <span className="text-slate-600">Damga Vergisi (İstisna Düşülmüş):</span>
                       <span className="font-mono font-bold text-rose-600">-₺{payroll.stampTax.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </>
                 ) : (
-                  <div className="py-2 text-slate-500 italic text-[11px] bg-slate-50 p-2 rounded">
+                  <div className="py-2 text-slate-500 dark:text-slate-400 italic text-[11px] bg-slate-50 dark:bg-slate-800/50 p-2 rounded">
                     * Harici / SGK'sız bordro: Yasal SGK prim kesintisi ve vergi stopajı bulunmamaktadır.
                   </div>
                 )}
 
                 {payroll.advanceDeduction > 0 && (
-                  <div className="flex justify-between py-1 border-b border-slate-100 bg-rose-50/40 px-1 rounded">
+                  <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800 bg-rose-50/40 px-1 rounded">
                     <span className="text-rose-800 font-medium">Mahsup Edilen Personel Avansı:</span>
                     <span className="font-mono font-bold text-rose-600">-₺{payroll.advanceDeduction.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 )}
 
                 {payroll.otherDeductions > 0 && (
-                  <div className="flex justify-between py-1 border-b border-slate-100">
+                  <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                     <span className="text-slate-600">Diğer Kesintiler (BES / İcra):</span>
                     <span className="font-mono font-bold text-rose-600">-₺{payroll.otherDeductions.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 )}
 
-                <div className="flex justify-between py-2 font-black text-slate-900 border-t border-slate-300 bg-rose-50/60 px-2 rounded">
+                <div className="flex justify-between py-2 font-black text-slate-900 dark:text-slate-100 border-t border-slate-300 bg-rose-50/60 px-2 rounded">
                   <span>Toplam Kesintiler:</span>
                   <span className="font-mono text-sm text-rose-700">
                     -₺{totalDeductions.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
@@ -696,25 +696,25 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
 
           {/* 6. Yasal SGK ve Vergi Matrahları (SGK'lı ise Şeffaf Gösterim) */}
           {isSgk && (
-            <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 text-[11px]">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-[11px]">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
                 Yasal Vergi & SGK Matrah Dökümü (7349 Sayılı Kanun Asgari Ücret Muafiyeti Uygulanmıştır)
               </span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-700 font-mono">
-                <div className="bg-white p-2 rounded border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-sans block">SGK Matrahı (SPEK):</span>
-                  <span className="font-bold text-slate-900">₺{payroll.totalGrossPay.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-700 dark:text-slate-200 font-mono">
+                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">SGK Matrahı (SPEK):</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">₺{payroll.totalGrossPay.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div className="bg-white p-2 rounded border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-sans block">Gelir Vergisi Matrahı:</span>
-                  <span className="font-bold text-slate-900">₺{(payroll.totalGrossPay - payroll.employeeSgkShare - payroll.employeeUnemploymentShare).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Gelir Vergisi Matrahı:</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">₺{(payroll.totalGrossPay - payroll.employeeSgkShare - payroll.employeeUnemploymentShare).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div className="bg-white p-2 rounded border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-sans block">Asgari Ücret Vergi İstisnası:</span>
+                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Asgari Ücret Vergi İstisnası:</span>
                   <span className="font-bold text-emerald-700">Uygulandı (%0 Vergi)</span>
                 </div>
-                <div className="bg-white p-2 rounded border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-sans block">İşveren Toplam Maliyeti:</span>
+                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">İşveren Toplam Maliyeti:</span>
                   <span className="font-bold text-indigo-900">₺{payroll.totalEmployerCost.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
@@ -749,7 +749,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
 
           {/* 8. Yasal Not & Karşılıklı İmza Alanı */}
           <div className="pt-2 border-t border-slate-300 space-y-4 text-xs">
-            <p className="text-[11px] text-slate-600 leading-relaxed italic bg-slate-50 p-2.5 rounded border border-slate-200">
+            <p className="text-[11px] text-slate-600 leading-relaxed italic bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded border border-slate-200 dark:border-slate-700">
               <b>Yasal Bildirim & İbra:</b> İşbu ücret hesap pusulası 4857 sayılı İş Kanunu'nun 37. maddesi uyarınca işçi ve işveren mutabakatı için tanzim edilmiştir. 
               İşbu hesap pusulasındaki tüm çalışma günleri, mesai saatleri ve kesintileri inceledim. Tarafıma ödenecek olan yukarıda dökümü yapılmış net tutarı eksiksiz teslim aldığımı, 
               bu döneme ilişkin başkaca bir ücret, fazla çalışma veya izin alacağım kalmadığını kabul ve beyan ederim. (Varsa itirazlar en geç 3 iş günü içinde İK departmanına bildirilmelidir).
@@ -757,15 +757,15 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
 
             <div className="grid grid-cols-2 gap-8 pt-2 text-center">
               <div>
-                <p className="font-bold text-slate-800">İşveren / Şirket Yetkilisi</p>
-                <p className="text-[10px] text-slate-500 uppercase">{compTitle}</p>
+                <p className="font-bold text-slate-800 dark:text-slate-200">İşveren / Şirket Yetkilisi</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">{compTitle}</p>
                 <div className="h-16 mt-2 border-b border-dashed border-slate-400 flex items-end justify-center pb-1">
                   <span className="text-[10px] text-slate-400">Kaşe / Yetkili İmza</span>
                 </div>
               </div>
               <div>
-                <p className="font-bold text-slate-800">Personel (Teslim Alan)</p>
-                <p className="text-[10px] text-slate-500">{payroll.employeeName} ({payroll.employeeCode})</p>
+                <p className="font-bold text-slate-800 dark:text-slate-200">Personel (Teslim Alan)</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">{payroll.employeeName} ({payroll.employeeCode})</p>
                 <div className="h-16 mt-2 border-b border-dashed border-slate-400 flex items-end justify-center pb-1">
                   <span className="text-[10px] text-slate-400">Tarih: ..... / ..... / 2026 &nbsp;&nbsp;|&nbsp;&nbsp; Islak İmza</span>
                 </div>
@@ -776,8 +776,8 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
         </div>
 
         {/* Modal Footer (Hidden during print) */}
-        <div className="shrink-0 px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between print:hidden">
-          <span className="text-xs text-slate-500">
+        <div className="shrink-0 px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between print:hidden">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
             Dönem: <b>{MONTH_NAMES[payroll.month - 1]} {payroll.year}</b> | Sicil: <b>{payroll.employeeCode}</b>
           </span>
           <div className="flex items-center gap-2">
@@ -790,7 +790,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
             >
               Pusulayı Kapat
             </button>

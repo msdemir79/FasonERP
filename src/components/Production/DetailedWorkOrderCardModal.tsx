@@ -616,7 +616,7 @@ export default function DetailedWorkOrderCardModal({
                   type="text"
                   value={moldCode}
                   onChange={e => setMoldCode(e.target.value)}
-                  className="w-full bg-white border border-amber-300 rounded-lg p-2 font-mono text-slate-900"
+                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 rounded-lg p-2 font-mono text-slate-900 dark:text-slate-100"
                   placeholder="örn: 018"
                 />
               </div>
@@ -627,7 +627,7 @@ export default function DetailedWorkOrderCardModal({
                   type="text"
                   value={moldGroup}
                   onChange={e => setMoldGroup(e.target.value)}
-                  className="w-full bg-white border border-amber-300 rounded-lg p-2 text-slate-900 uppercase"
+                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 rounded-lg p-2 text-slate-900 dark:text-slate-100 uppercase"
                   placeholder="örn: PTK _ PATİK (26-30)"
                 />
               </div>
@@ -638,7 +638,7 @@ export default function DetailedWorkOrderCardModal({
                   type="text"
                   value={customerName}
                   onChange={e => setCustomerName(e.target.value)}
-                  className="w-full bg-white border border-amber-300 rounded-lg p-2 text-slate-900 uppercase font-black"
+                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 rounded-lg p-2 text-slate-900 dark:text-slate-100 uppercase font-black"
                   placeholder="örn: BESTOF AYAKKABI"
                 />
               </div>
@@ -649,7 +649,7 @@ export default function DetailedWorkOrderCardModal({
                   type="text"
                   value={documentNo}
                   onChange={e => setDocumentNo(e.target.value)}
-                  className="w-full bg-white border border-amber-300 rounded-lg p-2 font-mono text-slate-900 uppercase"
+                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 rounded-lg p-2 font-mono text-slate-900 dark:text-slate-100 uppercase"
                   placeholder="örn: KİŞ 74"
                 />
               </div>
@@ -660,7 +660,7 @@ export default function DetailedWorkOrderCardModal({
                   type="text"
                   value={orderNumber}
                   onChange={e => setOrderNumber(e.target.value)}
-                  className="w-full bg-white border border-amber-300 rounded-lg p-2 font-mono text-slate-900"
+                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 rounded-lg p-2 font-mono text-slate-900 dark:text-slate-100"
                   placeholder="örn: 2423"
                 />
               </div>
@@ -671,7 +671,7 @@ export default function DetailedWorkOrderCardModal({
                   type="text"
                   value={colorName}
                   onChange={e => setColorName(e.target.value)}
-                  className="w-full bg-white border border-amber-300 rounded-lg p-2 uppercase text-slate-900 font-bold"
+                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 rounded-lg p-2 uppercase text-slate-900 dark:text-slate-100 font-bold"
                   placeholder="örn: SİYAH/BEYAZ"
                 />
               </div>
@@ -682,7 +682,7 @@ export default function DetailedWorkOrderCardModal({
                   type="text"
                   value={orderDateStr}
                   onChange={e => setOrderDateStr(e.target.value)}
-                  className="w-full bg-white border border-amber-300 rounded-lg p-2 font-mono text-slate-900"
+                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 rounded-lg p-2 font-mono text-slate-900 dark:text-slate-100"
                   placeholder="11/04/2022"
                 />
               </div>
@@ -693,7 +693,7 @@ export default function DetailedWorkOrderCardModal({
                   type="text"
                   value={customerCode}
                   onChange={e => setCustomerCode(e.target.value)}
-                  className="w-full bg-white border border-amber-300 rounded-lg p-2 font-mono text-slate-900 uppercase"
+                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 rounded-lg p-2 font-mono text-slate-900 dark:text-slate-100 uppercase"
                   placeholder="MUS-0021"
                 />
               </div>
@@ -704,7 +704,7 @@ export default function DetailedWorkOrderCardModal({
               <label className="text-[10px] text-amber-900 uppercase block font-black">Beden & Asorti Dağılımı</label>
               <div className="flex flex-wrap gap-2">
                 {customSizes.map((sz, idx) => (
-                  <div key={idx} className="bg-white border border-amber-300 rounded-lg p-1.5 text-center flex items-center gap-1.5">
+                  <div key={idx} className="bg-white dark:bg-slate-900 border border-amber-300 rounded-lg p-1.5 text-center flex items-center gap-1.5">
                     <span className="font-mono font-bold text-amber-900 text-xs px-1.5 bg-amber-100 rounded">{sz.size}:</span>
                     <input
                       type="number"
@@ -714,7 +714,7 @@ export default function DetailedWorkOrderCardModal({
                         next[idx].quantity = Number(e.target.value) || 0;
                         setCustomSizes(next);
                       }}
-                      className="w-14 text-center font-bold text-xs p-0.5 border border-slate-200 rounded"
+                      className="w-14 text-center font-bold text-xs p-0.5 border border-slate-200 dark:border-slate-700 rounded"
                     />
                   </div>
                 ))}
@@ -726,10 +726,10 @@ export default function DetailedWorkOrderCardModal({
         {/* ========================================================================= */}
         {/* PRINTABLE INDUSTRIAL WORK ORDER SHEET (EXACT CLONE OF USER IMAGE)        */}
         {/* ========================================================================= */}
-        <div className="overflow-x-auto bg-slate-100 p-2 sm:p-4 rounded-2xl flex justify-center">
+        <div className="overflow-x-auto bg-slate-100 dark:bg-slate-800 p-2 sm:p-4 rounded-2xl flex justify-center">
           <div
             id="work-order-sheet-printable"
-            className="w-full max-w-[210mm] bg-white text-black p-3.5 sm:p-5 border-2 border-black select-text shadow-xl"
+            className="w-full max-w-[210mm] bg-white dark:bg-slate-900 text-black p-3.5 sm:p-5 border-2 border-black select-text shadow-xl"
             style={{ 
               minHeight: '280mm',
               fontFamily: 'Arial, Helvetica, sans-serif',
@@ -745,7 +745,7 @@ export default function DetailedWorkOrderCardModal({
                   <div className="col-span-4 p-2 font-bold border-r border-black flex items-center" style={{ verticalAlign: 'middle' }}>
                     <span>Emir No : <strong className="font-black text-[12px]">{workOrder.id || '1458'}</strong></span>
                   </div>
-                  <div className="col-span-4 p-1 border-r border-black flex items-center justify-center bg-white">
+                  <div className="col-span-4 p-1 border-r border-black flex items-center justify-center bg-white dark:bg-slate-900">
                     <BarcodeSvg 
                       value={workOrder.barcode ? workOrder.barcode.replace(/\D/g, '') || workOrder.barcode : '1458'} 
                       height={32} 
@@ -778,7 +778,7 @@ export default function DetailedWorkOrderCardModal({
                 </div>
 
                 {/* Row 4: Müşteri Adı (Large Blue Bold) */}
-                <div className="p-2.5 bg-white">
+                <div className="p-2.5 bg-white dark:bg-slate-900">
                   <div className="flex items-center text-[12px] font-bold" style={{ verticalAlign: 'middle' }}>
                     <span className="mr-2">Müşteri Adı :</span>
                     <span className="text-[15px] font-black tracking-wide uppercase" style={{ color: '#0033cc' }}>
@@ -788,7 +788,7 @@ export default function DetailedWorkOrderCardModal({
                 </div>
 
                 {/* Row 5: Kalıp Kodu + Kalıp/Seri Grubu */}
-                <div className="grid grid-cols-12 text-[10.5px] bg-white">
+                <div className="grid grid-cols-12 text-[10.5px] bg-white dark:bg-slate-900">
                   <div className="col-span-5 p-2 font-bold border-r border-black" style={{ verticalAlign: 'middle' }}>
                     <span>Kalıp Kodu: <strong className="text-[12px] font-black">{moldCode || '018'}</strong></span>
                   </div>
@@ -874,7 +874,7 @@ export default function DetailedWorkOrderCardModal({
               {/* Header Columns */}
               <table className="w-full border-collapse" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr className="border-b-2 border-black text-[10px] font-black bg-white">
+                  <tr className="border-b-2 border-black text-[10px] font-black bg-white dark:bg-slate-900">
                     <th className="p-1.5 text-left border-r border-black w-[32%]" style={{ verticalAlign: 'middle', lineHeight: '1.4' }}>Hammadde Adı</th>
                     <th className="p-1.5 text-left border-r border-black w-[25%]" style={{ verticalAlign: 'middle', lineHeight: '1.4' }}>Açıklama / Not</th>
                     <th className="p-1.5 text-left border-r border-black w-[25%]" style={{ verticalAlign: 'middle', lineHeight: '1.4' }}>Kullanılacak Renk</th>
@@ -955,8 +955,8 @@ export default function DetailedWorkOrderCardModal({
         </div>
 
         {/* Bottom Modal Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 print:hidden">
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-700 print:hidden">
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
             <Info className="w-4 h-4 text-indigo-500 shrink-0" />
             <span>
               Bu fiş A4 endüstriyel formatta hazırlanmıştır. PDF olarak indirebilir veya doğrudan yazıcıya gönderebilirsiniz.
@@ -967,7 +967,7 @@ export default function DetailedWorkOrderCardModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+              className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
             >
               Kapat
             </button>

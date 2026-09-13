@@ -416,7 +416,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
         {/* Top Product Context Banner */}
         <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white p-5 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white border border-white/20 flex items-center justify-center backdrop-blur-md overflow-hidden shrink-0 shadow-inner relative group p-1">
+            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-white/20 flex items-center justify-center backdrop-blur-md overflow-hidden shrink-0 shadow-inner relative group p-1">
               {getLabelImageForColor() ? (
                 <img src={getLabelImageForColor()!} alt="" className="max-w-full max-h-full object-contain" />
               ) : (
@@ -492,7 +492,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
         </div>
 
         {/* Mode Selector Tabs */}
-        <div className="grid grid-cols-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+        <div className="grid grid-cols-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
           <button
             type="button"
             onClick={() => {
@@ -502,8 +502,8 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             className={cn(
               "flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
               activeTab === 'box'
-                ? "bg-white text-indigo-600 shadow-md shadow-indigo-900/5 font-extrabold"
-                : "text-slate-500 hover:text-slate-900"
+                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-md shadow-indigo-900/5 font-extrabold"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100"
             )}
           >
             <Package className="w-4 h-4" />
@@ -518,8 +518,8 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             className={cn(
               "flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
               activeTab === 'variant'
-                ? "bg-white text-indigo-600 shadow-md shadow-indigo-900/5 font-extrabold"
-                : "text-slate-500 hover:text-slate-900"
+                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-md shadow-indigo-900/5 font-extrabold"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100"
             )}
           >
             <Tag className="w-4 h-4" />
@@ -535,14 +535,14 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             
             {/* TAB 1: KOLİ BARKODU CONTROLS */}
             {activeTab === 'box' && (
-              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-5">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
                       <Package className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                         Koli Miktarları & Renk Dağılımı
                       </h4>
                       <p className="text-[10px] text-slate-400 font-bold uppercase">
@@ -567,7 +567,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                         const val = Math.max(0, parseInt(e.target.value, 10) || 0);
                         setGlobalBoxInput(val);
                       }}
-                      className="w-24 bg-white border border-indigo-200 rounded-xl p-2.5 text-center font-mono font-black text-indigo-700 outline-none text-base shadow-sm"
+                      className="w-24 bg-white dark:bg-slate-900 border border-indigo-200 rounded-xl p-2.5 text-center font-mono font-black text-indigo-700 outline-none text-base shadow-sm"
                     />
                     <button
                       type="button"
@@ -593,7 +593,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                           availableColors.forEach(c => { updated[c] = cnt; });
                           setBoxCounts(updated);
                         }}
-                        className="px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-black transition-all"
+                        className="px-2.5 py-1 bg-white dark:bg-slate-900 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-black transition-all"
                       >
                         +{cnt} Koli
                       </button>
@@ -613,12 +613,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                       return (
                         <div
                           key={color}
-                          className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-2xl hover:border-indigo-300 transition-all"
+                          className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-indigo-300 transition-all"
                         >
                           <div className="space-y-0.5">
                             <div className="flex items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
-                              <span className="text-xs font-black text-slate-800 uppercase">
+                              <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase">
                                 {color}
                               </span>
                             </div>
@@ -631,7 +631,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setBoxCounts(prev => ({ ...prev, [color]: Math.max(0, (prev[color] || 0) - 1) }))}
-                              className="w-8 h-8 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 flex items-center justify-center font-bold"
+                              className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold"
                             >
                               <Minus className="w-3.5 h-3.5" />
                             </button>
@@ -643,12 +643,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                                 const v = Math.max(0, parseInt(e.target.value, 10) || 0);
                                 setBoxCounts(prev => ({ ...prev, [color]: v }));
                               }}
-                              className="w-14 bg-white border border-slate-200 rounded-xl p-1.5 text-center font-mono font-black text-slate-900 text-sm outline-none"
+                              className="w-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-1.5 text-center font-mono font-black text-slate-900 dark:text-slate-100 text-sm outline-none"
                             />
                             <button
                               type="button"
                               onClick={() => setBoxCounts(prev => ({ ...prev, [color]: (prev[color] || 0) + 1 }))}
-                              className="w-8 h-8 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 flex items-center justify-center font-bold"
+                              className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold"
                             >
                               <Plus className="w-3.5 h-3.5" />
                             </button>
@@ -661,8 +661,8 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
                 {/* Box Assortment Summary */}
                 {product.isFootwear && (
-                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                       <span>1 Koli İçeriği (Asorti Dağılımı):</span>
                       <span className="font-mono font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
                         Toplam {totalPairsPerBox} Çift / Koli
@@ -670,9 +670,9 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                     </div>
                     <div className="grid grid-cols-5 gap-1.5">
                       {effectiveAssortment.map((a, i) => (
-                        <div key={i} className="bg-white p-1.5 rounded-xl border border-slate-200 text-center">
+                        <div key={i} className="bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
                           <div className="text-[9px] font-bold text-slate-400">{a.size}</div>
-                          <div className="text-xs font-mono font-black text-slate-800">{a.quantity} Ad.</div>
+                          <div className="text-xs font-mono font-black text-slate-800 dark:text-slate-200">{a.quantity} Ad.</div>
                         </div>
                       ))}
                     </div>
@@ -683,14 +683,14 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
             {/* TAB 2: ASORTİ / BEDEN BARKODU CONTROLS */}
             {activeTab === 'variant' && (
-              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-5">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
                       <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                         Akıllı Asorti & Beden Dağıtıcısı
                       </h4>
                       <p className="text-[10px] text-slate-400 font-bold uppercase">
@@ -707,7 +707,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                       <Layers className="w-3.5 h-3.5 text-indigo-600" />
                       Koli Sayısına Göre Otomatik Dağıt
                     </label>
-                    <span className="text-[9px] font-black text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-200 uppercase">
+                    <span className="text-[9px] font-black text-indigo-600 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-full border border-indigo-200 uppercase">
                       1 Koli = {totalPairsPerBox} Çift
                     </span>
                   </div>
@@ -723,7 +723,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                           setAssortmentBoxMultiplier(val);
                           applyAssortmentMultiplier(val);
                         }}
-                        className="w-full bg-white border-2 border-indigo-300 focus:border-indigo-600 rounded-2xl p-3 text-center font-mono font-black text-indigo-900 outline-none text-lg shadow-sm"
+                        className="w-full bg-white dark:bg-slate-900 border-2 border-indigo-300 focus:border-indigo-600 rounded-2xl p-3 text-center font-mono font-black text-indigo-900 outline-none text-lg shadow-sm"
                         placeholder="Koli adedi..."
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-indigo-400 uppercase pointer-events-none">
@@ -756,7 +756,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                             "px-2.5 py-1 rounded-lg text-[10px] font-black transition-all border",
                             assortmentBoxMultiplier === boxes
                               ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                              : "bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                              : "bg-white dark:bg-slate-900 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
                           )}
                         >
                           {boxes} Koli ({boxes * totalPairsPerBox} Çift)
@@ -794,7 +794,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                               "px-3 py-1.5 rounded-xl text-xs font-bold uppercase transition-all flex items-center gap-2 border",
                               isSelected
                                 ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                                : "bg-white dark:bg-slate-900 text-slate-600 border-slate-200 dark:border-slate-700 hover:border-slate-300"
                             )}
                           >
                             <span className={cn("w-2 h-2 rounded-full", isSelected ? "bg-indigo-400" : "bg-slate-300")}></span>
@@ -821,8 +821,8 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
                   <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
                     {selectedVariantColors.map(color => (
-                      <div key={color} className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                        <div className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5">
+                      <div key={color} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                        <div className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
                           Renk: {color}
                         </div>
@@ -835,13 +835,13 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                             return (
                               <div
                                 key={item.size}
-                                className="bg-white p-2.5 rounded-xl border border-slate-200 space-y-1 hover:border-indigo-300 transition-all shadow-xs"
+                                className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1 hover:border-indigo-300 transition-all shadow-xs"
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs font-black text-slate-900">
+                                  <span className="text-xs font-black text-slate-900 dark:text-slate-100">
                                     No: {item.size}
                                   </span>
-                                  <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1 rounded">
+                                  <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 rounded">
                                     oran: {item.quantity}
                                   </span>
                                 </div>
@@ -854,7 +854,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                                       const val = Math.max(0, parseInt(e.target.value, 10) || 0);
                                       setVariantQuantities(prev => ({ ...prev, [key]: val }));
                                     }}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1 text-center font-mono font-black text-indigo-600 text-xs outline-none"
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-1 text-center font-mono font-black text-indigo-600 text-xs outline-none"
                                   />
                                 </div>
                                 <div className="text-[8px] font-mono text-slate-400 truncate" title={barcode}>
@@ -872,14 +872,14 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             )}
 
             {/* BARKOD RESİM SEÇENEKLERİ (IMAGE SETTINGS PANEL) */}
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-pink-50 text-pink-600 rounded-xl">
                     <ImageIcon className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       Barkod Resim Seçenekleri
                     </h4>
                     <p className="text-[10px] text-slate-400 font-bold uppercase">
@@ -895,15 +895,15 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                     onChange={e => setShowImage(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-900 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                 </label>
               </div>
 
               {showImage && (
                 <div className="space-y-3 pt-1">
                   {/* Current Active Image Thumbnail & Actions */}
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                    <div className="w-14 h-14 rounded-xl bg-white border border-slate-300 overflow-hidden flex items-center justify-center shrink-0 shadow-xs p-1">
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+                    <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 overflow-hidden flex items-center justify-center shrink-0 shadow-xs p-1">
                       {getLabelImageForColor() ? (
                         <img 
                           src={getLabelImageForColor()!} 
@@ -919,7 +919,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                     </div>
 
                     <div className="flex-1 space-y-1">
-                      <div className="text-[10px] font-black uppercase text-slate-700">
+                      <div className="text-[10px] font-black uppercase text-slate-700 dark:text-slate-200">
                         {customImage ? 'Özel Yüklenen Görsel' : product.image ? 'Ürün Ana Görseli' : 'Görsel Bulunamadı'}
                       </div>
                       <p className="text-[9px] text-slate-400">
@@ -930,7 +930,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-[9px] font-black uppercase text-slate-700 transition-all shadow-xs"
+                          className="flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 border border-slate-300 rounded-lg text-[9px] font-black uppercase text-slate-700 dark:text-slate-200 transition-all shadow-xs"
                         >
                           <Upload className="w-3 h-3 text-indigo-600" />
                           {getLabelImageForColor() ? 'Değiştir / Yükle' : 'Resim Yükle'}
@@ -963,7 +963,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                             "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase transition-all border",
                             imageFit === 'contain'
                               ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                              : "bg-white dark:bg-slate-900 text-slate-600 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50"
                           )}
                           title="Görselin tamamı çerçeve içine sığdırılır, kesilmez"
                         >
@@ -976,7 +976,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                             "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase transition-all border",
                             imageFit === 'cover'
                               ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                              : "bg-white dark:bg-slate-900 text-slate-600 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50"
                           )}
                           title="Çerçeveyi tam dolduracak şekilde ayarlar"
                         >
@@ -1001,7 +1001,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                               "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase transition-all border",
                               imageSize === sz.id
                                 ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                : "bg-white dark:bg-slate-900 text-slate-600 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50"
                             )}
                           >
                             {sz.label}
@@ -1015,7 +1015,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             </div>
 
             {/* Label Print Options Card */}
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                   <Settings2 className="w-3.5 h-3.5" />
@@ -1028,7 +1028,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
               {/* Preset buttons */}
               <div className="space-y-1.5">
-                <div className="text-[9px] font-bold text-slate-500 uppercase">Hazır Ölçü Şablonları</div>
+                <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">Hazır Ölçü Şablonları</div>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
                     { id: '100x80', label: '100×80 mm', desc: 'Standart Koli' },
@@ -1046,7 +1046,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                         "p-2 rounded-xl text-center border transition-all",
                         labelSize === size.id
                           ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                          : "bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800"
                       )}
                     >
                       <div className="text-[10px] font-black">{size.label}</div>
@@ -1057,8 +1057,8 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
               </div>
 
               {/* Manual mm Inputs */}
-              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2.5">
-                <div className="flex items-center justify-between text-[10px] font-black text-slate-700 uppercase tracking-wider">
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5">
+                <div className="flex items-center justify-between text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
                   <span>Elle Ölçü Gir (Manuel mm)</span>
                   {labelSize === 'custom' && (
                     <span className="text-[8px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-md">
@@ -1070,12 +1070,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                 <div className="grid grid-cols-2 gap-3">
                   {/* Width Input */}
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase">Genişlik (mm)</label>
-                    <div className="flex items-center gap-1 bg-white rounded-xl border border-slate-300 p-1">
+                    <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">Genişlik (mm)</label>
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-300 p-1">
                       <button
                         type="button"
                         onClick={() => handleCustomWidthChange(Math.max(20, customWidthMm - 5))}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs"
                       >
                         -
                       </button>
@@ -1085,12 +1085,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                         max={300}
                         value={customWidthMm}
                         onChange={e => handleCustomWidthChange(Number(e.target.value))}
-                        className="w-full text-center text-xs font-black text-slate-900 focus:outline-hidden"
+                        className="w-full text-center text-xs font-black text-slate-900 dark:text-slate-100 focus:outline-hidden"
                       />
                       <button
                         type="button"
                         onClick={() => handleCustomWidthChange(Math.min(300, customWidthMm + 5))}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs"
                       >
                         +
                       </button>
@@ -1099,12 +1099,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
                   {/* Height Input */}
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase">Yükseklik (mm)</label>
-                    <div className="flex items-center gap-1 bg-white rounded-xl border border-slate-300 p-1">
+                    <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">Yükseklik (mm)</label>
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-300 p-1">
                       <button
                         type="button"
                         onClick={() => handleCustomHeightChange(Math.max(15, customHeightMm - 5))}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs"
                       >
                         -
                       </button>
@@ -1114,12 +1114,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                         max={300}
                         value={customHeightMm}
                         onChange={e => handleCustomHeightChange(Number(e.target.value))}
-                        className="w-full text-center text-xs font-black text-slate-900 focus:outline-hidden"
+                        className="w-full text-center text-xs font-black text-slate-900 dark:text-slate-100 focus:outline-hidden"
                       />
                       <button
                         type="button"
                         onClick={() => handleCustomHeightChange(Math.min(300, customHeightMm + 5))}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs"
                       >
                         +
                       </button>
@@ -1129,7 +1129,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <label className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer text-[10px] font-bold text-slate-700 hover:border-slate-300">
+                <label className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:border-slate-300">
                   <input
                     type="checkbox"
                     checked={showPrice}
@@ -1139,7 +1139,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                   <span>Fiyat Göster</span>
                 </label>
 
-                <label className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer text-[10px] font-bold text-slate-700 hover:border-slate-300">
+                <label className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:border-slate-300">
                   <input
                     type="checkbox"
                     checked={showBoxSerial}
@@ -1158,7 +1158,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4 text-indigo-600" />
-                <span className="text-xs font-black uppercase tracking-wider text-slate-800">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                   Canlı Etiket Önizleme ({getEffectiveDimensions().width} × {getEffectiveDimensions().height} mm)
                 </span>
               </div>
@@ -1170,7 +1170,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             </div>
 
             {/* Scrollable Preview Area */}
-            <div className="bg-slate-100/80 p-5 rounded-3xl border border-slate-200 min-h-[480px] max-h-[620px] overflow-y-auto space-y-4 shadow-inner">
+            <div className="bg-slate-100 dark:bg-slate-800/80 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 min-h-[480px] max-h-[620px] overflow-y-auto space-y-4 shadow-inner">
               
               {/* PRINTABLE CONTAINER */}
               <div id="barcode-printable-area" className="space-y-4">
@@ -1180,7 +1180,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                   boxLabelsToPrint.length === 0 ? (
                     <div className="py-24 text-center space-y-2 text-slate-400">
                       <Package className="w-12 h-12 mx-auto opacity-30 text-indigo-400" />
-                      <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                         Yazdırılacak koli miktarı girilmedi
                       </p>
                       <p className="text-[10px] text-slate-400 font-bold uppercase">
@@ -1192,7 +1192,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                       {boxLabelsToPrint.map((label, idx) => (
                         <div
                           key={`box-${idx}`}
-                          className="print-card bg-white border-2 border-slate-300 rounded-2xl p-5 shadow-sm space-y-4 text-black print:border-none print:shadow-none print:m-0 print:p-6 print:page-break-after-always"
+                          className="print-card bg-white dark:bg-slate-900 border-2 border-slate-300 rounded-2xl p-5 shadow-sm space-y-4 text-black print:border-none print:shadow-none print:m-0 print:p-6 print:page-break-after-always"
                           style={{
                             minHeight: `${Math.max(180, getEffectiveDimensions().height * 3.2)}px`
                           }}
@@ -1202,7 +1202,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                             <div className="flex items-center gap-3">
                               {label.image && (
                                 <div 
-                                  className="label-img-frame rounded-xl border-2 border-black overflow-hidden bg-white shrink-0 shadow-2xs flex items-center justify-center p-1"
+                                  className="label-img-frame rounded-xl border-2 border-black overflow-hidden bg-white dark:bg-slate-900 shrink-0 shadow-2xs flex items-center justify-center p-1"
                                   style={{
                                     width: imageSize === 'sm' ? '52px' : imageSize === 'lg' ? '92px' : '72px',
                                     height: imageSize === 'sm' ? '52px' : imageSize === 'lg' ? '92px' : '72px',
@@ -1257,9 +1257,9 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                           </div>
 
                           {/* Color and Box Numbers */}
-                          <div className="flex items-center justify-between bg-slate-100 print:bg-slate-200/50 p-2.5 rounded-xl font-bold">
+                          <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-800 print:bg-slate-200/50 p-2.5 rounded-xl font-bold">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] uppercase text-slate-500">RENK:</span>
+                              <span className="text-[10px] uppercase text-slate-500 dark:text-slate-400">RENK:</span>
                               <span className="text-sm font-black uppercase text-black">{label.color}</span>
                             </div>
                             {showBoxSerial && (
@@ -1282,7 +1282,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                                     <div className="bg-slate-200 print:bg-slate-300 font-bold text-[10px] py-1 border-b border-black">
                                       {a.size}
                                     </div>
-                                    <div className="font-mono font-black text-xs py-1.5 bg-white">
+                                    <div className="font-mono font-black text-xs py-1.5 bg-white dark:bg-slate-900">
                                       {a.quantity}
                                     </div>
                                   </div>
@@ -1292,7 +1292,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                           )}
 
                           {/* Barcode SVG */}
-                          <div className="pt-2 flex flex-col items-center justify-center border-t border-slate-200">
+                          <div className="pt-2 flex flex-col items-center justify-center border-t border-slate-200 dark:border-slate-700">
                             <BarcodeSvg
                               value={label.barcode}
                               height={getEffectiveDimensions().height <= 45 ? 36 : 52}
@@ -1303,7 +1303,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
                           {/* Footer Info */}
                           {showOrderInfo && orderContext?.orderNumber && (
-                            <div className="text-[9px] font-bold text-slate-500 border-t border-slate-200 pt-1 flex justify-between uppercase">
+                            <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-1 flex justify-between uppercase">
                               <span>Sipariş: {orderContext.orderNumber}</span>
                               <span>{orderContext.customerName}</span>
                             </div>
@@ -1319,7 +1319,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                   variantLabelsToPrint.length === 0 ? (
                     <div className="py-24 text-center space-y-2 text-slate-400">
                       <Tag className="w-12 h-12 mx-auto opacity-30 text-indigo-400" />
-                      <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                         Yazdırılacak beden etiketi seçilmedi
                       </p>
                       <p className="text-[10px] text-slate-400 font-bold uppercase">
@@ -1334,7 +1334,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                       {variantLabelsToPrint.map((label, idx) => (
                         <div
                           key={`var-${idx}`}
-                          className="print-card bg-white border-2 border-slate-300 rounded-2xl p-4 shadow-sm space-y-2 text-black print:border-none print:shadow-none print:m-0 print:p-4 print:page-break-after-always flex flex-col justify-between"
+                          className="print-card bg-white dark:bg-slate-900 border-2 border-slate-300 rounded-2xl p-4 shadow-sm space-y-2 text-black print:border-none print:shadow-none print:m-0 print:p-4 print:page-break-after-always flex flex-col justify-between"
                           style={{
                             minHeight: `${Math.max(130, getEffectiveDimensions().height * 3.0)}px`
                           }}
@@ -1344,7 +1344,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                             <div className="flex items-center gap-2">
                               {label.image && (
                                 <div 
-                                  className="label-img-frame rounded-lg border border-black overflow-hidden bg-white shrink-0 p-0.5 flex items-center justify-center shadow-2xs"
+                                  className="label-img-frame rounded-lg border border-black overflow-hidden bg-white dark:bg-slate-900 shrink-0 p-0.5 flex items-center justify-center shadow-2xs"
                                   style={{
                                     width: '44px',
                                     height: '44px',
@@ -1372,7 +1372,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                                 </div>
                               )}
                               <div>
-                                <div className="text-[9px] font-black uppercase tracking-wider text-slate-700">
+                                <div className="text-[9px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
                                   {product.brand || companyHeader}
                                 </div>
                                 <div className="text-xs font-black uppercase text-black line-clamp-1">
@@ -1387,13 +1387,13 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                           </div>
 
                           {/* Middle Highlight: SIZE & COLOR */}
-                          <div className="flex items-center justify-between bg-slate-100 print:bg-slate-200/50 p-2 rounded-xl">
+                          <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-800 print:bg-slate-200/50 p-2 rounded-xl">
                             <div className="text-[10px] font-bold uppercase text-slate-600">
                               RENK: <span className="font-black text-black">{label.color}</span>
                             </div>
                             <div className="text-right flex items-center">
-                              <span className="text-[9px] font-bold text-slate-500 uppercase mr-1.5">BEDEN:</span>
-                              <span className="text-lg font-black font-mono text-black bg-white px-2.5 py-0.5 rounded-lg border border-slate-400 shadow-2xs">
+                              <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mr-1.5">BEDEN:</span>
+                              <span className="text-lg font-black font-mono text-black bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-slate-400 shadow-2xs">
                                 {label.size}
                               </span>
                             </div>
@@ -1426,15 +1426,15 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
             {/* Bottom Actions */}
             <div className="flex items-center justify-between pt-2">
-              <div className="text-[11px] font-bold text-slate-500">
-                Seçilen Mod: <span className="font-black text-slate-900 uppercase">{activeTab === 'box' ? 'Koli Barkodu' : 'Asorti / Beden Barkodu'}</span> ({totalLabelsCount} Etiket)
+              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                Seçilen Mod: <span className="font-black text-slate-900 dark:text-slate-100 uppercase">{activeTab === 'box' ? 'Koli Barkodu' : 'Asorti / Beden Barkodu'}</span> ({totalLabelsCount} Etiket)
               </div>
 
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all"
+                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all"
                 >
                   Kapat
                 </button>

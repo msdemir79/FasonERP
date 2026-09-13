@@ -128,10 +128,10 @@ export default function KebirPrintModal({
 
   return (
     <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl border border-slate-200 flex flex-col max-h-[96vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-150">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[96vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-150">
         
         {/* TOP CONTROL BAR (Hidden on print) */}
-        <div className="p-3 sm:p-4 border-b border-slate-200 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-indigo-500/20 border border-indigo-400/30 rounded-xl flex items-center justify-center text-indigo-400">
               <BookOpen className="w-5 h-5" />
@@ -213,10 +213,10 @@ export default function KebirPrintModal({
         </div>
 
         {/* PRINTABLE CANVAS CONTAINER */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100/80">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100 dark:bg-slate-800/80">
           <div 
             ref={printContentRef}
-            className="bg-white mx-auto shadow-md border border-slate-300 p-6 sm:p-8 text-slate-900 rounded-sm"
+            className="bg-white dark:bg-slate-900 mx-auto shadow-md border border-slate-300 p-6 sm:p-8 text-slate-900 dark:text-slate-100 rounded-sm"
             style={{ maxWidth: orientation === 'landscape' ? '1040px' : '820px' }}
           >
             {/* 1. KURUMSAL VE RAPOR BAŞLIĞI */}
@@ -224,7 +224,7 @@ export default function KebirPrintModal({
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div className="flex items-center gap-3">
                   {companySettings?.logo ? (
-                    <div className="w-12 h-12 rounded bg-white border border-slate-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-12 h-12 rounded bg-white dark:bg-slate-900 border border-slate-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
                       <img src={companySettings.logo} alt={companySettings.companyName} className="max-w-full max-h-full object-contain" />
                     </div>
                   ) : null}
@@ -239,12 +239,12 @@ export default function KebirPrintModal({
                       {companySettings?.address || 'İkitelli OSB Mah. Aykosan Sanayi Sitesi 4. Ada A Blok No: 12-14 Başakşehir / İSTANBUL'}
                     </p>
                     <p className="text-[11px] text-slate-600">
-                      <span className="font-semibold text-slate-800">Vergi Dairesi:</span> {companySettings?.taxOffice || 'İkitelli V.D.'} &bull; <span className="font-semibold text-slate-800">VKN:</span> {companySettings?.taxNumber || '7320491820'}
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">Vergi Dairesi:</span> {companySettings?.taxOffice || 'İkitelli V.D.'} &bull; <span className="font-semibold text-slate-800 dark:text-slate-200">VKN:</span> {companySettings?.taxNumber || '7320491820'}
                     </p>
                   </div>
                 </div>
 
-                <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200">
+                <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200 dark:border-slate-700">
                   <span className="inline-block bg-indigo-950 text-white font-black text-xs px-3 py-1 uppercase tracking-wider rounded">
                     DEFTER-İ KEBİR EKSTRESİ
                   </span>
@@ -256,39 +256,39 @@ export default function KebirPrintModal({
               </div>
 
               {/* 2. SEÇİLİ HESAP DETAYLARI KUTUSU */}
-              <div className="mt-3 p-3 bg-slate-50 border border-slate-300 rounded grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-300 rounded grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase">Hesap Kodu</div>
-                  <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">{accountCode}</div>
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Hesap Kodu</div>
+                  <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm mt-0.5">{accountCode}</div>
                 </div>
                 <div className="sm:col-span-2">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase">Hesap Adı / Tanımı</div>
-                  <div className="font-bold text-slate-900 text-sm mt-0.5">{accountName}</div>
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Hesap Adı / Tanımı</div>
+                  <div className="font-bold text-slate-900 dark:text-slate-100 text-sm mt-0.5">{accountName}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase">Para Birimi / Tür</div>
-                  <div className="font-semibold text-slate-800 text-xs mt-0.5">{currency} &bull; {accountType.toUpperCase()}</div>
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Para Birimi / Tür</div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs mt-0.5">{currency} &bull; {accountType.toUpperCase()}</div>
                 </div>
               </div>
             </div>
 
             {/* 3. ÖZET İSTATİSTİKLER */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5 text-xs">
-              <div className="border border-slate-300 rounded p-2 bg-slate-50">
-                <div className="text-[10px] uppercase font-bold text-slate-500">Hareket Sayısı</div>
-                <div className="text-sm font-mono font-bold text-slate-900 mt-0.5">
+              <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50">
+                <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Hareket Sayısı</div>
+                <div className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                   {lines.length} işlem
                 </div>
               </div>
-              <div className="border border-slate-300 rounded p-2 bg-slate-50">
-                <div className="text-[10px] uppercase font-bold text-slate-500">Toplam Borç Tutarı</div>
-                <div className="text-sm font-mono font-bold text-slate-900 mt-0.5">
+              <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50">
+                <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Toplam Borç Tutarı</div>
+                <div className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                   ₺{totalDebit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </div>
               </div>
-              <div className="border border-slate-300 rounded p-2 bg-slate-50">
-                <div className="text-[10px] uppercase font-bold text-slate-500">Toplam Alacak Tutarı</div>
-                <div className="text-sm font-mono font-bold text-slate-900 mt-0.5">
+              <div className="border border-slate-300 rounded p-2 bg-slate-50 dark:bg-slate-800/50">
+                <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Toplam Alacak Tutarı</div>
+                <div className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                   ₺{totalCredit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                 </div>
               </div>
@@ -327,17 +327,17 @@ export default function KebirPrintModal({
                     </tr>
                   ) : (
                     lines.map((row, idx) => (
-                      <tr key={`print-kebir-${row.entryId}-${idx}`} className="hover:bg-slate-50">
-                        <td className="py-1.5 px-2 text-center font-mono text-slate-500 border border-slate-300 text-[10px]">
+                      <tr key={`print-kebir-${row.entryId}-${idx}`} className="hover:bg-slate-50 dark:bg-slate-800/50">
+                        <td className="py-1.5 px-2 text-center font-mono text-slate-500 dark:text-slate-400 border border-slate-300 text-[10px]">
                           {idx + 1}
                         </td>
-                        <td className="py-1.5 px-2.5 border border-slate-300 whitespace-nowrap text-slate-700">
+                        <td className="py-1.5 px-2.5 border border-slate-300 whitespace-nowrap text-slate-700 dark:text-slate-200">
                           {new Date(row.date).toLocaleDateString('tr-TR')}
                         </td>
-                        <td className="py-1.5 px-2.5 font-mono font-bold text-slate-900 border border-slate-300 whitespace-nowrap">
+                        <td className="py-1.5 px-2.5 font-mono font-bold text-slate-900 dark:text-slate-100 border border-slate-300 whitespace-nowrap">
                           {row.entryNumber}
                         </td>
-                        <td className="py-1.5 px-2.5 border border-slate-300 text-slate-800">
+                        <td className="py-1.5 px-2.5 border border-slate-300 text-slate-800 dark:text-slate-200">
                           {row.description || '-'}
                         </td>
                         <td className="py-1.5 px-2.5 text-right font-mono border border-slate-300 whitespace-nowrap">
@@ -376,23 +376,23 @@ export default function KebirPrintModal({
 
             {/* 5. İMZA VE ONAY ALANLARI */}
             <div className="mt-8 pt-4 border-t-2 border-slate-300 grid grid-cols-2 gap-8 text-center text-xs">
-              <div className="p-3 border border-slate-300 rounded bg-slate-50/50">
-                <div className="font-bold text-slate-800 uppercase tracking-wide">DÜZENLEYEN</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Muhasebe ve Finans Sorumlusu</div>
+              <div className="p-3 border border-slate-300 rounded bg-slate-50 dark:bg-slate-800/50/50">
+                <div className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">DÜZENLEYEN</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Muhasebe ve Finans Sorumlusu</div>
                 <div className="h-14 mt-2 border-b border-dashed border-slate-400"></div>
                 <div className="text-[10px] text-slate-400 mt-1">İmza / Kaşe</div>
               </div>
 
-              <div className="p-3 border border-slate-300 rounded bg-slate-50/50">
-                <div className="font-bold text-slate-800 uppercase tracking-wide">İNCELEYEN VE ONAYLAYAN</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Mali Müşavir / Şirket Müdürü</div>
+              <div className="p-3 border border-slate-300 rounded bg-slate-50 dark:bg-slate-800/50/50">
+                <div className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">İNCELEYEN VE ONAYLAYAN</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Mali Müşavir / Şirket Müdürü</div>
                 <div className="h-14 mt-2 border-b border-dashed border-slate-400"></div>
                 <div className="text-[10px] text-slate-400 mt-1">İmza / Kaşe</div>
               </div>
             </div>
 
             {/* 6. DİPNOT */}
-            <div className="mt-4 text-[9px] text-slate-500 flex justify-between items-center border-t border-slate-200 pt-2">
+            <div className="mt-4 text-[9px] text-slate-500 dark:text-slate-400 flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-2">
               <span>ProERP Büyük Defter (Defter-i Kebir) Sistemi &bull; Belge No: DK-{accountCode}</span>
               <span>213 Sayılı V.U.K. ve TTK Hükümlerine Uygundur</span>
             </div>

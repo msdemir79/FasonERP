@@ -1434,17 +1434,62 @@ export const erpService = {
     });
   },
 
+  async canModifyOrDeleteOrder(id: number | string): Promise<{ canModify: boolean; reason?: string; invoices: any[]; waybills: any[] }> {
+    const numId = Number(id);
+    const allInvoices = await db.invoices.toArray();
+    const activeInvoices = allInvoices.filter(inv => 
+      (inv.orderId === id || (inv.orderId !== undefined && !isNaN(numId) && Number(inv.orderId) === numId)) && 
+      inv.status !== 'cancelled'
+    );
+
+    const allWaybills = await db.waybills.toArray();
+    const activeWaybills = allWaybills.filter(wb => 
+      (wb.orderId === id || (wb.orderId !== undefined && !isNaN(numId) && Number(wb.orderId) === numId)) && 
+      wb.status !== 'cancelled'
+    );
+
+    if (activeInvoices.length > 0) {
+      const invNumbers = activeInvoices.map(i => i.invoiceNumber).join(', ');
+      return {
+        canModify: false,
+        reason: `Bu siparişe bağlı oluşturulmuş aktif fatura (${invNumbers}) bulunmaktadır. Sipariş üzerinde değişiklik yapmak veya silmek için önce ilgili faturayı iptal etmeli ya da silmelisiniz.`,
+        invoices: activeInvoices,
+        waybills: activeWaybills
+      };
+    }
+
+    if (activeWaybills.length > 0) {
+      const wbNumbers = activeWaybills.map(w => w.waybillNumber).join(', ');
+      return {
+        canModify: false,
+        reason: `Bu siparişe bağlı oluşturulmuş aktif irsaliye (${wbNumbers}) bulunmaktadır. Sipariş üzerinde değişiklik yapmak veya silmek için önce ilgili irsaliyeyi iptal etmeli ya da silmelisiniz.`,
+        invoices: activeInvoices,
+        waybills: activeWaybills
+      };
+    }
+
+    return { canModify: true, invoices: [], waybills: [] };
+  },
+
   async updateOrder(id: number, order: Partial<Order>, items?: Omit<OrderItem, 'id' | 'orderId'>[]) {
-    return await db.transaction('rw', [db.orders, db.orderItems, db.workOrders, db.recipes, db.products, db.contacts], async () => {
+    const check = await this.canModifyOrDeleteOrder(id);
+    if (!check.canModify) {
+      throw new Error(check.reason);
+    }
+
+    return await db.transaction('rw', [db.orders, db.orderItems, db.workOrders, db.recipes, db.products, db.contacts, db.assortmentTemplates], async () => {
       await db.orders.update(id, order);
       if (items) {
+        // Remove existing work orders if items are changed to re-synchronize
+        await db.workOrders.where('orderId').equals(id).delete();
         await db.orderItems.where('orderId').equals(id).delete();
         const itemsWithOrderId = items.map(item => ({ ...item, orderId: id }));
         await db.orderItems.bulkAdd(itemsWithOrderId as OrderItem[]);
       }
 
-      // If sales order changed to confirmed, ensure work orders are created
-      if (order.status === 'confirmed' || (order.type === 'sales' && order.status !== 'cancelled')) {
+      // If sales order is confirmed, recreate work orders
+      const currentOrder = await db.orders.get(id);
+      if (currentOrder && currentOrder.type === 'sales' && currentOrder.status === 'confirmed') {
         try {
           await this.createWorkOrdersFromOrder(id);
         } catch (err) {
@@ -1454,10 +1499,35 @@ export const erpService = {
     });
   },
 
-  async deleteOrder(id: number) {
-    return await db.transaction('rw', [db.orders, db.orderItems], async () => {
-      await db.orderItems.where('orderId').equals(id).delete();
-      await db.orders.delete(id);
+  async deleteOrder(id: number | string) {
+    const numId = Number(id);
+    const check = await this.canModifyOrDeleteOrder(id);
+    if (!check.canModify) {
+      throw new Error(check.reason);
+    }
+
+    return await db.transaction('rw', [db.orders, db.orderItems, db.workOrders], async () => {
+      // 1. Delete associated work orders
+      const allWOs = await db.workOrders.toArray();
+      const targetWOs = allWOs.filter(wo => wo.orderId === id || (wo.orderId !== undefined && !isNaN(numId) && Number(wo.orderId) === numId));
+      for (const wo of targetWOs) {
+        if (wo.id) await db.workOrders.delete(wo.id);
+      }
+
+      // 2. Delete associated order items
+      const allItems = await db.orderItems.toArray();
+      const targetItems = allItems.filter(it => it.orderId === id || (it.orderId !== undefined && !isNaN(numId) && Number(it.orderId) === numId));
+      for (const it of targetItems) {
+        if (it.id) await db.orderItems.delete(it.id);
+      }
+
+      // 3. Delete order itself
+      if (!isNaN(numId)) {
+        await db.orders.delete(numId);
+      }
+      if (typeof id === 'string' && id !== String(numId)) {
+        await db.orders.delete(id as any);
+      }
     });
   },
 
@@ -1532,6 +1602,31 @@ export const erpService = {
           items: itemsWithRemaining
         });
       }
+    }
+
+    return result;
+  },
+
+  async getPendingWaybillsForInvoicing(contactId?: number, type?: WaybillType) {
+    let query = db.waybills.where('status').equals('issued');
+    const issuedWaybills = await query.toArray();
+
+    const pendingWaybills = issuedWaybills.filter(wb => {
+      const notInvoiced = !wb.invoicedStatus || wb.invoicedStatus === 'not_invoiced';
+      const matchContact = contactId ? wb.contactId === contactId : true;
+      const matchType = type ? wb.type === type : true;
+      return notInvoiced && matchContact && matchType;
+    });
+
+    const result = [];
+    for (const wb of pendingWaybills) {
+      const items = await db.waybillItems.where('waybillId').equals(wb.id!).toArray();
+      const contact = wb.contactId ? await db.contacts.get(wb.contactId) : null;
+      result.push({
+        ...wb,
+        items,
+        contact
+      });
     }
 
     return result;
@@ -1801,6 +1896,7 @@ export const erpService = {
       db.invoiceItems, 
       db.orders, 
       db.orderItems, 
+      db.waybills,
       db.contacts, 
       db.inventoryLogs, 
       db.products,
@@ -1860,6 +1956,16 @@ export const erpService = {
         });
       }
 
+      // 3b. Handle Waybill Invoicing Link
+      if (invoiceData.waybillId) {
+        await db.waybills.update(invoiceData.waybillId, {
+          invoicedStatus: 'invoiced',
+          invoiceId,
+          invoiceNumber: invoiceData.invoiceNumber,
+          updatedAt: new Date()
+        });
+      }
+
       // 4. Update Contact Balance if invoice is issued (not draft)
       if (invoiceData.status !== 'draft' && invoiceData.contactId) {
         const contact = await db.contacts.get(invoiceData.contactId);
@@ -1911,6 +2017,7 @@ export const erpService = {
       db.invoiceItems, 
       db.orders, 
       db.orderItems, 
+      db.waybills,
       db.contacts, 
       db.inventoryLogs, 
       db.products,
@@ -1958,6 +2065,28 @@ export const erpService = {
           invoicingStatus,
           invoicedTotal: Math.max(0, existingInvoicedTotal - (invoice.grandTotal || 0))
         });
+      }
+
+      // 1b. Revert Waybill Invoiced Status if linked
+      if (invoice.waybillId) {
+        await db.waybills.update(invoice.waybillId, {
+          invoicedStatus: 'not_invoiced',
+          invoiceId: undefined,
+          invoiceNumber: undefined,
+          updatedAt: new Date()
+        });
+      } else {
+        const linkedWaybills = await db.waybills.where('invoiceId').equals(id).toArray();
+        for (const wb of linkedWaybills) {
+          if (wb.id) {
+            await db.waybills.update(wb.id, {
+              invoicedStatus: 'not_invoiced',
+              invoiceId: undefined,
+              invoiceNumber: undefined,
+              updatedAt: new Date()
+            });
+          }
+        }
       }
 
       // 2. Revert Contact Balance (if invoice was issued)
@@ -2022,6 +2151,7 @@ export const erpService = {
       db.invoiceItems, 
       db.orders, 
       db.orderItems, 
+      db.waybills,
       db.contacts, 
       db.inventoryLogs, 
       db.products,
@@ -2031,6 +2161,28 @@ export const erpService = {
       if (!invoice) return;
 
       const items = await db.invoiceItems.where('invoiceId').equals(id).toArray();
+
+      // Revert waybill invoiced status if linked
+      if (invoice.waybillId) {
+        await db.waybills.update(invoice.waybillId, {
+          invoicedStatus: 'not_invoiced',
+          invoiceId: undefined,
+          invoiceNumber: undefined,
+          updatedAt: new Date()
+        });
+      } else {
+        const linkedWaybills = await db.waybills.where('invoiceId').equals(id).toArray();
+        for (const wb of linkedWaybills) {
+          if (wb.id) {
+            await db.waybills.update(wb.id, {
+              invoicedStatus: 'not_invoiced',
+              invoiceId: undefined,
+              invoiceNumber: undefined,
+              updatedAt: new Date()
+            });
+          }
+        }
+      }
 
       // If the invoice was 'issued' (and not previously cancelled), revert relations
       if (invoice.status === 'issued') {
@@ -2362,6 +2514,11 @@ export const erpService = {
       if (!waybill) return;
       if (waybill.status === 'cancelled') return;
 
+      // Check if waybill is already invoiced
+      if (waybill.invoicedStatus === 'invoiced') {
+        throw new Error(`Bu irsaliye faturalandırılmıştır (${waybill.invoiceNumber || 'Bağlı Fatura'}). İrsaliyeyi iptal etmek için lütfen önce faturayı iptal ediniz.`);
+      }
+
       const items = await db.waybillItems.where('waybillId').equals(id).toArray();
 
       // 1. Revert order item shipped quantities
@@ -2445,6 +2602,10 @@ export const erpService = {
     ], async () => {
       const waybill = await db.waybills.get(id);
       if (!waybill) return;
+
+      if (waybill.invoicedStatus === 'invoiced') {
+        throw new Error(`Bu irsaliye faturalandırılmıştır (${waybill.invoiceNumber || 'Bağlı Fatura'}). İrsaliyeyi silmek için lütfen önce bağlı faturayı iptal ediniz.`);
+      }
 
       const items = await db.waybillItems.where('waybillId').equals(id).toArray();
 

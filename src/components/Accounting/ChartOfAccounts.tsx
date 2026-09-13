@@ -676,18 +676,18 @@ export default function ChartOfAccounts({
   }, [accounts, selectedAccountCode]);
 
   return (
-    <div className={`space-y-0 font-sans border border-slate-400/80 rounded-md shadow-md overflow-hidden bg-slate-100 ${isResizing ? 'select-none cursor-col-resize' : ''}`}>
+    <div className={`space-y-0 font-sans border border-slate-400/80 rounded-md shadow-md overflow-hidden bg-slate-100 dark:bg-slate-800 ${isResizing ? 'select-none cursor-col-resize' : ''}`}>
       
       {/* 1. CLASSIC ERP WINDOW TITLE BAR */}
       <div className="bg-gradient-to-r from-sky-800 via-blue-800 to-indigo-900 text-white px-3 py-1 flex items-center justify-between select-none shadow-xs">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-xs bg-white/20 border border-white/40 flex items-center justify-center text-[10px] font-black text-sky-200">
+          <div className="w-4 h-4 rounded-xs bg-white dark:bg-slate-900/20 border border-white/40 flex items-center justify-center text-[10px] font-black text-sky-200">
             H
           </div>
           <span className="text-xs font-bold tracking-tight">
             Hesap Planı Yönetimi & Mizan Bakiyeleri (080001)
           </span>
-          <span className="text-[10px] bg-white/15 px-1.5 py-0.2 rounded text-sky-100 font-mono">
+          <span className="text-[10px] bg-white dark:bg-slate-900/15 px-1.5 py-0.2 rounded text-sky-100 font-mono">
             TDHP Konsolide
           </span>
         </div>
@@ -696,17 +696,17 @@ export default function ChartOfAccounts({
           <button 
             type="button"
             onClick={() => applyPreset(viewPreset === 'mizan' ? 'extended' : 'mizan')}
-            className="text-[11px] bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded text-white font-medium flex items-center gap-1 transition-colors"
+            className="text-[11px] bg-white dark:bg-slate-900/10 hover:bg-white dark:bg-slate-900/20 px-2 py-0.5 rounded text-white font-medium flex items-center gap-1 transition-colors"
             title="Görünüm modunu değiştir"
           >
             <Eye className="w-3 h-3 text-sky-300" />
             <span>{viewPreset === 'mizan' ? 'Bakiye Görünümü (Mizan)' : 'Genişletilmiş ERP'}</span>
           </button>
-          <div className="h-3 w-px bg-white/30 mx-1" />
+          <div className="h-3 w-px bg-white dark:bg-slate-900/30 mx-1" />
           <button 
             type="button"
             onClick={handleResetWidths}
-            className="text-[11px] bg-white/10 hover:bg-white/20 px-1.5 py-0.5 rounded text-white/90 hover:text-white flex items-center gap-1 transition-colors"
+            className="text-[11px] bg-white dark:bg-slate-900/10 hover:bg-white dark:bg-slate-900/20 px-1.5 py-0.5 rounded text-white/90 hover:text-white flex items-center gap-1 transition-colors"
             title="Sütun genişliklerini orijinal ayarlarına sıfırla"
           >
             <RotateCcw className="w-3 h-3 text-amber-300" />
@@ -716,16 +716,16 @@ export default function ChartOfAccounts({
       </div>
 
       {/* 2. ERP MENU BAR */}
-      <div className="bg-slate-200 border-b border-slate-300 px-3 py-1 flex flex-wrap items-center justify-between text-xs text-slate-700 select-none">
+      <div className="bg-slate-200 border-b border-slate-300 px-3 py-1 flex flex-wrap items-center justify-between text-xs text-slate-700 dark:text-slate-200 select-none">
         <div className="flex items-center gap-4 text-xs font-medium">
-          <div className="flex items-center gap-2 text-slate-800 font-semibold">
+          <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-semibold">
             <Scale className="w-3.5 h-3.5 text-blue-700" />
             <span>Görünüm:</span>
             <button
               type="button"
               onClick={() => applyPreset('mizan')}
               className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors ${
-                viewPreset === 'mizan' ? 'bg-blue-700 text-white shadow-2xs' : 'text-slate-700 hover:bg-slate-300/70'
+                viewPreset === 'mizan' ? 'bg-blue-700 text-white shadow-2xs' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-300/70'
               }`}
             >
               Mizan / Bakiyeler (Birebir)
@@ -734,7 +734,7 @@ export default function ChartOfAccounts({
               type="button"
               onClick={() => applyPreset('extended')}
               className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors ${
-                viewPreset === 'extended' ? 'bg-blue-700 text-white shadow-2xs' : 'text-slate-700 hover:bg-slate-300/70'
+                viewPreset === 'extended' ? 'bg-blue-700 text-white shadow-2xs' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-300/70'
               }`}
             >
               Tüm Sütunlar
@@ -750,14 +750,14 @@ export default function ChartOfAccounts({
               onClick={() => setIsColumnDropdownOpen(!isColumnDropdownOpen)}
               className="hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <SlidersHorizontal className="w-3 h-3 text-slate-500" />
+              <SlidersHorizontal className="w-3 h-3 text-slate-500 dark:text-slate-400" />
               <span>Sütun Seçimi ({activeColumns.length}/{ALL_COLUMN_DEFINITIONS.length})</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isColumnDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-slate-300 rounded shadow-lg py-1 z-30 text-xs">
-                <div className="px-3 py-1 font-bold text-slate-800 border-b border-slate-200 text-[11px] flex items-center justify-between">
+              <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-300 rounded shadow-lg py-1 z-30 text-xs">
+                <div className="px-3 py-1 font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 text-[11px] flex items-center justify-between">
                   <span>Görünür Sütunlar</span>
                   <button 
                     type="button"
@@ -774,7 +774,7 @@ export default function ChartOfAccounts({
                     return (
                       <label 
                         key={c.id} 
-                        className={`flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-100 cursor-pointer ${
+                        className={`flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-100 dark:bg-slate-800 cursor-pointer ${
                           isRequired ? 'opacity-60 cursor-not-allowed' : ''
                         }`}
                       >
@@ -785,7 +785,7 @@ export default function ChartOfAccounts({
                           onChange={() => toggleColumnVisibility(c.id)}
                           className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className={`text-[11px] ${isChecked ? 'font-semibold text-slate-900' : 'text-slate-500'}`}>
+                        <span className={`text-[11px] ${isChecked ? 'font-semibold text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
                           {c.label} {c.isBalance && <span className="text-[9px] text-blue-600 font-bold">(Bakiye)</span>}
                         </span>
                       </label>
@@ -836,7 +836,7 @@ export default function ChartOfAccounts({
             <button
               type="button"
               onClick={() => onEditAccount(selectedAccount)}
-              className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors"
+              className="px-2 py-1 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-800/50 border border-slate-300 text-slate-700 dark:text-slate-200 rounded text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors"
               title="Seçili hesabı düzenle"
             >
               <Edit3 className="w-3 h-3 text-indigo-600" />
@@ -860,12 +860,12 @@ export default function ChartOfAccounts({
           <div className="h-4 w-px bg-slate-300 mx-0.5" />
 
           {/* Node Expand / Collapse Tools */}
-          <div className="flex items-center gap-0.5 bg-white border border-slate-300 rounded px-1 py-0.5 shadow-2xs">
+          <div className="flex items-center gap-0.5 bg-white dark:bg-slate-900 border border-slate-300 rounded px-1 py-0.5 shadow-2xs">
             <button
               type="button"
               onClick={collapseAll}
               className={`px-1.5 py-0.5 text-xs font-medium rounded flex items-center gap-1 transition-colors ${
-                isAllCollapsed ? 'bg-slate-800 text-white' : 'text-slate-700 hover:bg-slate-100'
+                isAllCollapsed ? 'bg-slate-800 text-white' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800'
               }`}
               title="Tüm düğümleri kapat - Sadece Seviye 1 (Sınıflar) görünür"
             >
@@ -877,7 +877,7 @@ export default function ChartOfAccounts({
               type="button"
               onClick={expandAll}
               className={`px-1.5 py-0.5 text-xs font-medium rounded flex items-center gap-1 transition-colors ${
-                isAllExpanded ? 'bg-slate-800 text-white' : 'text-slate-700 hover:bg-slate-100'
+                isAllExpanded ? 'bg-slate-800 text-white' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800'
               }`}
               title="Tüm düğümleri aç - Tüm üst ve alt hesaplar görünür"
             >
@@ -893,7 +893,7 @@ export default function ChartOfAccounts({
               <button
                 type="button"
                 onClick={() => expandToLevel(2)}
-                className="px-1.5 py-0.5 rounded hover:bg-slate-100 text-slate-700 font-semibold"
+                className="px-1.5 py-0.5 rounded hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold"
                 title="L1: Sadece Sınıflar (1-9)"
               >
                 L1
@@ -901,7 +901,7 @@ export default function ChartOfAccounts({
               <button
                 type="button"
                 onClick={() => expandToLevel(3)}
-                className="px-1.5 py-0.5 rounded hover:bg-slate-100 text-slate-700 font-semibold"
+                className="px-1.5 py-0.5 rounded hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold"
                 title="L2: Gruplar (10-99)"
               >
                 L2
@@ -909,7 +909,7 @@ export default function ChartOfAccounts({
               <button
                 type="button"
                 onClick={() => expandToLevel(4)}
-                className="px-1.5 py-0.5 rounded hover:bg-slate-100 text-slate-700 font-semibold"
+                className="px-1.5 py-0.5 rounded hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold"
                 title="L3: Ana Hesaplar (100-999)"
               >
                 L3
@@ -917,7 +917,7 @@ export default function ChartOfAccounts({
               <button
                 type="button"
                 onClick={() => expandToLevel(5)}
-                className="px-1.5 py-0.5 rounded hover:bg-slate-100 text-slate-700 font-semibold"
+                className="px-1.5 py-0.5 rounded hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold"
                 title="L4: Alt Hesaplar (.01)"
               >
                 L4
@@ -928,14 +928,14 @@ export default function ChartOfAccounts({
           <div className="h-4 w-px bg-slate-300 mx-0.5" />
 
           {/* Sadece Bakiyesi Olanlar Filtresi */}
-          <label className="flex items-center gap-1.5 px-2 py-1 bg-white border border-slate-300 rounded text-xs font-semibold text-slate-800 cursor-pointer shadow-2xs hover:bg-slate-50 transition-colors select-none">
+          <label className="flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 rounded text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer shadow-2xs hover:bg-slate-50 dark:bg-slate-800/50 transition-colors select-none">
             <input
               type="checkbox"
               checked={onlyWithBalance}
               onChange={(e) => setOnlyWithBalance(e.target.checked)}
               className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-slate-800">Sadece Bakiyesi Olanlar</span>
+            <span className="text-slate-800 dark:text-slate-200">Sadece Bakiyesi Olanlar</span>
           </label>
 
           {/* Kuruş Göster Filtresi */}
@@ -945,7 +945,7 @@ export default function ChartOfAccounts({
             className={`px-2 py-1 rounded text-xs font-semibold border transition-colors ${
               showDecimals 
                 ? 'bg-blue-50 border-blue-200 text-blue-800' 
-                : 'bg-white border-slate-300 text-slate-600'
+                : 'bg-white dark:bg-slate-900 border-slate-300 text-slate-600'
             }`}
             title="Kuruş ondalık basamaklarını aç/kapat"
           >
@@ -962,7 +962,7 @@ export default function ChartOfAccounts({
               placeholder="Hesap kodu veya adı ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-44 sm:w-56 pl-6 pr-6 py-0.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-blue-500 placeholder-slate-400"
+              className="w-44 sm:w-56 pl-6 pr-6 py-0.5 bg-white dark:bg-slate-900 border border-slate-300 rounded text-xs text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-1 focus:ring-blue-500 placeholder-slate-400"
             />
             <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1.5" />
             {searchTerm && (
@@ -980,7 +980,7 @@ export default function ChartOfAccounts({
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="py-0.5 px-1.5 bg-white border border-slate-300 rounded text-xs text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+            className="py-0.5 px-1.5 bg-white dark:bg-slate-900 border border-slate-300 rounded text-xs text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
           >
             <option value="all">Tüm Tipler</option>
             <option value="asset">1-2: Aktif</option>
@@ -994,7 +994,7 @@ export default function ChartOfAccounts({
           <button
             type="button"
             onClick={handleExportCsv}
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors"
+            className="px-2.5 py-1 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border border-slate-300 rounded text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors"
             title="Mevcut listeyi ve bakiyeleri Excel/CSV olarak kaydet"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
@@ -1004,7 +1004,7 @@ export default function ChartOfAccounts({
       </div>
 
       {/* 4. CLASSIC ERP DATA GRID TABLE WITH RESIZABLE COLUMNS */}
-      <div className="bg-white overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 overflow-hidden">
         <div className="overflow-x-auto max-h-[calc(100vh-295px)] custom-scrollbar">
           <table className="w-full text-left border-collapse border-spacing-0 select-text table-fixed">
             
@@ -1021,11 +1021,11 @@ export default function ChartOfAccounts({
             </colgroup>
 
             {/* Desktop ERP Grid Headers */}
-            <thead className="sticky top-0 z-10 bg-gradient-to-b from-slate-100 to-slate-200 text-slate-800 text-[11px] font-bold tracking-tight border-b border-slate-300 shadow-2xs">
+            <thead className="sticky top-0 z-10 bg-gradient-to-b from-slate-100 to-slate-200 text-slate-800 dark:text-slate-200 text-[11px] font-bold tracking-tight border-b border-slate-300 shadow-2xs">
               <tr className="h-6">
                 
                 {/* Leftmost row pointer header column with '*' */}
-                <th className="w-7 p-0 text-center font-mono text-[11px] text-slate-500 bg-slate-200/90 border-r border-slate-300 select-none">
+                <th className="w-7 p-0 text-center font-mono text-[11px] text-slate-500 dark:text-slate-400 bg-slate-200/90 border-r border-slate-300 select-none">
                   *
                 </th>
 
@@ -1070,7 +1070,7 @@ export default function ChartOfAccounts({
             <tbody className="divide-y divide-slate-200 text-xs font-normal">
               {visibleAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={activeColumns.length + 1} className="py-12 text-center text-slate-400 bg-slate-50">
+                  <td colSpan={activeColumns.length + 1} className="py-12 text-center text-slate-400 bg-slate-50 dark:bg-slate-800/50">
                     <Layers className="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-400" />
                     <p className="font-semibold text-xs text-slate-600">Görüntülenecek hesap kaydı bulunamadı.</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">Arama filtresini veya 'Sadece Bakiyesi Olanlar' seçeneğini kontrol edin.</p>
@@ -1101,23 +1101,23 @@ export default function ChartOfAccounts({
 
                   return (
                     <tr
-                      key={acc.id || acc.code}
+                      key={`acc-row-${acc.code}`}
                       onClick={() => setSelectedAccountCode(acc.code)}
                       onDoubleClick={() => onEditAccount(acc)}
                       className={`group transition-colors h-6.5 leading-none cursor-pointer ${
                         isSelected 
                           ? 'bg-blue-100/90 text-slate-950 font-medium' 
                           : isLevel1 
-                          ? 'bg-slate-100/95 font-black text-slate-950 border-t-2 border-slate-300 hover:bg-slate-200/70' 
+                          ? 'bg-slate-100 dark:bg-slate-800/95 font-black text-slate-950 border-t-2 border-slate-300 hover:bg-slate-200/70' 
                           : isLevel2 
-                          ? 'bg-slate-50 font-bold text-slate-900 border-t border-slate-200 hover:bg-slate-100/80' 
+                          ? 'bg-slate-50 dark:bg-slate-800/50 font-bold text-slate-900 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800/80' 
                           : isLevel3 
-                          ? 'font-bold text-slate-900 hover:bg-blue-50/50' 
-                          : 'text-slate-800 hover:bg-slate-50'
+                          ? 'font-bold text-slate-900 dark:text-slate-100 hover:bg-blue-50/50' 
+                          : 'text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:bg-slate-800/50'
                       }`}
                     >
                       {/* Leftmost Row Indicator Gutter: '>' when selected */}
-                      <td className="w-7 text-center font-bold text-[11px] bg-slate-100/80 border-r border-slate-300 select-none text-blue-700">
+                      <td className="w-7 text-center font-bold text-[11px] bg-slate-100 dark:bg-slate-800/80 border-r border-slate-300 select-none text-blue-700">
                         {isSelected ? '▶' : ''}
                       </td>
 
@@ -1125,7 +1125,7 @@ export default function ChartOfAccounts({
                       {activeColumns.map(col => {
                         if (col.id === 'code') {
                           return (
-                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 font-mono whitespace-nowrap overflow-hidden">
+                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 font-mono whitespace-nowrap overflow-hidden">
                               <div 
                                 className="flex items-center gap-1.5"
                                 style={{ paddingLeft: `${indentPx}px` }}
@@ -1137,13 +1137,13 @@ export default function ChartOfAccounts({
                                       e.stopPropagation();
                                       toggleNode(acc.code);
                                     }}
-                                    className="w-3.5 h-3.5 rounded-xs border flex items-center justify-center transition-all bg-white border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-slate-700 shrink-0 cursor-pointer shadow-2xs"
+                                    className="w-3.5 h-3.5 rounded-xs border flex items-center justify-center transition-all bg-white dark:bg-slate-900 border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-slate-700 dark:text-slate-200 shrink-0 cursor-pointer shadow-2xs"
                                     title={isExpanded ? 'Düğümü Kapat' : 'Düğümü Aç'}
                                   >
                                     {isExpanded ? (
-                                      <span className="font-mono text-[10px] leading-none font-black text-slate-800">−</span>
+                                      <span className="font-mono text-[10px] leading-none font-black text-slate-800 dark:text-slate-200">−</span>
                                     ) : (
-                                      <span className="font-mono text-[10px] leading-none font-black text-slate-800">+</span>
+                                      <span className="font-mono text-[10px] leading-none font-black text-slate-800 dark:text-slate-200">+</span>
                                     )}
                                   </button>
                                 ) : (
@@ -1154,9 +1154,9 @@ export default function ChartOfAccounts({
 
                                 <span className={`tracking-tight truncate ${
                                   isLevel1 ? 'font-black text-slate-950 text-xs' :
-                                  isLevel2 ? 'font-bold text-slate-900 text-xs' :
+                                  isLevel2 ? 'font-bold text-slate-900 dark:text-slate-100 text-xs' :
                                   isLevel3 ? 'font-bold text-blue-950 text-xs' :
-                                  'font-semibold text-slate-800 text-[11px]'
+                                  'font-semibold text-slate-800 dark:text-slate-200 text-[11px]'
                                 }`}>
                                   {acc.code}
                                 </span>
@@ -1167,13 +1167,13 @@ export default function ChartOfAccounts({
 
                         if (col.id === 'name') {
                           return (
-                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 overflow-hidden">
+                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 overflow-hidden">
                               <div className="flex items-center justify-between gap-1">
                                 <span className={`truncate ${
                                   isLevel1 ? 'font-black text-slate-950 uppercase' :
-                                  isLevel2 ? 'font-bold text-slate-900 uppercase' :
-                                  isLevel3 ? 'font-bold text-slate-900' :
-                                  'font-normal text-slate-800'
+                                  isLevel2 ? 'font-bold text-slate-900 dark:text-slate-100 uppercase' :
+                                  isLevel3 ? 'font-bold text-slate-900 dark:text-slate-100' :
+                                  'font-normal text-slate-800 dark:text-slate-200'
                                 }`}>
                                   {acc.name}
                                 </span>
@@ -1200,12 +1200,12 @@ export default function ChartOfAccounts({
                           return (
                             <td 
                               key={col.id} 
-                              className={`py-0.5 px-2 border-r border-slate-200 text-right pr-3 font-mono whitespace-nowrap overflow-hidden ${
+                              className={`py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 text-right pr-3 font-mono whitespace-nowrap overflow-hidden ${
                                 isZero 
                                   ? 'text-slate-400' 
                                   : isLevel1 || isLevel2 || isLevel3 
                                   ? 'font-bold text-slate-950' 
-                                  : 'text-slate-900'
+                                  : 'text-slate-900 dark:text-slate-100'
                               }`}
                             >
                               {formatAmount(bal.totalDebit)}
@@ -1219,12 +1219,12 @@ export default function ChartOfAccounts({
                           return (
                             <td 
                               key={col.id} 
-                              className={`py-0.5 px-2 border-r border-slate-200 text-right pr-3 font-mono whitespace-nowrap overflow-hidden ${
+                              className={`py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 text-right pr-3 font-mono whitespace-nowrap overflow-hidden ${
                                 isZero 
                                   ? 'text-slate-400' 
                                   : isLevel1 || isLevel2 || isLevel3 
                                   ? 'font-bold text-slate-950' 
-                                  : 'text-slate-900'
+                                  : 'text-slate-900 dark:text-slate-100'
                               }`}
                             >
                               {formatAmount(bal.totalCredit)}
@@ -1238,7 +1238,7 @@ export default function ChartOfAccounts({
                           return (
                             <td 
                               key={col.id} 
-                              className={`py-0.5 px-2 border-r border-slate-200 text-right pr-3 font-mono whitespace-nowrap overflow-hidden ${
+                              className={`py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 text-right pr-3 font-mono whitespace-nowrap overflow-hidden ${
                                 isZero 
                                   ? 'text-slate-400' 
                                   : isLevel1 || isLevel2 || isLevel3 
@@ -1257,7 +1257,7 @@ export default function ChartOfAccounts({
                           return (
                             <td 
                               key={col.id} 
-                              className={`py-0.5 px-2 border-r border-slate-200 text-right pr-3 font-mono whitespace-nowrap overflow-hidden ${
+                              className={`py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 text-right pr-3 font-mono whitespace-nowrap overflow-hidden ${
                                 isZero 
                                   ? 'text-slate-400' 
                                   : isLevel1 || isLevel2 || isLevel3 
@@ -1273,7 +1273,7 @@ export default function ChartOfAccounts({
                         // HESAP GRUBU
                         if (col.id === 'group') {
                           return (
-                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 text-slate-700 font-medium overflow-hidden truncate whitespace-nowrap">
+                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium overflow-hidden truncate whitespace-nowrap">
                               {getAccountGroup(acc)}
                             </td>
                           );
@@ -1282,7 +1282,7 @@ export default function ChartOfAccounts({
                         // ANA GRUP
                         if (col.id === 'mainGroup') {
                           return (
-                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 text-slate-600 font-medium overflow-hidden truncate whitespace-nowrap">
+                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 text-slate-600 font-medium overflow-hidden truncate whitespace-nowrap">
                               {getMainGroup(acc)}
                             </td>
                           );
@@ -1291,9 +1291,9 @@ export default function ChartOfAccounts({
                         // SEVİYE
                         if (col.id === 'level') {
                           return (
-                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 text-center font-mono text-[10px] whitespace-nowrap overflow-hidden">
+                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 text-center font-mono text-[10px] whitespace-nowrap overflow-hidden">
                               <span className={`inline-block px-1 py-0.2 rounded-xs ${
-                                isLevel1 ? 'bg-slate-200 text-slate-800 font-bold' :
+                                isLevel1 ? 'bg-slate-200 text-slate-800 dark:text-slate-200 font-bold' :
                                 isLevel2 ? 'bg-sky-100 text-sky-900 font-semibold' :
                                 isLevel3 ? 'bg-emerald-100 text-emerald-900 font-semibold' :
                                 isLevel4 ? 'bg-indigo-100 text-indigo-900 font-medium' :
@@ -1312,7 +1312,7 @@ export default function ChartOfAccounts({
                         // PARA BİRİMİ
                         if (col.id === 'currency') {
                           return (
-                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 text-center font-mono text-[11px] text-slate-700 overflow-hidden">
+                            <td key={col.id} className="py-0.5 px-2 border-r border-slate-200 dark:border-slate-700 text-center font-mono text-[11px] text-slate-700 dark:text-slate-200 overflow-hidden">
                               {acc.currency || 'TRY'}
                             </td>
                           );
@@ -1343,7 +1343,7 @@ export default function ChartOfAccounts({
                                     e.stopPropagation();
                                     onEditAccount(acc);
                                   }}
-                                  className="px-1 py-0.2 text-[10px] font-semibold text-slate-700 hover:text-blue-700 hover:bg-blue-50 rounded-xs border border-slate-300 transition-colors"
+                                  className="px-1 py-0.2 text-[10px] font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-700 hover:bg-blue-50 rounded-xs border border-slate-300 transition-colors"
                                   title="Hesap adını ve niteliklerini düzenle"
                                 >
                                   Düzenle
@@ -1375,7 +1375,7 @@ export default function ChartOfAccounts({
             </tbody>
 
             {/* 5. STICKY SUMMARY / TOTALS FOOTER ROW (GENEL TOPLAM) */}
-            <tfoot className="sticky bottom-0 z-10 bg-gradient-to-b from-slate-200 to-slate-300 text-slate-900 text-xs font-black border-t-2 border-slate-400 shadow-md">
+            <tfoot className="sticky bottom-0 z-10 bg-gradient-to-b from-slate-200 to-slate-300 text-slate-900 dark:text-slate-100 text-xs font-black border-t-2 border-slate-400 shadow-md">
               <tr className="h-7 leading-none">
                 <td className="w-7 text-center font-bold bg-slate-300/90 border-r border-slate-400 select-none">
                   ∑
@@ -1384,14 +1384,14 @@ export default function ChartOfAccounts({
                 {activeColumns.map(col => {
                   if (col.id === 'code') {
                     return (
-                      <td key={col.id} className="py-1 px-2 border-r border-slate-400 font-bold uppercase tracking-tight text-slate-900 whitespace-nowrap">
+                      <td key={col.id} className="py-1 px-2 border-r border-slate-400 font-bold uppercase tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap">
                         GENEL TOPLAM
                       </td>
                     );
                   }
                   if (col.id === 'name') {
                     return (
-                      <td key={col.id} className="py-1 px-2 border-r border-slate-400 text-slate-700 font-semibold text-[11px] truncate">
+                      <td key={col.id} className="py-1 px-2 border-r border-slate-400 text-slate-700 dark:text-slate-200 font-semibold text-[11px] truncate">
                         Konsolide TDHP Mizan Toplamları
                       </td>
                     );
@@ -1425,7 +1425,7 @@ export default function ChartOfAccounts({
                     );
                   }
                   return (
-                    <td key={col.id} className="py-1 px-2 border-r border-slate-400 text-slate-500 text-center">
+                    <td key={col.id} className="py-1 px-2 border-r border-slate-400 text-slate-500 dark:text-slate-400 text-center">
                       -
                     </td>
                   );
@@ -1436,20 +1436,20 @@ export default function ChartOfAccounts({
         </div>
 
         {/* 6. CLASSIC ERP STATUS BAR AT BOTTOM */}
-        <div className="bg-slate-200 border-t border-slate-300 px-3 py-1 text-[11px] font-medium text-slate-700 flex flex-wrap items-center justify-between gap-3 select-none">
+        <div className="bg-slate-200 border-t border-slate-300 px-3 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-200 flex flex-wrap items-center justify-between gap-3 select-none">
           <div className="flex items-center gap-4">
-            <span className="inline-flex items-center gap-1 font-bold text-slate-800">
+            <span className="inline-flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200">
               <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
               SİSTEM AKTİF
             </span>
-            <span>Toplam Hesap: <strong className="text-slate-900 font-mono">{accounts.length}</strong></span>
-            <span>Listelenen: <strong className="text-slate-900 font-mono">{visibleAccounts.length}</strong></span>
+            <span>Toplam Hesap: <strong className="text-slate-900 dark:text-slate-100 font-mono">{accounts.length}</strong></span>
+            <span>Listelenen: <strong className="text-slate-900 dark:text-slate-100 font-mono">{visibleAccounts.length}</strong></span>
             <span>Açık Düğümler: <strong className="text-blue-800 font-mono">{expandedNodes.size}</strong> / {allParentCodes.size}</span>
           </div>
 
           <div className="flex items-center gap-3 text-[11px] text-slate-600 font-mono">
             {selectedAccount ? (
-              <span className="bg-white px-2 py-0.5 rounded-xs border border-slate-300 text-blue-800 font-bold">
+              <span className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded-xs border border-slate-300 text-blue-800 font-bold">
                 Seçili: {selectedAccount.code} - {selectedAccount.name}
               </span>
             ) : (

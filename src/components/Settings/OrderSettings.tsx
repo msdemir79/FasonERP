@@ -68,7 +68,7 @@ export default function OrderSettings({ settings, onSave }: OrderSettingsProps) 
       )}
 
       {/* SECTION 1: EVRAK & NUMARA SERİLERİ */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -83,67 +83,67 @@ export default function OrderSettings({ settings, onSave }: OrderSettingsProps) 
 
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Satış Siparişi Öneki</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Satış Siparişi Öneki</label>
             <input
               type="text"
               value={salesPrefix}
               onChange={e => setSalesPrefix(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Örnek: {salesPrefix}000142</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Satın Alma Siparişi Öneki</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Satın Alma Siparişi Öneki</label>
             <input
               type="text"
               value={purchasePrefix}
               onChange={e => setPurchasePrefix(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Örnek: {purchasePrefix}000085</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Satış İrsaliye Öneki</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Satış İrsaliye Öneki</label>
             <input
               type="text"
               value={waybillSalesPrefix}
               onChange={e => setWaybillSalesPrefix(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Örnek: {waybillSalesPrefix}000210</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alış İrsaliye Öneki</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Alış İrsaliye Öneki</label>
             <input
               type="text"
               value={waybillPurchasePrefix}
               onChange={e => setWaybillPurchasePrefix(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Örnek: {waybillPurchasePrefix}000094</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">E-Fatura / Satış Faturası Öneki</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">E-Fatura / Satış Faturası Öneki</label>
             <input
               type="text"
               value={invoiceSalesPrefix}
               onChange={e => setInvoiceSalesPrefix(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Örnek: {invoiceSalesPrefix}000512</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alış / Gider Faturası Öneki</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Alış / Gider Faturası Öneki</label>
             <input
               type="text"
               value={invoicePurchasePrefix}
               onChange={e => setInvoicePurchasePrefix(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Örnek: {invoicePurchasePrefix}000189</span>
           </div>
@@ -151,7 +151,7 @@ export default function OrderSettings({ settings, onSave }: OrderSettingsProps) 
       </div>
 
       {/* SECTION 2: TİCARİ VE FİNANSAL VARSAYILANLAR */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -166,11 +166,11 @@ export default function OrderSettings({ settings, onSave }: OrderSettingsProps) 
 
         <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Varsayılan KDV Oranı (%)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Varsayılan KDV Oranı (%)</label>
             <select
               value={defaultVat}
               onChange={e => setDefaultVat(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             >
               <option value="1">%1 (İstisnai / Temel Gıda vb.)</option>
               <option value="10">%10 (Tekstil / Konfeksiyon / Ayakkabı İndirimli)</option>
@@ -180,11 +180,11 @@ export default function OrderSettings({ settings, onSave }: OrderSettingsProps) 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Varsayılan Para Birimi</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Varsayılan Para Birimi</label>
             <select
               value={defaultCurrency}
               onChange={e => setDefaultCurrency(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             >
               <option value="TRY">Türk Lirası (₺ - TRY)</option>
               <option value="USD">Amerikan Doları ($ - USD)</option>
@@ -194,19 +194,19 @@ export default function OrderSettings({ settings, onSave }: OrderSettingsProps) 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Standart Ödeme Vadesi (Gün)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Standart Ödeme Vadesi (Gün)</label>
             <input
               type="number"
               min="0"
               value={defaultTermDays}
               onChange={e => setDefaultTermDays(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
           </div>
         </div>
 
         {/* Automation Toggles */}
-        <div className="p-6 bg-slate-50 border-t border-slate-200 space-y-4">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 space-y-4">
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -215,8 +215,8 @@ export default function OrderSettings({ settings, onSave }: OrderSettingsProps) 
               className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
             />
             <div>
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">Sipariş Onayında Otomatik İş Emri Oluştur</span>
-              <span className="text-[11px] text-slate-500">Müşteri siparişi onaylandığında üretilecek mamuller için otomatik üretim iş emirleri açılır.</span>
+              <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider block">Sipariş Onayında Otomatik İş Emri Oluştur</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Müşteri siparişi onaylandığında üretilecek mamuller için otomatik üretim iş emirleri açılır.</span>
             </div>
           </label>
 
@@ -228,13 +228,13 @@ export default function OrderSettings({ settings, onSave }: OrderSettingsProps) 
               className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
             />
             <div>
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">İrsaliye Kesildiğinde Stokları Anında Düş</span>
-              <span className="text-[11px] text-slate-500">Satış sevk irsaliyesi düzenlendiğinde ilgili mamul/varyant stokları depodan otomatik düşürülür.</span>
+              <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider block">İrsaliye Kesildiğinde Stokları Anında Düş</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Satış sevk irsaliyesi düzenlendiğinde ilgili mamul/varyant stokları depodan otomatik düşürülür.</span>
             </div>
           </label>
         </div>
 
-        <div className="p-6 bg-white border-t border-slate-200 flex justify-end">
+        <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex justify-end">
           <button
             type="submit"
             disabled={isSaving}

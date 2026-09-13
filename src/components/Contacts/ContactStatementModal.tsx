@@ -258,7 +258,7 @@ export default function ContactStatementModal({
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <span className="px-2.5 py-1 bg-white/10 text-indigo-200 border border-white/10 rounded-md text-xs font-mono font-bold tracking-wider">
+                <span className="px-2.5 py-1 bg-white dark:bg-slate-900/10 text-indigo-200 border border-white/10 rounded-md text-xs font-mono font-bold tracking-wider">
                   {currentContact.code || `CAR-${currentContact.id?.toString().padStart(4, '0')}`}
                 </span>
                 <span className={cn(
@@ -317,7 +317,7 @@ export default function ContactStatementModal({
             </div>
 
             {/* Financial Summary Widget inside Header */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-white dark:bg-slate-900/5 border border-white/10 p-4 rounded-xl backdrop-blur-sm">
               <div className="text-left sm:text-right pr-0 sm:pr-4 sm:border-r border-white/10">
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   {effectiveBalance > 0 
@@ -394,7 +394,7 @@ export default function ContactStatementModal({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-3 print:hidden">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700 pb-3 print:hidden">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('ledger')}
@@ -402,7 +402,7 @@ export default function ContactStatementModal({
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
                 activeTab === 'ledger'
                   ? "bg-indigo-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
               )}
             >
               <FileText className="w-4 h-4" />
@@ -414,7 +414,7 @@ export default function ContactStatementModal({
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
                 activeTab === 'invoices'
                   ? "bg-indigo-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
               )}
             >
               <Receipt className="w-4 h-4" />
@@ -426,7 +426,7 @@ export default function ContactStatementModal({
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
                 activeTab === 'orders'
                   ? "bg-indigo-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
               )}
             >
               <ShoppingBag className="w-4 h-4" />
@@ -438,7 +438,7 @@ export default function ContactStatementModal({
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
                 activeTab === 'transactions'
                   ? "bg-indigo-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
               )}
             >
               <CreditCard className="w-4 h-4" />
@@ -450,7 +450,7 @@ export default function ContactStatementModal({
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
                 activeTab === 'details'
                   ? "bg-indigo-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
               )}
             >
               <Building2 className="w-4 h-4" />
@@ -464,7 +464,7 @@ export default function ContactStatementModal({
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value as any)}
-                className="bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm"
               >
                 <option value="all">Tüm Hareketler</option>
                 <option value="30days">Son 30 Gün</option>
@@ -479,22 +479,22 @@ export default function ContactStatementModal({
           <div className="space-y-4">
             {/* Ledger Totals Banner */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
                   <span>Toplam Borç (Satış/Çıkış)</span>
                   <ArrowUpRight className="w-4 h-4 text-rose-500" />
                 </div>
-                <div className="text-xl font-black font-mono text-slate-900">
+                <div className="text-xl font-black font-mono text-slate-900 dark:text-slate-100">
                   ₺{totalDebit.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
                   <span>Toplam Alacak (Tahsilat/Giriş)</span>
                   <ArrowDownLeft className="w-4 h-4 text-emerald-500" />
                 </div>
-                <div className="text-xl font-black font-mono text-slate-900">
+                <div className="text-xl font-black font-mono text-slate-900 dark:text-slate-100">
                   ₺{totalCredit.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
@@ -505,7 +505,7 @@ export default function ContactStatementModal({
                   ? "bg-emerald-50 border-emerald-200 text-emerald-950" 
                   : netBalance < 0 
                   ? "bg-rose-50 border-rose-200 text-rose-950"
-                  : "bg-slate-50 border-slate-200 text-slate-900"
+                  : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
               )}>
                 <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider mb-1 opacity-80">
                   <span>Dönem Sonu Bakiye</span>
@@ -521,10 +521,10 @@ export default function ContactStatementModal({
             </div>
 
             {/* Ledger Table */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
                       <th className="px-4 py-3 font-bold text-slate-600 uppercase tracking-wider w-24">Tarih</th>
                       <th className="px-4 py-3 font-bold text-slate-600 uppercase tracking-wider w-28">Evrak / No</th>
@@ -544,7 +544,7 @@ export default function ContactStatementModal({
                       </tr>
                     ) : (
                       filteredLedger.map((row) => (
-                        <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
+                        <tr key={row.id} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors">
                           <td className="px-4 py-3 font-mono font-medium text-slate-600 whitespace-nowrap">
                             {row.date.toLocaleDateString('tr-TR')}
                           </td>
@@ -558,13 +558,13 @@ export default function ContactStatementModal({
                               row.type === 'purchase_invoice' ? "bg-amber-100 text-amber-800" :
                               row.type === 'collection' ? "bg-emerald-100 text-emerald-800" :
                               row.type === 'payment' ? "bg-rose-100 text-rose-800" :
-                              "bg-slate-100 text-slate-700"
+                              "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                             )}>
                               {row.typeLabel}
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <div className="font-semibold text-slate-800">{row.description}</div>
+                            <div className="font-semibold text-slate-800 dark:text-slate-200">{row.description}</div>
                             {row.paymentMethod && (
                               <div className="mt-0.5">{getPaymentMethodBadge(row.paymentMethod)}</div>
                             )}
@@ -577,7 +577,7 @@ export default function ContactStatementModal({
                           </td>
                           <td className={cn(
                             "px-4 py-3 text-right font-mono font-black whitespace-nowrap",
-                            row.runningBalance > 0 ? "text-emerald-700 bg-emerald-50/40" : row.runningBalance < 0 ? "text-rose-700 bg-rose-50/40" : "text-slate-500"
+                            row.runningBalance > 0 ? "text-emerald-700 bg-emerald-50/40" : row.runningBalance < 0 ? "text-rose-700 bg-rose-50/40" : "text-slate-500 dark:text-slate-400"
                           )}>
                             ₺{Math.abs(row.runningBalance).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             <span className="text-[10px] ml-1 opacity-70">
@@ -588,9 +588,9 @@ export default function ContactStatementModal({
                       ))
                     )}
                   </tbody>
-                  <tfoot className="bg-slate-100 border-t-2 border-slate-300 font-bold">
+                  <tfoot className="bg-slate-100 dark:bg-slate-800 border-t-2 border-slate-300 font-bold">
                     <tr>
-                      <td colSpan={4} className="px-4 py-3 text-slate-700 uppercase tracking-wider text-right">
+                      <td colSpan={4} className="px-4 py-3 text-slate-700 dark:text-slate-200 uppercase tracking-wider text-right">
                         Toplamlar ve Net Bakiye:
                       </td>
                       <td className="px-4 py-3 text-right font-mono font-black text-rose-700">
@@ -601,7 +601,7 @@ export default function ContactStatementModal({
                       </td>
                       <td className={cn(
                         "px-4 py-3 text-right font-mono font-black",
-                        netBalance > 0 ? "text-emerald-700" : netBalance < 0 ? "text-rose-700" : "text-slate-800"
+                        netBalance > 0 ? "text-emerald-700" : netBalance < 0 ? "text-rose-700" : "text-slate-800 dark:text-slate-200"
                       )}>
                         ₺{Math.abs(netBalance).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
@@ -618,10 +618,10 @@ export default function ContactStatementModal({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                   Cariye Kesilen & Alınan Faturalar ({invoices?.length || 0})
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Cari hesap bakiyesi bu faturalar ve tahsilat/ödeme hareketleri üzerinden oluşur.
                 </p>
               </div>
@@ -636,9 +636,9 @@ export default function ContactStatementModal({
               )}
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
               <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="px-4 py-3 font-bold text-slate-600 uppercase tracking-wider">Fatura No</th>
                     <th className="px-4 py-3 font-bold text-slate-600 uppercase tracking-wider">Tarih / Vade</th>
@@ -658,7 +658,7 @@ export default function ContactStatementModal({
                     </tr>
                   ) : (
                     invoices.map((inv) => (
-                      <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={inv.id} className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors">
                         <td className="px-4 py-3 font-mono font-bold text-indigo-600">
                           {inv.invoiceNumber}
                         </td>
@@ -679,7 +679,7 @@ export default function ContactStatementModal({
                         </td>
                         <td className="px-4 py-3 font-mono text-slate-600">
                           {inv.orderNumber ? (
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-bold">
+                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded font-bold">
                               {inv.orderNumber}
                             </span>
                           ) : (
@@ -691,7 +691,7 @@ export default function ContactStatementModal({
                             "px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider",
                             inv.status === 'issued' ? "bg-emerald-100 text-emerald-800" :
                             inv.status === 'cancelled' ? "bg-rose-100 text-rose-800" :
-                            "bg-slate-100 text-slate-700"
+                            "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                           )}>
                             {inv.status === 'issued' ? 'Kesildi' :
                              inv.status === 'cancelled' ? 'İptal Edildi' : 'Taslak'}
@@ -720,10 +720,10 @@ export default function ContactStatementModal({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                   Cariye Ait Siparişler & Faturalama Takibi ({orders?.length || 0})
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Sipariş tutarı cari bakiyeye doğrudan yansımaz. Fatura kesildiğinde bakiyeye geçer.
                 </p>
               </div>
@@ -738,9 +738,9 @@ export default function ContactStatementModal({
               )}
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
               <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="px-4 py-3 font-bold text-slate-600 uppercase tracking-wider">Sipariş No</th>
                     <th className="px-4 py-3 font-bold text-slate-600 uppercase tracking-wider">Tarih</th>
@@ -766,7 +766,7 @@ export default function ContactStatementModal({
                       const invStatus = ord.invoicingStatus || (invoicedAmt >= ord.grandTotal ? 'fully_invoiced' : invoicedAmt > 0 ? 'partially_invoiced' : 'not_invoiced');
 
                       return (
-                        <tr key={ord.id} className="hover:bg-slate-50 transition-colors">
+                        <tr key={ord.id} className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors">
                           <td className="px-4 py-3 font-mono font-bold text-indigo-600">
                             {ord.orderNumber}
                           </td>
@@ -787,7 +787,7 @@ export default function ContactStatementModal({
                               ord.status === 'completed' ? "bg-emerald-100 text-emerald-800" :
                               ord.status === 'confirmed' ? "bg-blue-100 text-blue-800" :
                               ord.status === 'cancelled' ? "bg-rose-100 text-rose-800" :
-                              "bg-slate-100 text-slate-700"
+                              "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                             )}>
                               {ord.status === 'confirmed' ? 'Onaylandı' :
                                ord.status === 'completed' ? 'Tamamlandı' :
@@ -799,13 +799,13 @@ export default function ContactStatementModal({
                               "px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider",
                               invStatus === 'fully_invoiced' ? "bg-emerald-100 text-emerald-800" :
                               invStatus === 'partially_invoiced' ? "bg-amber-100 text-amber-800" :
-                              "bg-slate-100 text-slate-600"
+                              "bg-slate-100 dark:bg-slate-800 text-slate-600"
                             )}>
                               {invStatus === 'fully_invoiced' ? 'Tamamı Faturalandı' :
                                invStatus === 'partially_invoiced' ? 'Kısmi Faturalandı' : 'Faturalanmadı'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono font-bold text-slate-900">
+                          <td className="px-4 py-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
                             ₺{ord.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-right font-mono font-semibold text-emerald-600">
@@ -831,7 +831,7 @@ export default function ContactStatementModal({
         {activeTab === 'transactions' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                 Finansal Hareketler & Kasa Kayıtları ({transactions?.length || 0})
               </h3>
               {onQuickPayment && (
@@ -854,9 +854,9 @@ export default function ContactStatementModal({
               )}
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
               <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="px-4 py-3 font-bold text-slate-600 uppercase tracking-wider">Tarih</th>
                     <th className="px-4 py-3 font-bold text-slate-600 uppercase tracking-wider">Makbuz/Dekont No</th>
@@ -876,11 +876,11 @@ export default function ContactStatementModal({
                     </tr>
                   ) : (
                     transactions.map((tx) => (
-                      <tr key={tx.id} className="hover:bg-slate-50 transition-colors group">
+                      <tr key={tx.id} className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors group">
                         <td className="px-4 py-3 font-mono text-slate-600">
                           {new Date(tx.date).toLocaleDateString('tr-TR')}
                         </td>
-                        <td className="px-4 py-3 font-mono font-bold text-slate-700">
+                        <td className="px-4 py-3 font-mono font-bold text-slate-700 dark:text-slate-200">
                           {tx.documentNo || `TRX-${tx.id}`}
                         </td>
                         <td className="px-4 py-3">
@@ -894,7 +894,7 @@ export default function ContactStatementModal({
                         <td className="px-4 py-3">
                           {getPaymentMethodBadge(tx.paymentMethod)}
                         </td>
-                        <td className="px-4 py-3 font-medium text-slate-800">
+                        <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">
                           {tx.description}
                         </td>
                         <td className={cn(
@@ -940,8 +940,8 @@ export default function ContactStatementModal({
         {activeTab === 'details' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Company & Official Details */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
                 <Building2 className="w-4 h-4 text-indigo-600" />
                 Resmi & İletişim Bilgileri
               </h3>
@@ -949,35 +949,35 @@ export default function ContactStatementModal({
               <div className="space-y-3 text-xs">
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-slate-400 font-bold uppercase">Cari Kodu:</span>
-                  <span className="col-span-2 font-mono font-bold text-slate-800">{currentContact.code || '-'}</span>
+                  <span className="col-span-2 font-mono font-bold text-slate-800 dark:text-slate-200">{currentContact.code || '-'}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-slate-400 font-bold uppercase">Ticari Ünvan:</span>
-                  <span className="col-span-2 font-bold text-slate-800">{currentContact.companyTitle || currentContact.name}</span>
+                  <span className="col-span-2 font-bold text-slate-800 dark:text-slate-200">{currentContact.companyTitle || currentContact.name}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-slate-400 font-bold uppercase">Yetkili Kişi:</span>
-                  <span className="col-span-2 font-semibold text-slate-800">{currentContact.contactPerson || 'Girilmemiş'}</span>
+                  <span className="col-span-2 font-semibold text-slate-800 dark:text-slate-200">{currentContact.contactPerson || 'Girilmemiş'}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-slate-400 font-bold uppercase">Vergi Dairesi:</span>
-                  <span className="col-span-2 text-slate-800">{currentContact.taxOffice || 'Girilmemiş'}</span>
+                  <span className="col-span-2 text-slate-800 dark:text-slate-200">{currentContact.taxOffice || 'Girilmemiş'}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-slate-400 font-bold uppercase">Vergi No / TCKN:</span>
-                  <span className="col-span-2 font-mono font-bold text-slate-800">{currentContact.taxNumber || currentContact.tcKimlik || 'Girilmemiş'}</span>
+                  <span className="col-span-2 font-mono font-bold text-slate-800 dark:text-slate-200">{currentContact.taxNumber || currentContact.tcKimlik || 'Girilmemiş'}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-slate-400 font-bold uppercase">Telefon:</span>
-                  <span className="col-span-2 font-mono text-slate-800">{currentContact.phone || 'Girilmemiş'}</span>
+                  <span className="col-span-2 font-mono text-slate-800 dark:text-slate-200">{currentContact.phone || 'Girilmemiş'}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-slate-400 font-bold uppercase">GSM / Cep:</span>
-                  <span className="col-span-2 font-mono text-slate-800">{currentContact.mobile || 'Girilmemiş'}</span>
+                  <span className="col-span-2 font-mono text-slate-800 dark:text-slate-200">{currentContact.mobile || 'Girilmemiş'}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-slate-400 font-bold uppercase">E-posta:</span>
-                  <span className="col-span-2 text-slate-800">{currentContact.email || 'Girilmemiş'}</span>
+                  <span className="col-span-2 text-slate-800 dark:text-slate-200">{currentContact.email || 'Girilmemiş'}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-slate-400 font-bold uppercase">Web Sitesi:</span>
@@ -988,8 +988,8 @@ export default function ContactStatementModal({
 
             {/* Banking & Risk Details */}
             <div className="space-y-6">
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
                   <CreditCard className="w-4 h-4 text-emerald-600" />
                   Banka & Hesap Bilgileri
                 </h3>
@@ -997,15 +997,15 @@ export default function ContactStatementModal({
                 <div className="space-y-3 text-xs">
                   <div className="grid grid-cols-3 gap-2">
                     <span className="text-slate-400 font-bold uppercase">Banka Adı:</span>
-                    <span className="col-span-2 font-bold text-slate-800">{currentContact.bankName || 'Tanımlanmamış'}</span>
+                    <span className="col-span-2 font-bold text-slate-800 dark:text-slate-200">{currentContact.bankName || 'Tanımlanmamış'}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <span className="text-slate-400 font-bold uppercase">Hesap Sahibi:</span>
-                    <span className="col-span-2 text-slate-800">{currentContact.bankAccountName || currentContact.name}</span>
+                    <span className="col-span-2 text-slate-800 dark:text-slate-200">{currentContact.bankAccountName || currentContact.name}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <span className="text-slate-400 font-bold uppercase">IBAN:</span>
-                    <span className="col-span-2 font-mono font-bold text-slate-900 tracking-wider">
+                    <span className="col-span-2 font-mono font-bold text-slate-900 dark:text-slate-100 tracking-wider">
                       {currentContact.iban || 'Girilmemiş'}
                     </span>
                   </div>
@@ -1013,8 +1013,8 @@ export default function ContactStatementModal({
               </div>
 
               {/* Address & Logistics */}
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
                   <MapPin className="w-4 h-4 text-amber-600" />
                   Adres & Sevkiyat Lokasyonu
                 </h3>
@@ -1022,7 +1022,7 @@ export default function ContactStatementModal({
                 <div className="space-y-3 text-xs">
                   <div>
                     <span className="text-slate-400 font-bold uppercase block mb-1">Fatura Adresi:</span>
-                    <p className="text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    <p className="text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
                       {currentContact.address || 'Fatura adresi belirtilmemiş.'}
                       {currentContact.city ? ` (${currentContact.city} / ${currentContact.district || ''})` : ''}
                     </p>
@@ -1030,7 +1030,7 @@ export default function ContactStatementModal({
                   {currentContact.shippingAddress && (
                     <div>
                       <span className="text-slate-400 font-bold uppercase block mb-1">Sevkiyat / Depo Adresi:</span>
-                      <p className="text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                      <p className="text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
                         {currentContact.shippingAddress}
                       </p>
                     </div>
@@ -1049,7 +1049,7 @@ export default function ContactStatementModal({
         )}
 
         {/* Printable Official Statement Template (Visible on Print) */}
-        <div className="hidden print:block font-sans text-slate-900 pt-4">
+        <div className="hidden print:block font-sans text-slate-900 dark:text-slate-100 pt-4">
           <div className="border-b-2 border-slate-900 pb-4 mb-4 flex justify-between items-start">
             <div>
               <h1 className="text-xl font-black uppercase tracking-tight">RESMİ CARİ HESAP EKSTRESİ</h1>
@@ -1065,7 +1065,7 @@ export default function ContactStatementModal({
 
           <table className="w-full text-left border-collapse text-[10px] mb-6">
             <thead>
-              <tr className="border-b border-slate-900 font-bold bg-slate-100">
+              <tr className="border-b border-slate-900 font-bold bg-slate-100 dark:bg-slate-800">
                 <th className="py-1.5 px-2">Tarih</th>
                 <th className="py-1.5 px-2">Evrak No</th>
                 <th className="py-1.5 px-2">İşlem Türü</th>
@@ -1077,7 +1077,7 @@ export default function ContactStatementModal({
             </thead>
             <tbody>
               {filteredLedger.map((row) => (
-                <tr key={row.id} className="border-b border-slate-200">
+                <tr key={row.id} className="border-b border-slate-200 dark:border-slate-700">
                   <td className="py-1 px-2">{row.date.toLocaleDateString('tr-TR')}</td>
                   <td className="py-1 px-2 font-mono">{row.docNo}</td>
                   <td className="py-1 px-2">{row.typeLabel}</td>
@@ -1101,11 +1101,11 @@ export default function ContactStatementModal({
           <div className="grid grid-cols-2 gap-8 pt-8 mt-8 border-t border-slate-300 text-center text-xs">
             <div>
               <div className="font-bold uppercase mb-12">Düzenleyen (Firma Yetkilisi)</div>
-              <div className="border-t border-slate-400 pt-1 w-48 mx-auto text-slate-500">İmza / Kaşe</div>
+              <div className="border-t border-slate-400 pt-1 w-48 mx-auto text-slate-500 dark:text-slate-400">İmza / Kaşe</div>
             </div>
             <div>
               <div className="font-bold uppercase mb-12">Mutabık Kalan (Cari Yetkilisi)</div>
-              <div className="border-t border-slate-400 pt-1 w-48 mx-auto text-slate-500">İmza / Kaşe</div>
+              <div className="border-t border-slate-400 pt-1 w-48 mx-auto text-slate-500 dark:text-slate-400">İmza / Kaşe</div>
             </div>
           </div>
         </div>

@@ -74,7 +74,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
   return (
     <div className="space-y-4">
       {/* Top Filter and Actions Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 shadow-xs">
         
         {/* Search and Dropdowns */}
         <div className="flex flex-wrap items-center gap-2.5 flex-1 w-full sm:w-auto">
@@ -85,16 +85,16 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
               placeholder="Personel adı, sicil, görev..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 focus:bg-white"
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 dark:bg-slate-800/50/50 focus:bg-white dark:bg-slate-900"
             />
           </div>
 
           {/* SGK Status Filter */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs shrink-0">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs shrink-0">
             <button
               onClick={() => setSgkFilter('all')}
               className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors cursor-pointer ${
-                sgkFilter === 'all' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                sgkFilter === 'all' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               Tümü ({employees.length})
@@ -102,7 +102,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
             <button
               onClick={() => setSgkFilter('sgk_li')}
               className={`px-2.5 py-1 rounded-md font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer ${
-                sgkFilter === 'sgk_li' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                sgkFilter === 'sgk_li' ? 'bg-white dark:bg-slate-900 text-emerald-700 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               <Shield className="w-3 h-3 text-emerald-600" />
@@ -111,7 +111,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
             <button
               onClick={() => setSgkFilter('sgk_siz')}
               className={`px-2.5 py-1 rounded-md font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer ${
-                sgkFilter === 'sgk_siz' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                sgkFilter === 'sgk_siz' ? 'bg-white dark:bg-slate-900 text-amber-700 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               <DollarSign className="w-3 h-3 text-amber-600" />
@@ -123,7 +123,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
           <select
             value={deptFilter}
             onChange={(e) => setDeptFilter(e.target.value)}
-            className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none shrink-0"
+            className="px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none shrink-0"
           >
             <option value="all">Tüm Departmanlar</option>
             {departments.map((d) => (
@@ -134,12 +134,12 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
 
         {/* View Mode Toggle & Add Button */}
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end shrink-0">
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg text-xs border border-slate-200/60">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-xs border border-slate-200 dark:border-slate-700/60">
             <button
               onClick={() => setViewMode('table')}
               className={cn(
                 "px-2.5 py-1 rounded-md font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer",
-                viewMode === 'table' ? "bg-white text-indigo-600 shadow-xs font-semibold" : "text-slate-500 hover:text-slate-800"
+                viewMode === 'table' ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-xs font-semibold" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
               )}
               title="Tablo Görünümü"
             >
@@ -150,7 +150,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
               onClick={() => setViewMode('cards')}
               className={cn(
                 "px-2.5 py-1 rounded-md font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer",
-                viewMode === 'cards' ? "bg-white text-indigo-600 shadow-xs font-semibold" : "text-slate-500 hover:text-slate-800"
+                viewMode === 'cards' ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-xs font-semibold" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
               )}
               title="Kart Görünümü"
             >
@@ -174,16 +174,16 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
 
       {/* Main Employee Content (Table vs Cards) */}
       {filteredEmployees.length === 0 ? (
-        <div className="p-12 bg-white rounded-xl border border-slate-200/80 text-center text-slate-400 text-xs">
+        <div className="p-12 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 text-center text-slate-400 text-xs">
           Arama kriterlerinize uygun personel bulunamadı.
         </div>
       ) : viewMode === 'table' ? (
         /* TABLO GÖRÜNÜMÜ */
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                <tr className="bg-slate-50 dark:bg-slate-800/50/80 border-b border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold text-[11px] uppercase tracking-wider">
                   <th className="py-3 px-4">Sicil & Personel</th>
                   <th className="py-3 px-4">Görev / Departman</th>
                   <th className="py-3 px-4">SGK Durumu</th>
@@ -200,7 +200,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
                   const remainingLeave = Math.max(0, (emp.entitledAnnualLeave ?? 14) - (emp.usedAnnualLeave ?? 0));
 
                   return (
-                    <tr key={emp.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <tr key={emp.id} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors group">
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
@@ -209,7 +209,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
                             {emp.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
                           </div>
                           <div>
-                            <span className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors block">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 transition-colors block">
                               {emp.name}
                             </span>
                             <span className="font-mono text-[10px] text-slate-400">
@@ -221,10 +221,10 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
 
                       <td className="py-2.5 px-4">
                         <div>
-                          <span className="font-medium text-slate-800 block">
+                          <span className="font-medium text-slate-800 dark:text-slate-200 block">
                             {emp.position}
                           </span>
-                          <span className="text-[11px] text-slate-500">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
                             {emp.department}
                           </span>
                         </div>
@@ -242,7 +242,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
                       </td>
 
                       <td className="py-2.5 px-4 font-mono">
-                        <div className="font-semibold text-slate-900">
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">
                           ₺{emp.baseSalary.toLocaleString('tr-TR')}
                         </div>
                         <div className="text-[10px] text-slate-400 font-sans">
@@ -260,7 +260,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
                         </span>
                       </td>
 
-                      <td className="py-2.5 px-4 text-slate-500 text-[11px]">
+                      <td className="py-2.5 px-4 text-slate-500 dark:text-slate-400 text-[11px]">
                         <div>{emp.phone || '-'}</div>
                         {emp.iban && (
                           <div className="text-[10px] font-mono text-slate-400 truncate max-w-[120px]" title={emp.iban}>
@@ -304,7 +304,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
             return (
               <div
                 key={emp.id}
-                className="bg-white rounded-xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all p-4 flex flex-col justify-between group"
+                className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 shadow-xs hover:border-slate-300 transition-all p-4 flex flex-col justify-between group"
               >
                 <div className="space-y-3">
                   {/* Top info */}
@@ -316,10 +316,10 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
                         {emp.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
                       </div>
                       <div>
-                        <h4 className="font-semibold text-xs text-slate-900 group-hover:text-indigo-600 transition-colors">
+                        <h4 className="font-semibold text-xs text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 transition-colors">
                           {emp.name}
                         </h4>
-                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
                           <span className="font-mono">{emp.employeeCode}</span>
                           <span>•</span>
                           <span>{emp.position}</span>
@@ -337,26 +337,26 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
                   </div>
 
                   {/* Department & Wage details */}
-                  <div className="p-2.5 bg-slate-50/80 rounded-lg border border-slate-100 space-y-1.5 text-xs">
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50/80 rounded-lg border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
                     <div className="flex justify-between items-center text-slate-600">
-                      <span className="text-[10px] text-slate-500">Departman:</span>
-                      <span className="font-semibold text-slate-800 text-[11px]">{emp.department}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">Departman:</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px]">{emp.department}</span>
                     </div>
 
                     <div className="flex justify-between items-center text-slate-600">
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
                         {emp.salaryType === 'daily' ? 'Günlük Yevmiye:' : 'Aylık Ücret:'}
                       </span>
-                      <span className="font-mono font-semibold text-slate-900 text-[11px]">
+                      <span className="font-mono font-semibold text-slate-900 dark:text-slate-100 text-[11px]">
                         ₺{emp.baseSalary.toLocaleString('tr-TR')} 
-                        <span className="text-[9px] text-slate-500 font-normal ml-1">
+                        <span className="text-[9px] text-slate-500 dark:text-slate-400 font-normal ml-1">
                           {emp.salaryType === 'daily' ? '/ gün' : emp.salaryType === 'monthly_gross' ? '(Brüt)' : '(Net)'}
                         </span>
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center text-slate-600">
-                      <span className="text-[10px] text-slate-500">Kalan İzin:</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">Kalan İzin:</span>
                       <span className="font-mono font-semibold text-indigo-600 text-[11px]">
                         {remainingLeave} Gün
                       </span>
@@ -364,7 +364,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
                   </div>
 
                   {/* Contact Snippets */}
-                  <div className="space-y-1 text-xs text-slate-500">
+                  <div className="space-y-1 text-xs text-slate-500 dark:text-slate-400">
                     {emp.phone && (
                       <div className="flex items-center gap-1.5 text-[11px]">
                         <Phone className="w-3 h-3 text-slate-400" />
@@ -380,7 +380,7 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
                 </div>
 
                 {/* Footer Action Buttons */}
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-xs">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
                   <span className="text-[10px] text-slate-400 font-mono">
                     Giriş: {new Date(emp.hireDate).toLocaleDateString('tr-TR')}
                   </span>
@@ -388,14 +388,14 @@ export default function EmployeeListTab({ employees, onRefresh }: EmployeeListTa
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleEdit(emp)}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                       title="Düzenle"
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(emp)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                       title="Sil"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

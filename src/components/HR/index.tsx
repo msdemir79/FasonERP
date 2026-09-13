@@ -64,9 +64,9 @@ export default function HRManagement() {
         iconColor="indigo"
         actions={
           <div className="flex items-center gap-2 text-xs">
-            <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/80 text-center">
+            <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 text-center">
               <span className="text-[10px] font-bold text-slate-400 uppercase block">Toplam</span>
-              <span className="text-sm font-black text-slate-800">{activeEmployees.length}</span>
+              <span className="text-sm font-black text-slate-800 dark:text-slate-200">{activeEmployees.length}</span>
             </div>
 
             <div className="bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-200/80 text-center">
@@ -87,13 +87,13 @@ export default function HRManagement() {
       />
 
       {/* Main Tab Navigation */}
-      <div className="flex border-b border-slate-200 bg-white rounded-t-xl px-4 shadow-xs">
+      <div className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-t-xl px-4 shadow-xs">
         <button
           onClick={() => setActiveTab('employees')}
           className={`py-3.5 px-5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
             activeTab === 'employees'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -105,7 +105,7 @@ export default function HRManagement() {
           className={`py-3.5 px-5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
             activeTab === 'attendance'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
           }`}
         >
           <Calendar className="w-4 h-4" />
@@ -117,7 +117,7 @@ export default function HRManagement() {
           className={`py-3.5 px-5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
             activeTab === 'leaves'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
           }`}
         >
           <FileText className="w-4 h-4" />
@@ -129,7 +129,7 @@ export default function HRManagement() {
           className={`py-3.5 px-5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
             activeTab === 'payroll'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
           }`}
         >
           <DollarSign className="w-4 h-4" />
@@ -141,7 +141,7 @@ export default function HRManagement() {
           className={`py-3.5 px-5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
             activeTab === 'advances'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
           }`}
         >
           <CreditCard className="w-4 h-4" />
@@ -153,7 +153,7 @@ export default function HRManagement() {
           className={`py-3.5 px-5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
             activeTab === 'reports'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
           }`}
         >
           <BarChart3 className="w-4 h-4 text-indigo-600" />

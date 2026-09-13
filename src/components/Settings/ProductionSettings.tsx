@@ -54,7 +54,7 @@ export default function ProductionSettings({ settings, onSave }: ProductionSetti
       )}
 
       {/* SECTION 1: İMALAT VE KAPASİTE PARAMETRELERİ */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -69,30 +69,30 @@ export default function ProductionSettings({ settings, onSave }: ProductionSetti
 
         <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">İş Emri Barkod Öneki</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">İş Emri Barkod Öneki</label>
             <input
               type="text"
               value={woPrefix}
               onChange={e => setWoPrefix(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Örnek: {woPrefix}000452</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hedef Günlük Üretim Kapasitesi (Çift/Gün)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Hedef Günlük Üretim Kapasitesi (Çift/Gün)</label>
             <input
               type="number"
               min="1"
               value={dailyCapacity}
               onChange={e => setDailyCapacity(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Tüm montaj bantlarının toplam günlük nominal kapasitesi</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Standart Fire / Hurda Kabul Toleransı (%)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Standart Fire / Hurda Kabul Toleransı (%)</label>
             <input
               type="number"
               min="0"
@@ -100,13 +100,13 @@ export default function ProductionSettings({ settings, onSave }: ProductionSetti
               step="0.5"
               value={scrapTolerance}
               onChange={e => setScrapTolerance(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Saya kesim ve finisaj aşamalarında kabul edilen standart pay</span>
           </div>
         </div>
 
-        <div className="p-6 bg-slate-50 border-t border-slate-200">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -115,15 +115,15 @@ export default function ProductionSettings({ settings, onSave }: ProductionSetti
               className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
             />
             <div>
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">Planlamadan Kesime Geçildiğinde Reçete Hammaddelerini Otomatik Düş</span>
-              <span className="text-[11px] text-slate-500">İş emri kesim/dikim aşamasına alındığında reçetedeki deri, taban, astar ve aksesuarlar depodan otomatik rezerve/sarf edilir.</span>
+              <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider block">Planlamadan Kesime Geçildiğinde Reçete Hammaddelerini Otomatik Düş</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">İş emri kesim/dikim aşamasına alındığında reçetedeki deri, taban, astar ve aksesuarlar depodan otomatik rezerve/sarf edilir.</span>
             </div>
           </label>
         </div>
       </div>
 
       {/* SECTION 2: ÜRETİM İSTASYONLARI VE AŞAMALAR */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -141,7 +141,7 @@ export default function ProductionSettings({ settings, onSave }: ProductionSetti
             {PRODUCTION_STAGES_CONFIG.map((stage) => (
               <div 
                 key={stage.id}
-                className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2 hover:border-slate-300 transition-colors"
+                className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50/70 space-y-2 hover:border-slate-300 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-black flex items-center justify-center">
@@ -151,14 +151,14 @@ export default function ProductionSettings({ settings, onSave }: ProductionSetti
                     {stage.shortLabel}
                   </span>
                 </div>
-                <div className="text-xs font-black text-slate-900">{stage.label}</div>
-                <p className="text-[11px] text-slate-500">{stage.description}</p>
+                <div className="text-xs font-black text-slate-900 dark:text-slate-100">{stage.label}</div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">{stage.description}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="p-6 bg-white border-t border-slate-200 flex justify-end">
+        <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex justify-end">
           <button
             type="submit"
             disabled={isSaving}

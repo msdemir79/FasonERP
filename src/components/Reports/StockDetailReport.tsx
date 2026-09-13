@@ -606,7 +606,7 @@ export default function StockDetailReport() {
 
     processedProducts.forEach(p => {
       const typeLabel = CATEGORY_TYPE_META[p.categoryType]?.label || 'Mamül';
-      const statusLabel = p.isBroken ? 'KIRIK BEDEN' : p.isCritical ? 'KRİTİK STOK' : p.isOutOfStock ? 'TÜKENDİ' : 'NORMAL';
+      const statusLabel = (p as any).isBroken ? 'KIRIK BEDEN' : p.isCritical ? 'KRİTİK STOK' : p.isOutOfStock ? 'TÜKENDİ' : 'NORMAL';
 
       if (p.colorRows && p.colorRows.length > 0) {
         p.colorRows.forEach(c => {
@@ -625,7 +625,7 @@ export default function StockDetailReport() {
                 p.unit || 'Çift',
                 p.buyingPrice || 0,
                 p.sellingPrice || 0,
-                s.barcode || c.boxBarcode || p.barcode || '-',
+                s.barcode || c.boxBarcode || (p as any).barcode || '-',
                 p.shelf || '-',
                 statusLabel
               ]);
@@ -644,7 +644,7 @@ export default function StockDetailReport() {
               p.unit || 'Birim',
               p.buyingPrice || 0,
               p.sellingPrice || 0,
-              c.boxBarcode || p.barcode || '-',
+              c.boxBarcode || (p as any).barcode || '-',
               p.shelf || '-',
               statusLabel
             ]);
@@ -664,7 +664,7 @@ export default function StockDetailReport() {
           p.unit || 'Birim',
           p.buyingPrice || 0,
           p.sellingPrice || 0,
-          p.barcode || '-',
+          (p as any).barcode || '-',
           p.shelf || '-',
           statusLabel
         ]);
@@ -679,33 +679,33 @@ export default function StockDetailReport() {
       {/* ════════════════════════════════════════════════════════════════
           1. SAYFA BAŞLIĞI VE HIZLI EYLEMLER
          ════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-1 border-b border-slate-200/80">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-1 border-b border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">
               Envanter & Varyant Dağılımı
             </span>
             <span className="text-slate-300">•</span>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               {processedProducts.length} Stok Listeleniyor
             </span>
           </div>
-          <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">
+          <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight uppercase">
             Stok Detay & Asorti Raporu
           </h2>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Yoğunluk Switcher */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
             <button
               type="button"
               onClick={() => setRowDensity('compact')}
               className={cn(
                 "px-2.5 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5",
                 rowDensity === 'compact'
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-900"
+                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100"
               )}
               title="Kompakt Tasarım (Ekrana maksimum satır sığdırır)"
             >
@@ -718,8 +718,8 @@ export default function StockDetailReport() {
               className={cn(
                 "px-2.5 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5",
                 rowDensity === 'normal'
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-900"
+                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100"
               )}
               title="Standart Tasarım"
             >
@@ -737,7 +737,7 @@ export default function StockDetailReport() {
               "flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-2xs",
               syncSuccess 
                 ? "bg-emerald-50 border-emerald-300 text-emerald-700" 
-                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:bg-slate-800/50"
             )}
             title="Model ve varyant stoklarını asorti oranlarına göre eşitle / onar"
           >
@@ -749,12 +749,12 @@ export default function StockDetailReport() {
           <button 
             type="button"
             onClick={toggleExpandAll}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-50 transition-all shadow-2xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-50 dark:bg-slate-800/50 transition-all shadow-2xs"
             title={areAllExpanded ? "Tüm modellerin alt detayını daralt" : "Tüm modellerin alt detayını genişlet"}
           >
             {areAllExpanded ? (
               <>
-                <Minimize2 className="w-3.5 h-3.5 text-slate-500" />
+                <Minimize2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                 <span>Tümünü Daralt</span>
               </>
             ) : (
@@ -830,7 +830,7 @@ export default function StockDetailReport() {
             <div className="flex items-center gap-2.5 min-w-0">
               <div className={cn(
                 "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                stockClassification === 'all' ? "bg-white/20 text-white" : "bg-slate-700 text-slate-400"
+                stockClassification === 'all' ? "bg-white dark:bg-slate-900/20 text-white" : "bg-slate-700 text-slate-400"
               )}>
                 <Layers className="w-4 h-4" />
               </div>
@@ -841,7 +841,7 @@ export default function StockDetailReport() {
             </div>
             <span className={cn(
               "px-2 py-0.5 rounded-md font-mono text-xs font-black shrink-0",
-              stockClassification === 'all' ? "bg-white text-indigo-900" : "bg-slate-700 text-slate-300"
+              stockClassification === 'all' ? "bg-white dark:bg-slate-900 text-indigo-900" : "bg-slate-700 text-slate-300"
             )}>
               {classificationCounts.total}
             </span>
@@ -864,7 +864,7 @@ export default function StockDetailReport() {
             <div className="flex items-center gap-2.5 min-w-0">
               <div className={cn(
                 "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                stockClassification === 'mamul' ? "bg-white/20 text-white" : "bg-slate-700 text-indigo-400"
+                stockClassification === 'mamul' ? "bg-white dark:bg-slate-900/20 text-white" : "bg-slate-700 text-indigo-400"
               )}>
                 <Box className="w-4 h-4" />
               </div>
@@ -875,7 +875,7 @@ export default function StockDetailReport() {
             </div>
             <span className={cn(
               "px-2 py-0.5 rounded-md font-mono text-xs font-black shrink-0",
-              stockClassification === 'mamul' ? "bg-white text-indigo-900" : "bg-slate-700 text-indigo-300"
+              stockClassification === 'mamul' ? "bg-white dark:bg-slate-900 text-indigo-900" : "bg-slate-700 text-indigo-300"
             )}>
               {classificationCounts.mamul}
             </span>
@@ -897,7 +897,7 @@ export default function StockDetailReport() {
             <div className="flex items-center gap-2.5 min-w-0">
               <div className={cn(
                 "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                stockClassification === 'mamul_disi' ? "bg-white/20 text-white" : "bg-slate-700 text-amber-400"
+                stockClassification === 'mamul_disi' ? "bg-white dark:bg-slate-900/20 text-white" : "bg-slate-700 text-amber-400"
               )}>
                 <Boxes className="w-4 h-4" />
               </div>
@@ -908,7 +908,7 @@ export default function StockDetailReport() {
             </div>
             <span className={cn(
               "px-2 py-0.5 rounded-md font-mono text-xs font-black shrink-0",
-              stockClassification === 'mamul_disi' ? "bg-white text-amber-950" : "bg-slate-700 text-amber-300"
+              stockClassification === 'mamul_disi' ? "bg-white dark:bg-slate-900 text-amber-950" : "bg-slate-700 text-amber-300"
             )}>
               {classificationCounts.mamulDisi}
             </span>
@@ -979,7 +979,7 @@ export default function StockDetailReport() {
       {/* ════════════════════════════════════════════════════════════════
           3. ARAMA VE İKİNCİL FİLTRELEME ÇUBUĞU
          ════════════════════════════════════════════════════════════════ */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-700/90 shadow-2xs space-y-2.5">
         <div className="flex flex-col md:flex-row gap-2.5 items-center justify-between">
           {/* Arama Kutusu */}
           <div className="relative w-full md:max-w-md">
@@ -987,7 +987,7 @@ export default function StockDetailReport() {
             <input 
               type="text" 
               placeholder="MODEL ADI, KOD, RENK, RAF VEYA BARKOD ARA..." 
-              className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-bold uppercase tracking-wider text-slate-800 placeholder:text-slate-400 transition-all"
+              className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 placeholder:text-slate-400 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -1007,7 +1007,7 @@ export default function StockDetailReport() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="all">Tüm Kategoriler ({categories.length})</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -1018,7 +1018,7 @@ export default function StockDetailReport() {
               <select
                 value={selectedBrand}
                 onChange={(e) => setSelectedBrand(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="all">Tüm Markalar ({brands.length})</option>
                 {brands.map(b => <option key={b} value={b}>{b}</option>)}
@@ -1028,7 +1028,7 @@ export default function StockDetailReport() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <option value="name">Sırala: İsim (A-Z)</option>
               <option value="code">Sırala: Ürün Kodu</option>
@@ -1039,7 +1039,7 @@ export default function StockDetailReport() {
         </div>
 
         {/* Durum Rozetleri (Kırık, Kritik, Tükendi) */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
             <Filter className="w-3 h-3" /> Durum:
           </span>
@@ -1050,7 +1050,7 @@ export default function StockDetailReport() {
               "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
               filterType === 'all' 
                 ? "bg-slate-900 text-white shadow-xs" 
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
             )}
           >
             Tümü ({processedProducts.length})
@@ -1062,7 +1062,7 @@ export default function StockDetailReport() {
               "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1",
               filterType === 'broken' 
                 ? "bg-rose-600 text-white shadow-xs" 
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
             )}
           >
             <AlertTriangle className="w-3 h-3 text-rose-500" />
@@ -1075,7 +1075,7 @@ export default function StockDetailReport() {
               "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
               filterType === 'critical' 
                 ? "bg-amber-600 text-white shadow-xs" 
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
             )}
           >
             Kritik Stok ({summaryStats.criticalCount})
@@ -1087,14 +1087,14 @@ export default function StockDetailReport() {
               "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
               filterType === 'out_of_stock' 
                 ? "bg-slate-800 text-white shadow-xs" 
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
             )}
           >
             Tükenenler ({summaryStats.outOfStockCount})
           </button>
 
           {/* Aktif Liste Özeti */}
-          <div className="ml-auto text-[11px] font-mono font-bold text-slate-500 hidden sm:block">
+          <div className="ml-auto text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 hidden sm:block">
             Toplam Stok: <span className="text-emerald-700 font-black">{summaryStats.totalStock}</span> Adet/Çift
           </div>
         </div>
@@ -1105,9 +1105,9 @@ export default function StockDetailReport() {
          ════════════════════════════════════════════════════════════════ */}
       <div className={cn("transition-all", rowDensity === 'compact' ? "space-y-1.5" : "space-y-2.5")}>
         {processedProducts.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-10 text-center">
             <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Seçilen Kriterlere Uygun Kayıt Bulunamadı</h3>
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Seçilen Kriterlere Uygun Kayıt Bulunamadı</h3>
             <p className="text-xs text-slate-400 mt-1">Arama teriminizi veya "Mamül / Mamül Dışı" kriter seçiminizi değiştirerek tekrar deneyebilirsiniz.</p>
           </div>
         ) : (
@@ -1121,10 +1121,10 @@ export default function StockDetailReport() {
                 key={p.id || p.code}
                 id={`product-card-${p.id}`}
                 className={cn(
-                  "bg-white rounded-xl border transition-all duration-150 overflow-hidden",
+                  "bg-white dark:bg-slate-900 rounded-xl border transition-all duration-150 overflow-hidden",
                   isExpanded 
                     ? "border-indigo-300 ring-2 ring-indigo-500/10 shadow-sm" 
-                    : "border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs"
+                    : "border-slate-200 dark:border-slate-700/90 hover:border-slate-300 shadow-2xs hover:shadow-xs"
                 )}
               >
                 {/* ────────────────────────────────────────────────────────────
@@ -1136,8 +1136,8 @@ export default function StockDetailReport() {
                     "w-full flex items-center justify-between gap-3 cursor-pointer select-none transition-colors",
                     rowDensity === 'compact' ? "py-2 px-3 sm:px-3.5" : "py-2.5 px-3.5 sm:px-4",
                     isExpanded 
-                      ? "bg-slate-50/90 border-b border-slate-200 text-slate-900" 
-                      : "bg-white hover:bg-slate-50/80 text-slate-900"
+                      ? "bg-slate-50 dark:bg-slate-800/50/90 border-b border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100" 
+                      : "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-800/50/80 text-slate-900 dark:text-slate-100"
                   )}
                 >
                   {/* SOL TARAF: Ok, Resim, Kod, Kategori Türü, İsim ve Etiketler */}
@@ -1151,7 +1151,7 @@ export default function StockDetailReport() {
                       }}
                       className={cn(
                         "w-6 h-6 rounded-md flex items-center justify-center transition-transform shrink-0 cursor-pointer",
-                        isExpanded ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                        isExpanded ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200"
                       )}
                       title={isExpanded ? "Detayı Kapat" : "Detayı Aç"}
                     >
@@ -1160,7 +1160,7 @@ export default function StockDetailReport() {
 
                     {/* Mini Küçük Resim */}
                     <div className={cn(
-                      "rounded-lg border border-slate-200 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-2xs",
+                      "rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs",
                       rowDensity === 'compact' ? "w-8 h-8" : "w-10 h-10"
                     )}>
                       {p.image ? (
@@ -1176,7 +1176,7 @@ export default function StockDetailReport() {
                     </div>
 
                     {/* Stok Kodu */}
-                    <span className="font-mono text-xs font-black text-slate-800 bg-slate-100/90 border border-slate-200/90 px-2 py-0.5 rounded shrink-0">
+                    <span className="font-mono text-xs font-black text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/90 px-2 py-0.5 rounded shrink-0">
                       {p.code}
                     </span>
 
@@ -1190,20 +1190,20 @@ export default function StockDetailReport() {
 
                     {/* Model / Ürün Adı & Ek İpuçları */}
                     <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:gap-2">
-                      <span className="text-xs sm:text-sm font-black text-slate-900 truncate">
+                      <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100 truncate">
                         {p.name}
                       </span>
 
                       {/* Kompakt Yan Etiketler */}
                       <div className="flex flex-wrap items-center gap-1.5 mt-0.5 sm:mt-0 shrink-0">
                         {p.brand && (
-                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded hidden sm:inline-block">
+                          <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded hidden sm:inline-block">
                             {p.brand}
                           </span>
                         )}
 
                         {p.subType && (
-                          <span className="text-[10px] font-bold text-slate-600 bg-slate-100/80 px-1.5 py-0.2 rounded hidden md:inline-block">
+                          <span className="text-[10px] font-bold text-slate-600 bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.2 rounded hidden md:inline-block">
                             {p.subType}
                           </span>
                         )}
@@ -1237,7 +1237,7 @@ export default function StockDetailReport() {
 
                     {/* Koli / Multiplier Tahmini (Ayakkabılar İçin) */}
                     {p.multiplier && p.multiplier > 1 && (
-                      <span className="text-[10px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded hidden md:inline-block">
+                      <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded hidden md:inline-block">
                         ~{(p.finalStock / p.multiplier).toFixed(1)} Koli
                       </span>
                     )}
@@ -1256,7 +1256,7 @@ export default function StockDetailReport() {
                         )}>
                           {p.finalStock}
                         </span>
-                        <span className="text-[10px] font-bold uppercase text-slate-500">
+                        <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
                           {p.unit || 'Çift'}
                         </span>
                       </div>
@@ -1281,7 +1281,7 @@ export default function StockDetailReport() {
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      className="border-t border-slate-200 bg-slate-50/60 p-3 sm:p-4 space-y-3"
+                      className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50/60 p-3 sm:p-4 space-y-3"
                     >
                       {/* Üst Bilgi Şeridi */}
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -1306,8 +1306,8 @@ export default function StockDetailReport() {
                           )}
                         </div>
 
-                        <div className="text-[11px] font-mono text-slate-500">
-                          Alış: <b className="text-slate-800">₺{p.buyingPrice || 0}</b> • Satış: <b className="text-slate-800">₺{p.sellingPrice || 0}</b> • Min: <b className="text-slate-800">{p.minStock || 0} {p.unit}</b>
+                        <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                          Alış: <b className="text-slate-800 dark:text-slate-200">₺{p.buyingPrice || 0}</b> • Satış: <b className="text-slate-800 dark:text-slate-200">₺{p.sellingPrice || 0}</b> • Min: <b className="text-slate-800 dark:text-slate-200">{p.minStock || 0} {p.unit}</b>
                         </div>
                       </div>
 
@@ -1316,14 +1316,14 @@ export default function StockDetailReport() {
                         {p.colorRows.map((c, cIdx) => (
                           <div 
                             key={`${p.id}-${c.color}-${cIdx}`}
-                            className="bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden"
+                            className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs overflow-hidden"
                           >
                             {/* Renk Başlık Şeridi */}
-                            <div className="p-2 sm:px-3 bg-slate-100/80 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="p-2 sm:px-3 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <div className="flex items-center gap-2.5">
                                 {/* Color Swatch / Mini image */}
                                 {c.colorImage ? (
-                                  <div className="w-6 h-6 rounded border border-slate-200 bg-white overflow-hidden shrink-0 flex items-center justify-center">
+                                  <div className="w-6 h-6 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shrink-0 flex items-center justify-center">
                                     <img 
                                       src={c.colorImage} 
                                       alt={c.color} 
@@ -1337,7 +1337,7 @@ export default function StockDetailReport() {
                                   </div>
                                 )}
 
-                                <span className="text-xs font-black uppercase text-slate-900">
+                                <span className="text-xs font-black uppercase text-slate-900 dark:text-slate-100">
                                   {c.color}
                                 </span>
 
@@ -1382,7 +1382,7 @@ export default function StockDetailReport() {
                                 <span className="text-slate-400 font-bold uppercase text-[10px]">Varyant Stoğu:</span>
                                 <span className={cn(
                                   "font-black",
-                                  c.colorTotalStock <= 0 ? "text-rose-600" : "text-slate-900"
+                                  c.colorTotalStock <= 0 ? "text-rose-600" : "text-slate-900 dark:text-slate-100"
                                 )}>
                                   {c.colorTotalStock} {p.unit || 'Çift'}
                                 </span>
@@ -1399,14 +1399,14 @@ export default function StockDetailReport() {
                               <div className="p-2 overflow-x-auto">
                                 <table className="w-full text-center border-collapse min-w-[450px]">
                                   <thead>
-                                    <tr className="bg-slate-100/90 text-slate-600 text-[10px] font-black uppercase tracking-wider border border-slate-200">
-                                      <th className="py-1.5 px-2 text-left w-28 border-r border-slate-200 bg-slate-200/70">
+                                    <tr className="bg-slate-100 dark:bg-slate-800/90 text-slate-600 text-[10px] font-black uppercase tracking-wider border border-slate-200 dark:border-slate-700">
+                                      <th className="py-1.5 px-2 text-left w-28 border-r border-slate-200 dark:border-slate-700 bg-slate-200/70">
                                         Beden / Numara
                                       </th>
                                       {c.sizeList.map((s, sIdx) => (
                                         <th 
                                           key={`${s.size}-${sIdx}`}
-                                          className="py-1.5 px-2 border-r border-slate-200 last:border-r-0 font-mono text-xs font-black text-slate-900"
+                                          className="py-1.5 px-2 border-r border-slate-200 dark:border-slate-700 last:border-r-0 font-mono text-xs font-black text-slate-900 dark:text-slate-100"
                                         >
                                           {s.size}
                                         </th>
@@ -1419,14 +1419,14 @@ export default function StockDetailReport() {
                                   <tbody>
                                     {/* Koli Şablon Dağılımı */}
                                     {c.sizeList.some(s => (s.templateRatio || 0) > 0) && (
-                                      <tr className="border-b border-slate-100 text-xs text-slate-500 bg-slate-50/40">
-                                        <td className="py-1.5 px-2 text-left font-bold text-[9px] uppercase tracking-wider text-slate-400 border-r border-slate-200 bg-slate-50">
+                                      <tr className="border-b border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50/40">
+                                        <td className="py-1.5 px-2 text-left font-bold text-[9px] uppercase tracking-wider text-slate-400 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                                           Koli Şablonu
                                         </td>
                                         {c.sizeList.map((s, sIdx) => (
                                           <td 
                                             key={`ratio-${s.size}-${sIdx}`}
-                                            className="py-1.5 px-2 border-r border-slate-100 last:border-r-0 font-mono font-bold text-slate-400 text-xs"
+                                            className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 last:border-r-0 font-mono font-bold text-slate-400 text-xs"
                                           >
                                             {s.templateRatio || '-'}
                                           </td>
@@ -1438,8 +1438,8 @@ export default function StockDetailReport() {
                                     )}
 
                                     {/* Mevcut Stok */}
-                                    <tr className="border-b border-slate-200 bg-white">
-                                      <td className="py-2 px-2 text-left font-black text-xs uppercase tracking-wider text-slate-900 border-r border-slate-200 bg-slate-50/80">
+                                    <tr className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                                      <td className="py-2 px-2 text-left font-black text-xs uppercase tracking-wider text-slate-900 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50/80">
                                         Mevcut Stok
                                       </td>
                                       {c.sizeList.map((s, sIdx) => {
@@ -1448,7 +1448,7 @@ export default function StockDetailReport() {
                                           <td 
                                             key={`stock-${s.size}-${sIdx}`}
                                             className={cn(
-                                              "py-2 px-2 border-r border-slate-200 last:border-r-0 font-mono text-xs font-black transition-colors",
+                                              "py-2 px-2 border-r border-slate-200 dark:border-slate-700 last:border-r-0 font-mono text-xs font-black transition-colors",
                                               isZero 
                                                 ? "bg-rose-50/80 text-rose-600" 
                                                 : "bg-emerald-50/40 text-emerald-800"
@@ -1468,14 +1468,14 @@ export default function StockDetailReport() {
                                     </tr>
 
                                     {/* Beden Tekil Barkodu */}
-                                    <tr className="text-[9px] text-slate-400 bg-slate-50/30">
-                                      <td className="py-1 px-2 text-left font-bold text-[8px] uppercase tracking-wider text-slate-400 border-r border-slate-200">
+                                    <tr className="text-[9px] text-slate-400 bg-slate-50 dark:bg-slate-800/50/30">
+                                      <td className="py-1 px-2 text-left font-bold text-[8px] uppercase tracking-wider text-slate-400 border-r border-slate-200 dark:border-slate-700">
                                         Beden Barkod
                                       </td>
                                       {c.sizeList.map((s, sIdx) => (
                                         <td 
                                           key={`bc-${s.size}-${sIdx}`}
-                                          className="py-1 px-1.5 border-r border-slate-100 last:border-r-0 font-mono text-[9px]"
+                                          className="py-1 px-1.5 border-r border-slate-100 dark:border-slate-800 last:border-r-0 font-mono text-[9px]"
                                         >
                                           {s.barcode ? (
                                             <span 
@@ -1500,22 +1500,22 @@ export default function StockDetailReport() {
                               </div>
                             ) : (
                               /* Standart / Boyutsuz Stok Bilgi Çubuğu */
-                              <div className="p-2.5 text-xs text-slate-600 flex flex-wrap items-center justify-between gap-3 bg-white">
+                              <div className="p-2.5 text-xs text-slate-600 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900">
                                 <div className="flex items-center gap-3">
-                                  <span>Birim: <b className="text-slate-900">{p.unit}</b></span>
+                                  <span>Birim: <b className="text-slate-900 dark:text-slate-100">{p.unit}</b></span>
                                   <span>•</span>
                                   <span>Mevcut Miktar: <b className="text-emerald-700 font-mono font-black">{c.colorTotalStock} {p.unit}</b></span>
                                   {p.minStock > 0 && (
                                     <>
                                       <span>•</span>
-                                      <span>Kritik Eşik: <b className="text-slate-900">{p.minStock} {p.unit}</b></span>
+                                      <span>Kritik Eşik: <b className="text-slate-900 dark:text-slate-100">{p.minStock} {p.unit}</b></span>
                                     </>
                                   )}
                                 </div>
                                 {c.boxBarcode && (
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-slate-400 text-[10px] uppercase font-bold">Stok Barkodu:</span>
-                                    <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                    <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                                       {c.boxBarcode}
                                     </span>
                                   </div>

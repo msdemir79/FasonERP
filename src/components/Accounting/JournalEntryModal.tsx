@@ -122,7 +122,7 @@ export default function JournalEntryModal({ isOpen, onClose, accounts, contacts,
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-6 space-y-5 my-8 max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-4xl w-full p-6 space-y-5 my-8 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between border-b pb-3 flex-shrink-0">
           <div>
@@ -142,7 +142,7 @@ export default function JournalEntryModal({ isOpen, onClose, accounts, contacts,
               <select
                 value={entryType}
                 onChange={(e) => setEntryType(e.target.value as JournalEntryType)}
-                className="w-full text-xs border border-gray-300 rounded p-2 bg-white font-medium"
+                className="w-full text-xs border border-gray-300 rounded p-2 bg-white dark:bg-slate-900 font-medium"
               >
                 <option value="mahsup">Mahsup Fişi (Genel)</option>
                 <option value="tahsil">Tahsil Fişi (Kasaya Giriş)</option>
@@ -159,7 +159,7 @@ export default function JournalEntryModal({ isOpen, onClose, accounts, contacts,
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full text-xs border border-gray-300 rounded p-2 bg-white"
+                className="w-full text-xs border border-gray-300 rounded p-2 bg-white dark:bg-slate-900"
               />
             </div>
 
@@ -170,7 +170,7 @@ export default function JournalEntryModal({ isOpen, onClose, accounts, contacts,
                 placeholder="Örn: FAT-2026-001"
                 value={documentNumber}
                 onChange={(e) => setDocumentNumber(e.target.value)}
-                className="w-full text-xs border border-gray-300 rounded p-2 bg-white"
+                className="w-full text-xs border border-gray-300 rounded p-2 bg-white dark:bg-slate-900"
               />
             </div>
 
@@ -182,7 +182,7 @@ export default function JournalEntryModal({ isOpen, onClose, accounts, contacts,
                 placeholder="Örn: Aylık kira tahakkuk fişi"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full text-xs border border-gray-300 rounded p-2 bg-white"
+                className="w-full text-xs border border-gray-300 rounded p-2 bg-white dark:bg-slate-900"
               />
             </div>
           </div>
@@ -201,17 +201,17 @@ export default function JournalEntryModal({ isOpen, onClose, accounts, contacts,
                   <th className="py-2.5 px-2 text-center w-10"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 bg-white">
+              <tbody className="divide-y divide-gray-100 bg-white dark:bg-slate-900">
                 {lines.map((line, idx) => (
-                  <tr key={line.id} className="hover:bg-gray-50">
+                  <tr key={line.id || `line-${idx}`} className="hover:bg-gray-50">
                     <td className="p-2">
                       <select
                         value={line.accountCode}
                         onChange={(e) => handleAccountChange(idx, e.target.value)}
-                        className="w-full text-xs font-mono font-bold border border-gray-300 rounded p-1.5 bg-white"
+                        className="w-full text-xs font-mono font-bold border border-gray-300 rounded p-1.5 bg-white dark:bg-slate-900"
                       >
                         {accounts.map((acc) => (
-                          <option key={acc.id} value={acc.code}>
+                          <option key={`je-acc-${acc.code}`} value={acc.code}>
                             {acc.code} - {acc.name}
                           </option>
                         ))}
@@ -238,11 +238,11 @@ export default function JournalEntryModal({ isOpen, onClose, accounts, contacts,
                       <select
                         value={line.contactId || ''}
                         onChange={(e) => handleLineChange(idx, 'contactId', e.target.value ? Number(e.target.value) : undefined)}
-                        className="w-full text-xs border border-gray-300 rounded p-1.5 bg-white truncate"
+                        className="w-full text-xs border border-gray-300 rounded p-1.5 bg-white dark:bg-slate-900 truncate"
                       >
                         <option value="">Cari Yok</option>
                         {contacts.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
+                          <option key={`je-contact-${c.id}`} value={c.id}>{c.name}</option>
                         ))}
                       </select>
                     </td>

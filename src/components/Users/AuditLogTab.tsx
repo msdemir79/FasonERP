@@ -26,12 +26,12 @@ const ACTION_LABELS: Record<AuditActionType, { label: string; bg: string; text: 
   update: { label: 'Güncelleme', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
   delete: { label: 'Silme / İptal', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
   login: { label: 'Oturum Açma', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-  logout: { label: 'Çıkış Yapma', bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' },
+  logout: { label: 'Çıkış Yapma', bg: 'bg-slate-50 dark:bg-slate-800/50', text: 'text-slate-700 dark:text-slate-200', border: 'border-slate-200 dark:border-slate-700' },
   export: { label: 'Dışa Aktarma', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
   approve: { label: 'Özel Onay', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
   status_change: { label: 'Durum Değişimi', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
   permission_change: { label: 'Yetki Güncellemesi', bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200' },
-  system: { label: 'Sistem Olayı', bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-300' }
+  system: { label: 'Sistem Olayı', bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-800 dark:text-slate-200', border: 'border-slate-300' }
 };
 
 export default function AuditLogTab() {
@@ -90,7 +90,7 @@ export default function AuditLogTab() {
   return (
     <div className="space-y-4">
       {/* Filters Toolbar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
@@ -99,7 +99,7 @@ export default function AuditLogTab() {
               placeholder="İşlem açıklaması, kullanıcı veya detay ara..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           </div>
@@ -109,7 +109,7 @@ export default function AuditLogTab() {
             <select
               value={selectedModule}
               onChange={(e) => setSelectedModule(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
             >
               <option value="all">Tüm Modüller</option>
               <option value="auth">Oturum / Giriş</option>
@@ -126,7 +126,7 @@ export default function AuditLogTab() {
             <select
               value={selectedAction}
               onChange={(e) => setSelectedAction(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
             >
               <option value="all">Tüm Eylemler</option>
               {Object.entries(ACTION_LABELS).map(([actKey, actObj]) => (
@@ -141,7 +141,7 @@ export default function AuditLogTab() {
           <button
             type="button"
             onClick={handleExport}
-            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+            className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-100 dark:bg-slate-800 transition-colors inline-flex items-center gap-1.5 shadow-2xs"
           >
             <Download className="w-3.5 h-3.5" />
             Excel'e Aktar
@@ -160,11 +160,11 @@ export default function AuditLogTab() {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 shadow-xs overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
               Kullanıcı İşlem Hareketleri ({logs.length} Kayıt)
             </h3>
           </div>
@@ -176,7 +176,7 @@ export default function AuditLogTab() {
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold">
                 <th className="py-2.5 px-4 min-w-[140px]">Tarih & Saat</th>
                 <th className="py-2.5 px-4 min-w-[150px]">Kullanıcı & Rol</th>
                 <th className="py-2.5 px-3 min-w-[100px]">Modül</th>
@@ -198,15 +198,15 @@ export default function AuditLogTab() {
                 logs.map((log) => {
                   const actionStyle = ACTION_LABELS[log.action] || {
                     label: log.action,
-                    bg: 'bg-slate-50',
-                    text: 'text-slate-700',
-                    border: 'border-slate-200'
+                    bg: 'bg-slate-50 dark:bg-slate-800/50',
+                    text: 'text-slate-700 dark:text-slate-200',
+                    border: 'border-slate-200 dark:border-slate-700'
                   };
 
                   return (
                     <tr 
                       key={log.id} 
-                      className="hover:bg-slate-50/70 transition-colors cursor-pointer"
+                      className="hover:bg-slate-50 dark:bg-slate-800/50/70 transition-colors cursor-pointer"
                       onClick={() => setSelectedLogDetail(log)}
                     >
                       <td className="py-2.5 px-4 font-mono text-[11px] text-slate-600">
@@ -221,16 +221,16 @@ export default function AuditLogTab() {
                       </td>
 
                       <td className="py-2.5 px-4">
-                        <div className="font-semibold text-slate-900 leading-tight">
+                        <div className="font-semibold text-slate-900 dark:text-slate-100 leading-tight">
                           {log.userName}
                         </div>
-                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
                           {log.userRole}
                         </div>
                       </td>
 
                       <td className="py-2.5 px-3">
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-mono text-[10px] uppercase font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-mono text-[10px] uppercase font-bold">
                           {log.module}
                         </span>
                       </td>
@@ -242,11 +242,11 @@ export default function AuditLogTab() {
                       </td>
 
                       <td className="py-2.5 px-4">
-                        <div className="font-medium text-slate-800 line-clamp-1">
+                        <div className="font-medium text-slate-800 dark:text-slate-200 line-clamp-1">
                           {log.description}
                         </div>
                         {log.details && (
-                          <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
                             {log.details}
                           </div>
                         )}
@@ -267,7 +267,7 @@ export default function AuditLogTab() {
       {/* Log Detail Modal */}
       {selectedLogDetail && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <FileText className="w-5 h-5 text-indigo-400" />
@@ -282,10 +282,10 @@ export default function AuditLogTab() {
             </div>
 
             <div className="p-5 space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block">Tarih & Saat</span>
-                  <span className="font-mono font-semibold text-slate-800">
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
                     {new Date(selectedLogDetail.timestamp).toLocaleString('tr-TR')}
                   </span>
                 </div>
@@ -297,13 +297,13 @@ export default function AuditLogTab() {
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block">İşlemi Yapan</span>
-                  <span className="font-semibold text-slate-800">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
                     {selectedLogDetail.userName}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block">Rolü</span>
-                  <span className="font-mono text-slate-700">
+                  <span className="font-mono text-slate-700 dark:text-slate-200">
                     {selectedLogDetail.userRole}
                   </span>
                 </div>
@@ -311,7 +311,7 @@ export default function AuditLogTab() {
 
               <div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Açıklama</span>
-                <p className="p-3 bg-white rounded-xl border border-slate-200 font-medium text-slate-900">
+                <p className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-slate-100">
                   {selectedLogDetail.description}
                 </p>
               </div>
@@ -319,19 +319,19 @@ export default function AuditLogTab() {
               {selectedLogDetail.details && (
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Ek Detaylar & Parametreler</span>
-                  <p className="p-3 bg-slate-50 rounded-xl border border-slate-200 font-mono text-slate-700 text-[11px] whitespace-pre-wrap">
+                  <p className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-200 text-[11px] whitespace-pre-wrap">
                     {selectedLogDetail.details}
                   </p>
                 </div>
               )}
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-                <span>Modül: <strong className="text-slate-800 uppercase">{selectedLogDetail.module}</strong></span>
-                <span>İstemci: <strong className="text-slate-800 font-mono">{selectedLogDetail.ipAddress || '192.168.1.100'}</strong></span>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
+                <span>Modül: <strong className="text-slate-800 dark:text-slate-200 uppercase">{selectedLogDetail.module}</strong></span>
+                <span>İstemci: <strong className="text-slate-800 dark:text-slate-200 font-mono">{selectedLogDetail.ipAddress || '192.168.1.100'}</strong></span>
               </div>
             </div>
 
-            <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 text-right">
+            <div className="px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 text-right">
               <button
                 onClick={() => setSelectedLogDetail(null)}
                 className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-xs"

@@ -341,7 +341,7 @@ export default function ProductSelectorModal({
     >
       <div className="space-y-4 -mt-2">
         {/* Top Filter Tabs & Quick Search */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-100/80 p-2.5 rounded-2xl border border-slate-200">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-100 dark:bg-slate-800/80 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700">
           {/* Category Tabs */}
           <div className="flex flex-wrap items-center gap-1">
             {[
@@ -358,8 +358,8 @@ export default function ProductSelectorModal({
                 className={cn(
                   "px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer",
                   activeCategory === tab.id
-                    ? "bg-white text-indigo-700 shadow-xs border border-slate-200"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                    ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-xs border border-slate-200 dark:border-slate-700"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-100 hover:bg-white dark:bg-slate-900/50"
                 )}
               >
                 {tab.label}
@@ -376,7 +376,7 @@ export default function ProductSelectorModal({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Model, kod, kalıp, renk ara..."
-                className="w-full pl-9 pr-7 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                className="w-full pl-9 pr-7 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
               />
               {searchTerm && (
                 <button
@@ -396,7 +396,7 @@ export default function ProductSelectorModal({
                 "px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1",
                 onlyInStock
                   ? "bg-emerald-600 border-emerald-600 text-white"
-                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:bg-slate-800/50"
               )}
               title="Sadece mevcut stoğu 0'dan büyük olan ürünleri filtrele"
             >
@@ -409,8 +409,8 @@ export default function ProductSelectorModal({
         {/* Main 2-Column Split Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-[480px]">
           {/* Left Column: Product List Browser (5 cols) */}
-          <div className="lg:col-span-5 flex flex-col space-y-2 border border-slate-200 rounded-2xl bg-white p-2.5 shadow-2xs">
-            <div className="flex items-center justify-between px-2 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+          <div className="lg:col-span-5 flex flex-col space-y-2 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-900 p-2.5 shadow-2xs">
+            <div className="flex items-center justify-between px-2 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
               <span>Ürün Listesi ({filteredProducts.length})</span>
               <span>{orderType === 'sales' ? 'Satış Fiyatı' : 'Alış Fiyatı'}</span>
             </div>
@@ -435,8 +435,8 @@ export default function ProductSelectorModal({
                       className={cn(
                         "w-full text-left p-3 rounded-xl border transition-all flex items-start justify-between gap-2.5 cursor-pointer relative",
                         isSelected
-                          ? "bg-indigo-50/80 border-indigo-600 text-slate-900 shadow-sm ring-1 ring-indigo-500"
-                          : "bg-white border-slate-200/80 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                          ? "bg-indigo-50/80 border-indigo-600 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-indigo-500"
+                          : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:bg-slate-800/50 hover:border-slate-300"
                       )}
                     >
                       {/* Left: Thumbnail & Info */}
@@ -445,13 +445,13 @@ export default function ProductSelectorModal({
                           <img
                             src={p.image}
                             alt={p.name}
-                            className="w-11 h-11 object-cover rounded-lg border border-slate-200 shrink-0 mt-0.5 bg-slate-50"
+                            className="w-11 h-11 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5 bg-slate-50 dark:bg-slate-800/50"
                             referrerPolicy="no-referrer"
                           />
                         ) : (
                           <div className={cn(
                             "w-11 h-11 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 font-mono text-xs font-bold",
-                            isSelected ? "bg-indigo-100 border-indigo-300 text-indigo-700" : "bg-slate-100 border-slate-200 text-slate-500"
+                            isSelected ? "bg-indigo-100 border-indigo-300 text-indigo-700" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
                           )}>
                             <Package className="w-5 h-5" />
                           </div>
@@ -463,13 +463,13 @@ export default function ProductSelectorModal({
                               {p.code}
                             </span>
                             {p.moldCode && (
-                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1 py-0.5 rounded">
+                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
                                 Kalıp: {p.moldCode}
                               </span>
                             )}
                           </div>
                           
-                          <div className="font-bold text-xs text-slate-900 truncate mt-1">
+                          <div className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate mt-1">
                             {p.name}
                           </div>
 
@@ -502,7 +502,7 @@ export default function ProductSelectorModal({
 
                       {/* Right: Stock & Price */}
                       <div className="text-right shrink-0 space-y-1">
-                        <div className="font-mono font-black text-xs text-slate-900">
+                        <div className="font-mono font-black text-xs text-slate-900 dark:text-slate-100">
                           {(price || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
                         </div>
 
@@ -521,20 +521,20 @@ export default function ProductSelectorModal({
           </div>
 
           {/* Right Column: Variant & Quantity Customizer (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col justify-between space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div className="lg:col-span-7 flex flex-col justify-between space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
             {selectedProduct ? (
               <div className="space-y-4 overflow-y-auto max-h-[500px] pr-1">
                 {/* 1. Selected Product Header Summary */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-start gap-3">
+                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs flex items-start gap-3">
                   {currentColorImage ? (
                     <img
                       src={currentColorImage}
                       alt={selectedProduct.name}
-                      className="w-16 h-16 object-cover rounded-xl border border-slate-200 bg-slate-50 shrink-0"
+                      className="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 shrink-0"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center shrink-0 text-slate-400 font-mono font-black">
+                    <div className="w-16 h-16 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400 font-mono font-black">
                       <Package className="w-7 h-7" />
                     </div>
                   )}
@@ -549,17 +549,17 @@ export default function ProductSelectorModal({
                       </span>
                     </div>
 
-                    <h4 className="text-sm font-black text-slate-900 mt-1 uppercase truncate">
+                    <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 uppercase truncate">
                       {selectedProduct.name}
                     </h4>
 
-                    <div className="flex items-center gap-2 mt-1 text-[11px] font-semibold text-slate-500">
+                    <div className="flex items-center gap-2 mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                       {selectedProduct.moldGroup && (
-                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                        <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600">
                           {selectedProduct.moldGroup}
                         </span>
                       )}
-                      <span>Stok: <b className="text-slate-800">{selectedProduct.stock || 0} {selectedProduct.unit || 'Çift'}</b></span>
+                      <span>Stok: <b className="text-slate-800 dark:text-slate-200">{selectedProduct.stock || 0} {selectedProduct.unit || 'Çift'}</b></span>
                     </div>
                   </div>
                 </div>
@@ -567,7 +567,7 @@ export default function ProductSelectorModal({
                 {/* 2. Color Selection (Varyant Renkleri) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <label className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                       <Palette className="w-4 h-4 text-indigo-600" />
                       Renk Seçimi {effectiveColor ? <span className="text-indigo-600 font-mono font-bold">({effectiveColor})</span> : ''}
                     </label>
@@ -605,7 +605,7 @@ export default function ProductSelectorModal({
                                 "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer",
                                 isSelected
                                   ? "bg-slate-900 border-slate-900 text-white shadow-sm ring-2 ring-indigo-400 ring-offset-1"
-                                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
+                                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 hover:border-slate-300"
                               )}
                             >
                               <span
@@ -616,7 +616,7 @@ export default function ProductSelectorModal({
                               {variantStock !== undefined && (
                                 <span className={cn(
                                   "text-[10px] px-1.5 py-0.2 rounded font-mono",
-                                  isSelected ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-500"
+                                  isSelected ? "bg-slate-800 text-slate-300" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                                 )}>
                                   {variantStock} Çift
                                 </span>
@@ -644,7 +644,7 @@ export default function ProductSelectorModal({
                         value={customColor}
                         onChange={(e) => setCustomColor(e.target.value)}
                         placeholder="Örn: Bordo Nubuk, Siyah Rugan, Taba Deri..."
-                        className="w-full p-2.5 bg-white border border-indigo-300 rounded-xl text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full p-2.5 bg-white dark:bg-slate-900 border border-indigo-300 rounded-xl text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-indigo-500"
                         autoFocus
                       />
                       <p className="text-[10px] text-slate-400">Özel sipariş veya listede olmayan bir renk adı belirtebilirsiniz.</p>
@@ -653,9 +653,9 @@ export default function ProductSelectorModal({
                 </div>
 
                 {/* 3. Quantity Calculation Modes */}
-                <div className="space-y-2 pt-2 border-t border-slate-200">
+                <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <label className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                       <Boxes className="w-4 h-4 text-indigo-600" />
                       Miktar Belirleme ({selectedProduct.unit || 'Çift'})
                     </label>
@@ -668,7 +668,7 @@ export default function ProductSelectorModal({
                           onClick={() => setQuantityMode('direct')}
                           className={cn(
                             "px-2 py-0.5 rounded-md transition-all cursor-pointer",
-                            quantityMode === 'direct' ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                            quantityMode === 'direct' ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
                           )}
                         >
                           Net Miktar
@@ -678,7 +678,7 @@ export default function ProductSelectorModal({
                           onClick={() => setQuantityMode('box')}
                           className={cn(
                             "px-2 py-0.5 rounded-md transition-all cursor-pointer",
-                            quantityMode === 'box' ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                            quantityMode === 'box' ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
                           )}
                         >
                           Koli Hesabı
@@ -688,7 +688,7 @@ export default function ProductSelectorModal({
                           onClick={() => setQuantityMode('matrix')}
                           className={cn(
                             "px-2 py-0.5 rounded-md transition-all cursor-pointer",
-                            quantityMode === 'matrix' ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                            quantityMode === 'matrix' ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
                           )}
                         >
                           Numara Dağılımı
@@ -699,12 +699,12 @@ export default function ProductSelectorModal({
 
                   {/* Mode 1: Direct Quantity Input */}
                   {quantityMode === 'direct' && (
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+                    <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleQuantityChange(quantity - 1)}
-                          className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-lg cursor-pointer"
+                          className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-lg cursor-pointer"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
@@ -715,7 +715,7 @@ export default function ProductSelectorModal({
                             min="1"
                             value={quantity}
                             onChange={(e) => handleQuantityChange(Number(e.target.value))}
-                            className="w-full p-2 text-center text-xl font-black font-mono text-slate-900 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full p-2 text-center text-xl font-black font-mono text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 uppercase">
                             {selectedProduct.unit || 'Çift'}
@@ -725,21 +725,21 @@ export default function ProductSelectorModal({
                         <button
                           type="button"
                           onClick={() => handleQuantityChange(quantity + 1)}
-                          className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-lg cursor-pointer"
+                          className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-lg cursor-pointer"
                         >
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
 
                       {/* Quick Add Chips */}
-                      <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-100">
+                      <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-100 dark:border-slate-800">
                         <span className="text-[10px] font-bold text-slate-400">Hızlı Ekle:</span>
                         {[5, 10, 20, 50, 100, 500].map(inc => (
                           <button
                             key={inc}
                             type="button"
                             onClick={() => handleQuantityChange(quantity + inc)}
-                            className="px-2 py-0.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 transition-colors cursor-pointer"
+                            className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold text-slate-600 transition-colors cursor-pointer"
                           >
                             +{inc}
                           </button>
@@ -750,15 +750,15 @@ export default function ProductSelectorModal({
 
                   {/* Mode 2: Box / Assortment Template Input */}
                   {quantityMode === 'box' && (
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-3">
+                    <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                       <div className="flex items-center gap-3">
                         <div className="w-1/2 space-y-1">
-                          <label className="text-[10px] font-black text-slate-500 uppercase">Koli / Kutu Adedi</label>
+                          <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase">Koli / Kutu Adedi</label>
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
                               onClick={() => handleBoxCountChange(boxCount - 1)}
-                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs"
+                              className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-xs"
                             >
                               -
                             </button>
@@ -767,12 +767,12 @@ export default function ProductSelectorModal({
                               min="1"
                               value={boxCount}
                               onChange={(e) => handleBoxCountChange(Number(e.target.value))}
-                              className="w-full p-1.5 text-center font-mono font-black text-sm bg-slate-50 border border-slate-200 rounded-lg"
+                              className="w-full p-1.5 text-center font-mono font-black text-sm bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg"
                             />
                             <button
                               type="button"
                               onClick={() => handleBoxCountChange(boxCount + 1)}
-                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs"
+                              className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-xs"
                             >
                               +
                             </button>
@@ -780,7 +780,7 @@ export default function ProductSelectorModal({
                         </div>
 
                         <div className="w-1/2 space-y-1 text-right">
-                          <label className="text-[10px] font-black text-slate-500 uppercase">Toplam Çift Miktarı</label>
+                          <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase">Toplam Çift Miktarı</label>
                           <div className="p-1.5 bg-indigo-50 border border-indigo-100 rounded-lg text-indigo-700 font-mono font-black text-sm text-center">
                             {quantity} Çift
                           </div>
@@ -789,8 +789,8 @@ export default function ProductSelectorModal({
 
                       {/* Template Size Breakdown */}
                       {pairsPerBox > 0 && (
-                        <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1.5">
-                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400">
                             <span>1 Koli Asorti Dağılımı ({pairsPerBox} Çift/Koli):</span>
                             <span className="font-mono text-indigo-600">{currentTemplate?.name || 'Özel Asorti'}</span>
                           </div>
@@ -799,9 +799,9 @@ export default function ProductSelectorModal({
                             {(currentTemplate?.items || selectedProduct.assortment || []).map(it => (
                               <div
                                 key={it.size}
-                                className="flex flex-col items-center bg-white border border-slate-200 px-2 py-1 rounded-lg text-[10px]"
+                                className="flex flex-col items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg text-[10px]"
                               >
-                                <span className="font-black text-slate-700 font-mono">{it.size}</span>
+                                <span className="font-black text-slate-700 dark:text-slate-200 font-mono">{it.size}</span>
                                 <span className="text-indigo-600 font-bold font-mono">
                                   {it.quantity * boxCount} Çift
                                 </span>
@@ -815,7 +815,7 @@ export default function ProductSelectorModal({
 
                   {/* Mode 3: Matrix Size Breakdown Input */}
                   {quantityMode === 'matrix' && (
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+                    <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
                       <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
                         <span>Numara Bazında Adet Girişi:</span>
                         <span className="font-mono font-black text-indigo-600">Toplam: {quantity} Çift</span>
@@ -824,13 +824,13 @@ export default function ProductSelectorModal({
                       <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                         {['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45'].map(sz => (
                           <div key={sz} className="space-y-1 text-center">
-                            <label className="text-[10px] font-black text-slate-500 font-mono block">{sz}</label>
+                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 font-mono block">{sz}</label>
                             <input
                               type="number"
                               min="0"
                               value={matrixValues[sz] || 0}
                               onChange={(e) => handleMatrixSizeChange(sz, Number(e.target.value))}
-                              className="w-full p-1 text-center font-mono font-bold text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-indigo-500"
+                              className="w-full p-1 text-center font-mono font-bold text-xs bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-indigo-500"
                             />
                           </div>
                         ))}
@@ -840,37 +840,37 @@ export default function ProductSelectorModal({
                 </div>
 
                 {/* 4. Pricing, Discount & Tax Inputs */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 grid grid-cols-3 gap-3">
+                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase">Birim Fiyat (TL)</label>
+                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase">Birim Fiyat (TL)</label>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
                       value={unitPrice}
                       onChange={(e) => setUnitPrice(Number(e.target.value))}
-                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-xs text-slate-900 outline-none"
+                      className="w-full p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-xs text-slate-900 dark:text-slate-100 outline-none"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase">İskonto (%)</label>
+                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase">İskonto (%)</label>
                     <input
                       type="number"
                       min="0"
                       max="100"
                       value={discountRate}
                       onChange={(e) => setDiscountRate(Number(e.target.value))}
-                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-xs text-slate-900 outline-none"
+                      className="w-full p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-xs text-slate-900 dark:text-slate-100 outline-none"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase">KDV Oranı (%)</label>
+                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase">KDV Oranı (%)</label>
                     <select
                       value={taxRate}
                       onChange={(e) => setTaxRate(Number(e.target.value))}
-                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-900 outline-none"
+                      className="w-full p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-xs text-slate-900 dark:text-slate-100 outline-none"
                     >
                       <option value={20}>%20</option>
                       <option value={10}>%10</option>
@@ -887,7 +887,7 @@ export default function ProductSelectorModal({
                     value={itemNotes}
                     onChange={(e) => setItemNotes(e.target.value)}
                     placeholder="Kalem özel notu (opsiyonel)..."
-                    className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-medium outline-none"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium outline-none"
                   />
                 </div>
               </div>
@@ -902,7 +902,7 @@ export default function ProductSelectorModal({
 
             {/* Bottom Actions & Live Calculation Summary */}
             {selectedProduct && (
-              <div className="pt-3 border-t border-slate-200 space-y-3">
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-700 space-y-3">
                 {/* Live Cost Summary Banner */}
                 <div className="bg-indigo-900 text-white p-3 rounded-xl flex items-center justify-between shadow-sm">
                   <div>
@@ -927,7 +927,7 @@ export default function ProductSelectorModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs uppercase cursor-pointer"
+                    className="px-4 py-2.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-xs uppercase cursor-pointer"
                   >
                     Kapat
                   </button>

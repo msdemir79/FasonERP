@@ -130,8 +130,8 @@ export default function StockMovementReport() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Stok Hareket Raporu</h2>
-          <p className="text-slate-500 text-sm">Giriş, çıkış ve üretim kaynaklı tüm stok hareketlerini takip edin.</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Stok Hareket Raporu</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Giriş, çıkış ve üretim kaynaklı tüm stok hareketlerini takip edin.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {logs && logs.length > 0 && (
@@ -147,7 +147,7 @@ export default function StockMovementReport() {
 
           <button 
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-xs cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 dark:bg-slate-800/50 transition-colors shadow-xs cursor-pointer"
           >
             <Printer className="w-4 h-4" /> Yazdır
           </button>
@@ -159,14 +159,14 @@ export default function StockMovementReport() {
             <FileDown className="w-4 h-4" /> Excel'e Aktar
           </button>
 
-          <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 self-start sm:self-center">
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 self-start sm:self-center">
             {(['all', 'in', 'out', 'production_in', 'production_out'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setFilterType(t)}
                 className={cn(
                   "px-3 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest transition-all",
-                  filterType === t ? "bg-white shadow text-indigo-600" : "text-slate-500 hover:text-slate-700"
+                  filterType === t ? "bg-white dark:bg-slate-900 shadow text-indigo-600" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200"
                 )}
               >
                 {t === 'all' ? 'Tümü' : t === 'in' ? 'Giriş' : t === 'out' ? 'Çıkış' : t === 'production_in' ? 'Üretim Giriş' : 'Üretim Çıkış'}
@@ -176,14 +176,14 @@ export default function StockMovementReport() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-white">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input 
               type="text" 
               placeholder="ÜRÜN VEYA AÇIKLAMA ARA..." 
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 text-[10px] font-bold uppercase tracking-widest transition-all"
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 text-[10px] font-bold uppercase tracking-widest transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -193,7 +193,7 @@ export default function StockMovementReport() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-[10px] text-slate-400 uppercase font-bold tracking-widest">
+              <tr className="bg-slate-50 dark:bg-slate-800/50 text-[10px] text-slate-400 uppercase font-bold tracking-widest">
                 <th className="px-6 py-3">Tarih</th>
                 <th className="px-6 py-3">Ürün</th>
                 <th className="px-6 py-3">Tür</th>
@@ -215,19 +215,19 @@ export default function StockMovementReport() {
                 return (
                   <tr 
                     key={log.id}
-                    className="hover:bg-slate-50 transition-colors"
+                    className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5 text-slate-300" />
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                           {format(log.date, 'dd MMM yyyy HH:mm', { locale: tr })}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                         <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
+                         <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700">
                            {product?.image ? (
                              <img src={product.image} className="w-full h-full object-cover" />
                            ) : (
@@ -235,7 +235,7 @@ export default function StockMovementReport() {
                            )}
                          </div>
                          <div>
-                           <div className="font-bold text-slate-800 text-[11px] uppercase tracking-tight">{product?.name || 'Bilinmeyen'}</div>
+                           <div className="font-bold text-slate-800 dark:text-slate-200 text-[11px] uppercase tracking-tight">{product?.name || 'Bilinmeyen'}</div>
                            <div className="text-[9px] text-slate-400 font-bold uppercase">{product?.code}</div>
                          </div>
                       </div>
@@ -249,7 +249,7 @@ export default function StockMovementReport() {
                          {log.type === 'in' ? 'Giriş' : log.type === 'out' ? 'Çıkış' : log.type === 'production_in' ? 'ÜRETİM GİRİŞ' : 'ÜRETİM ÇIKIŞ'}
                        </div>
                     </td>
-                    <td className="px-6 py-4 text-[10px] font-medium text-slate-500 italic max-w-xs truncate">
+                    <td className="px-6 py-4 text-[10px] font-medium text-slate-500 dark:text-slate-400 italic max-w-xs truncate">
                       {log.description}
                     </td>
                     <td className="px-6 py-4 text-right font-bold font-mono">
@@ -269,7 +269,7 @@ export default function StockMovementReport() {
       {/* Clear Stock Movements Confirmation Modal */}
       {isClearModalOpen && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
             <div className="p-6 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-rose-600 text-white rounded-2xl flex items-center justify-center shadow-md shadow-rose-200">
@@ -287,7 +287,7 @@ export default function StockMovementReport() {
               <button
                 onClick={() => setIsClearModalOpen(false)}
                 disabled={isClearing}
-                className="w-8 h-8 bg-white border border-rose-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                className="w-8 h-8 bg-white dark:bg-slate-900 border border-rose-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -308,12 +308,12 @@ export default function StockMovementReport() {
               </p>
             </div>
 
-            <div className="p-5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+            <div className="p-5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setIsClearModalOpen(false)}
                 disabled={isClearing}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+                className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
               >
                 Vazgeç
               </button>

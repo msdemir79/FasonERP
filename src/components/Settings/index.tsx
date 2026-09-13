@@ -135,7 +135,7 @@ export default function SettingsHub() {
       <div className="flex items-center justify-center min-h-[500px]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Sistem Ayarları Yükleniyor...</span>
+          <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sistem Ayarları Yükleniyor...</span>
         </div>
       </div>
     );
@@ -151,7 +151,7 @@ export default function SettingsHub() {
         icon={SettingsIcon}
         iconColor="indigo"
         actions={
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Veritabanı Aktif</span>
           </div>
@@ -159,7 +159,7 @@ export default function SettingsHub() {
       />
 
       {/* MODULE TABS NAVIGATION */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -169,8 +169,8 @@ export default function SettingsHub() {
               onClick={() => handleTabChange(tab.id)}
               className={`p-3 rounded-xl text-left transition-all flex flex-col justify-between gap-2 cursor-pointer ${
                 isActive
-                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200 ring-2 ring-indigo-500/20'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200 dark:border-slate-700 ring-2 ring-indigo-500/20'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-100 hover:bg-white dark:bg-slate-900/60'
               }`}
             >
               <div className="flex items-center justify-between">

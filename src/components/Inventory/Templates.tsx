@@ -48,15 +48,15 @@ export default function Templates() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Asorti Şablonları</h2>
-        <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">Ayakkabı üretim ve kutulama standartlarınızı belirleyin.</p>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight uppercase">Asorti Şablonları</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest">Ayakkabı üretim ve kutulama standartlarınızı belirleyin.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Creation Form */}
         <div className="lg:col-span-1">
-          <form onSubmit={handleCreateTemplate} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 sticky top-8">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-3">Yeni Şablon Oluştur</h3>
+          <form onSubmit={handleCreateTemplate} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6 sticky top-8">
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-3">Yeni Şablon Oluştur</h3>
             
             <div className="space-y-4">
                <div className="space-y-1">
@@ -65,26 +65,26 @@ export default function Templates() {
                   required 
                   value={newTemplateName} 
                   onChange={e => setNewTemplateName(e.target.value)} 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
                   placeholder="ÖRN: 10'LU ERKEK SPOR"
                 />
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-xl space-y-4">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-4">
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Beden / Miktar Ekle</div>
                 <div className="flex gap-2">
                   <input 
                     ref={sizeInputRef}
                     type="text" 
                     placeholder="Beden" 
-                    className="w-20 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center outline-none focus:border-indigo-400"
+                    className="w-20 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-bold text-center outline-none focus:border-indigo-400"
                     value={newTemplateItem.size}
                     onChange={e => setNewTemplateItem({ ...newTemplateItem, size: e.target.value })}
                   />
                   <input 
                     type="number" 
                     placeholder="Adet" 
-                    className="w-24 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center outline-none focus:border-indigo-400"
+                    className="w-24 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-bold text-center outline-none focus:border-indigo-400"
                     value={newTemplateItem.quantity}
                     onChange={e => setNewTemplateItem({ ...newTemplateItem, quantity: Number(e.target.value) })}
                   />
@@ -99,7 +99,7 @@ export default function Templates() {
 
                 <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
                   {newTemplateItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-100">
+                    <div key={idx} className="flex items-center justify-between bg-white dark:bg-slate-900 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
                       <div className="flex gap-2 items-center">
                         <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">NO: {item.size}</span>
                         <span className="text-xs font-bold text-slate-600">x {item.quantity} Adet</span>
@@ -132,7 +132,7 @@ export default function Templates() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-indigo-200 transition-all group"
+                className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-indigo-200 transition-all group"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -140,7 +140,7 @@ export default function Templates() {
                       <Ruler className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-800 uppercase tracking-tight">{t.name}</h4>
+                      <h4 className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">{t.name}</h4>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                         TOPLAM: {t.items.reduce((acc, curr) => acc + curr.quantity, 0)} ÇİFT / KOLİ
                       </p>
@@ -156,9 +156,9 @@ export default function Templates() {
                 
                 <div className="flex flex-wrap gap-2">
                   {t.items.map((item, i) => (
-                    <div key={i} className="px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg flex flex-col items-center min-w-[50px]">
+                    <div key={i} className="px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-lg flex flex-col items-center min-w-[50px]">
                       <span className="text-[9px] font-bold text-slate-400 uppercase">NO</span>
-                      <span className="text-xs font-black text-slate-700">{item.size}</span>
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-200">{item.size}</span>
                       <div className="w-full h-px bg-slate-200 my-1" />
                       <span className="text-[10px] font-bold text-indigo-600">{item.quantity}</span>
                     </div>
@@ -169,7 +169,7 @@ export default function Templates() {
           </AnimatePresence>
 
           {templates?.length === 0 && (
-            <div className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+            <div className="text-center py-20 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
               <Hash className="w-12 h-12 text-slate-200 mx-auto mb-4" />
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Henüz hiçbir asorti şablonu tanımlanmadı.</p>
             </div>

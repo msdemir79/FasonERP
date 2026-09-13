@@ -64,7 +64,7 @@ export default function HRSettings({ settings, onSave }: HRSettingsProps) {
       )}
 
       {/* SECTION 1: ÇALIŞMA SAATLERİ VE FAZLA MESAİ */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -79,33 +79,33 @@ export default function HRSettings({ settings, onSave }: HRSettingsProps) {
 
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Haftalık Yasal Çalışma (Saat)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Haftalık Yasal Çalışma (Saat)</label>
             <input
               type="number"
               min="1"
               max="60"
               value={weeklyHours}
               onChange={e => setWeeklyHours(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Yasal standart 45 saat</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Günlük Normal Mesai (Saat)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Günlük Normal Mesai (Saat)</label>
             <input
               type="number"
               min="1"
               max="12"
               value={dailyHours}
               onChange={e => setDailyHours(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Genel vardiya 8 saat</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hafta İçi Mesai Çarpanı (x)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Hafta İçi Mesai Çarpanı (x)</label>
             <input
               type="number"
               min="1"
@@ -113,13 +113,13 @@ export default function HRSettings({ settings, onSave }: HRSettingsProps) {
               step="0.1"
               value={overtimeWeekday}
               onChange={e => setOvertimeWeekday(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Standart %50 zamlı (1.5x)</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hafta Sonu & Tatil Çarpanı (x)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Hafta Sonu & Tatil Çarpanı (x)</label>
             <input
               type="number"
               min="1"
@@ -127,7 +127,7 @@ export default function HRSettings({ settings, onSave }: HRSettingsProps) {
               step="0.1"
               value={overtimeWeekend}
               onChange={e => setOvertimeWeekend(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Pazar/Resmi tatil %100 zamlı (2.0x)</span>
           </div>
@@ -135,7 +135,7 @@ export default function HRSettings({ settings, onSave }: HRSettingsProps) {
       </div>
 
       {/* SECTION 2: SGK VE YASAL KESİNTİLER */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -150,55 +150,55 @@ export default function HRSettings({ settings, onSave }: HRSettingsProps) {
 
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">SGK İşçi Primi (%)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">SGK İşçi Primi (%)</label>
             <input
               type="number"
               step="0.1"
               value={sgkEmployee}
               onChange={e => setSgkEmployee(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Yasal oran %14</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">İşsizlik Sigortası İşçi (%)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">İşsizlik Sigortası İşçi (%)</label>
             <input
               type="number"
               step="0.1"
               value={unempEmployee}
               onChange={e => setUnempEmployee(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Yasal oran %1</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">SGK İşveren Primi (%)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">SGK İşveren Primi (%)</label>
             <input
               type="number"
               step="0.1"
               value={sgkEmployer}
               onChange={e => setSgkEmployer(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Hazine teşvikli %15.5 / normal %20.5</span>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">İşsizlik Sigortası İşveren (%)</label>
+            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">İşsizlik Sigortası İşveren (%)</label>
             <input
               type="number"
               step="0.1"
               value={unempEmployer}
               onChange={e => setUnempEmployer(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             <span className="text-[10px] text-slate-400">Yasal oran %2</span>
           </div>
         </div>
 
-        <div className="p-6 bg-white border-t border-slate-200 flex justify-end">
+        <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex justify-end">
           <button
             type="submit"
             disabled={isSaving}

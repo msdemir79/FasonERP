@@ -25,7 +25,9 @@ import {
   Layers,
   Boxes,
   Factory,
-  BarChart3
+  BarChart3,
+  Edit2,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -34,6 +36,8 @@ import ProductSelectorModal from './Orders/ProductSelectorModal';
 import { erpService } from '../services/erpService';
 import PageHeader from './PageHeader';
 import type { Order, OrderItem, OrderStatus, OrderType } from '../types';
+
+type OrderTab = 'all' | 'sales' | 'purchase';
 
 export default function Orders() {
   const navigate = useNavigate();
@@ -44,14 +48,25 @@ export default function Orders() {
   const workOrders = useLiveQuery(() => db.workOrders.toArray());
   const orderItemsAll = useLiveQuery(() => db.orderItems.toArray());
   const invoices = useLiveQuery(() => db.invoices.toArray());
+  const waybills = useLiveQuery(() => db.waybills.toArray());
 
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [activeTab, setActiveTab] = React.useState<OrderType>('sales');
+  const [activeTab, setActiveTab] = React.useState<OrderTab>('all');
+  const [formOrderType, setFormOrderType] = React.useState<OrderType>('sales');
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [editingOrderId, setEditingOrderId] = React.useState<number | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = React.useState(false);
   const [selectedOrder, setSelectedOrder] = React.useState<any>(null);
   const [isTransferringToProduction, setIsTransferringToProduction] = React.useState(false);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  
+  // Custom in-app delete confirmation & warning modals
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; orderNumber: string; grandTotal?: number; contactName?: string } | null>(null);
+  const [isBlockedModalOpen, setIsBlockedModalOpen] = React.useState(false);
+  const [blockedReason, setBlockedReason] = React.useState<string | null>(null);
+  const [feedbackAlert, setFeedbackAlert] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
   // Product Selector Modal State
   const [isProductSelectorOpen, setIsProductSelectorOpen] = React.useState(false);
@@ -107,7 +122,7 @@ export default function Orders() {
   // Global KPIs for current tab
   const tabKPIs = React.useMemo(() => {
     if (!orders) return { totalOrders: 0, totalOrderedQty: 0, totalProducedQty: 0, totalShippedQty: 0, remainingShipQty: 0 };
-    const tabOrders = orders.filter(o => o.type === activeTab);
+    const tabOrders = activeTab === 'all' ? orders : orders.filter(o => o.type === activeTab);
     
     let totalOrderedQty = 0;
     let totalProducedQty = 0;
@@ -137,8 +152,8 @@ export default function Orders() {
       const contact = contacts?.find(c => c.id === o.contactId);
       const matchesSearch = 
         o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact?.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = o.type === activeTab;
+        (contact?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = activeTab === 'all' || o.type === activeTab;
       
       if (!matchesSearch || !matchesType) return false;
       if (statusFilter === 'all') return true;
@@ -253,15 +268,120 @@ export default function Orders() {
     setOrderItems(newItems);
   };
 
+  const handleOpenEditModal = async (orderId: number) => {
+    try {
+      const check = await erpService.canModifyOrDeleteOrder(orderId);
+      if (!check.canModify) {
+        setBlockedReason(check.reason || 'Bu sipariş faturası veya irsaliyesi kesildiği için değiştirilemez.');
+        setIsBlockedModalOpen(true);
+        return;
+      }
+
+      const orderData = await erpService.getOrder(orderId);
+      if (!orderData) {
+        setFeedbackAlert({ type: 'error', message: 'Sipariş kaydı bulunamadı.' });
+        return;
+      }
+
+      setEditingOrderId(orderId);
+      setSelectedContactId(orderData.contactId);
+      setOrderNumber(orderData.orderNumber);
+      setOrderDate(orderData.date ? new Date(orderData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+      setDeliveryDate(orderData.deliveryDate ? new Date(orderData.deliveryDate).toISOString().split('T')[0] : '');
+      setNotes(orderData.notes || '');
+      setFormOrderType(orderData.type);
+
+      // Map existing items
+      const mappedItems = (orderData.items || []).map(item => {
+        const prod = products?.find(p => p.id === item.productId) as any;
+        const lineNet = (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0) * (1 - (Number(item.discountRate) || 0) / 100);
+        const lineTax = lineNet * ((Number(item.taxRate) || 0) / 100);
+        return {
+          productId: item.productId,
+          name: prod?.name || 'Ürün',
+          code: prod?.code || '',
+          unit: prod?.unit || 'Çift',
+          color: item.color,
+          size: item.size,
+          moldCode: prod?.moldCode,
+          isFootwear: prod?.isFootwear,
+          assortmentTemplateId: prod?.assortmentTemplateId,
+          pairsPerBox: prod?.pairsPerBox,
+          boxCount: (prod?.pairsPerBox && prod.pairsPerBox > 0) ? Math.floor(item.quantity / prod.pairsPerBox) : undefined,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate,
+          discountRate: item.discountRate || 0,
+          total: item.total || (lineNet + lineTax),
+          notes: (item as any).notes || ''
+        };
+      });
+
+      setOrderItems(mappedItems);
+      setIsAddModalOpen(true);
+    } catch (error: any) {
+      setFeedbackAlert({ type: 'error', message: 'Sipariş düzenleme moduna alınırken hata: ' + (error?.message || error) });
+    }
+  };
+
+  const handleRequestDelete = async (orderId: number, ordNumber: string, grandTotal?: number, contactName?: string) => {
+    try {
+      const check = await erpService.canModifyOrDeleteOrder(orderId);
+      if (!check.canModify) {
+        setBlockedReason(check.reason || 'Bu sipariş faturası veya irsaliyesi kesildiği için silinemez.');
+        setIsBlockedModalOpen(true);
+        return;
+      }
+
+      setDeleteTarget({
+        id: orderId,
+        orderNumber: ordNumber,
+        grandTotal,
+        contactName
+      });
+      setIsDeleteModalOpen(true);
+    } catch (error: any) {
+      setBlockedReason('Kontrol sırasında hata oluştu: ' + (error?.message || error));
+      setIsBlockedModalOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setIsProcessing(true);
+      await erpService.deleteOrder(deleteTarget.id);
+      if (selectedOrder?.id === deleteTarget.id) {
+        setIsDetailModalOpen(false);
+        setSelectedOrder(null);
+      }
+      setIsDeleteModalOpen(false);
+      const deletedNum = deleteTarget.orderNumber;
+      setDeleteTarget(null);
+      setFeedbackAlert({
+        type: 'success',
+        message: `"${deletedNum}" numaralı sipariş ve bağlı iş emirleri başarıyla silindi.`
+      });
+      setTimeout(() => setFeedbackAlert(null), 4000);
+    } catch (error: any) {
+      setFeedbackAlert({
+        type: 'error',
+        message: 'Sipariş silinirken hata: ' + (error?.message || error)
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedContactId || orderItems.length === 0) {
-      alert('Lütfen bir cari seçin ve en az bir ürün ekleyin.');
+      setFeedbackAlert({ type: 'error', message: 'Lütfen bir cari seçin ve en az bir ürün ekleyin.' });
       return;
     }
 
     const orderData: Omit<Order, 'id'> = {
-      type: activeTab,
+      type: formOrderType,
       orderNumber: orderNumber || `ORD-${Date.now()}`,
       contactId: selectedContactId,
       date: new Date(orderDate),
@@ -281,18 +401,28 @@ export default function Orders() {
       shippedQuantity: 0,
       unitPrice: item.unitPrice,
       taxRate: item.taxRate,
-      discountRate: item.discountRate,
+      discountRate: item.discountRate || 0,
       total: item.unitPrice * item.quantity * (1 + item.taxRate / 100),
       color: item.color,
       size: item.size
     }));
 
     try {
-      await erpService.createOrder(orderData, items);
+      setIsProcessing(true);
+      if (editingOrderId) {
+        await erpService.updateOrder(editingOrderId, orderData, items);
+        setFeedbackAlert({ type: 'success', message: `"${orderData.orderNumber}" numaralı sipariş başarıyla güncellendi!` });
+      } else {
+        await erpService.createOrder(orderData, items);
+        setFeedbackAlert({ type: 'success', message: `"${orderData.orderNumber}" numaralı sipariş başarıyla oluşturuldu!` });
+      }
+      setTimeout(() => setFeedbackAlert(null), 4000);
       setIsAddModalOpen(false);
       resetForm();
     } catch (error: any) {
-      alert(error.message);
+      setFeedbackAlert({ type: 'error', message: 'İşlem sırasında hata oluştu: ' + (error?.message || error) });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -300,30 +430,33 @@ export default function Orders() {
     try {
       setIsTransferringToProduction(true);
       await erpService.createWorkOrdersFromOrder(orderId);
-      alert('Sipariş için üretim iş emirleri başarıyla oluşturuldu!');
+      setFeedbackAlert({ type: 'success', message: 'Sipariş için üretim iş emirleri başarıyla oluşturuldu!' });
+      setTimeout(() => setFeedbackAlert(null), 4000);
       if (selectedOrder?.id === orderId) {
         const updated = await erpService.getOrder(orderId);
         setSelectedOrder(updated);
       }
     } catch (error: any) {
-      alert('İş emri oluşturulurken hata: ' + error.message);
+      setFeedbackAlert({ type: 'error', message: 'İş emri oluşturulurken hata: ' + error.message });
     } finally {
       setIsTransferringToProduction(false);
     }
   };
 
   const resetForm = () => {
+    setEditingOrderId(null);
     setOrderItems([]);
     setSelectedContactId(null);
     setOrderDate(new Date().toISOString().split('T')[0]);
     setDeliveryDate('');
     setOrderNumber('');
     setNotes('');
+    setFormOrderType(activeTab === 'purchase' ? 'purchase' : 'sales');
   };
 
   const getStatusBadge = (status: OrderStatus) => {
     const styles = {
-      draft: "bg-slate-100 text-slate-600 border-slate-200",
+      draft: "bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-700",
       confirmed: "bg-indigo-50 text-indigo-700 border-indigo-200",
       partially_shipped: "bg-amber-50 text-amber-700 border-amber-200",
       completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -347,6 +480,38 @@ export default function Orders() {
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification Alert */}
+      <AnimatePresence>
+        {feedbackAlert && (
+          <motion.div 
+            initial={{ opacity: 0, y: -15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className={cn(
+              "p-3.5 rounded-xl border text-xs font-bold flex items-center justify-between shadow-md",
+              feedbackAlert.type === 'success' 
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
+                : "bg-rose-50 text-rose-800 border-rose-200"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              {feedbackAlert.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span>{feedbackAlert.message}</span>
+            </div>
+            <button 
+              onClick={() => setFeedbackAlert(null)}
+              className="p-1 hover:bg-black/5 rounded cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header Banner */}
       <PageHeader
         title="Sipariş Yönetimi & Takip"
@@ -356,24 +521,51 @@ export default function Orders() {
         iconColor="purple"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200/60">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80">
+              <button 
+                onClick={() => setActiveTab('all')}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                  activeTab === 'all' ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
+                )}
+              >
+                <span>Tüm Siparişler</span>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.2 rounded-full font-mono font-black",
+                  activeTab === 'all' ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-600"
+                )}>
+                  {orders?.length || 0}
+                </span>
+              </button>
               <button 
                 onClick={() => setActiveTab('sales')}
                 className={cn(
-                  "px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer",
-                  activeTab === 'sales' ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                  activeTab === 'sales' ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
                 )}
               >
-                Satış Siparişleri
+                <span>Satış Siparişleri</span>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.2 rounded-full font-mono font-black",
+                  activeTab === 'sales' ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-600"
+                )}>
+                  {orders?.filter(o => o.type === 'sales').length || 0}
+                </span>
               </button>
               <button 
                 onClick={() => setActiveTab('purchase')}
                 className={cn(
-                  "px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer",
-                  activeTab === 'purchase' ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                  activeTab === 'purchase' ? "bg-white dark:bg-slate-900 text-emerald-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
                 )}
               >
-                Alış Siparişleri
+                <span>Alış Siparişleri</span>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.2 rounded-full font-mono font-black",
+                  activeTab === 'purchase' ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"
+                )}>
+                  {orders?.filter(o => o.type === 'purchase').length || 0}
+                </span>
               </button>
             </div>
 
@@ -386,7 +578,10 @@ export default function Orders() {
             </Link>
 
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => {
+                resetForm();
+                setIsAddModalOpen(true);
+              }}
               className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -398,18 +593,18 @@ export default function Orders() {
 
       {/* Production & Shipment Live KPI Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-black uppercase tracking-wider">Toplam Sipariş</span>
             <Package className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="text-xl font-black text-slate-900 font-mono">
+          <div className="text-xl font-black text-slate-900 dark:text-slate-100 font-mono">
             {tabKPIs.totalOrderedQty.toLocaleString('tr-TR')} <span className="text-xs font-bold text-slate-400">Çift/Adet</span>
           </div>
           <p className="text-[10px] text-slate-400 font-bold mt-1">{tabKPIs.totalOrders} Adet Aktif Sipariş</p>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-black uppercase tracking-wider">Üretilen Miktar</span>
             <Factory className="w-4 h-4 text-blue-600" />
@@ -418,7 +613,7 @@ export default function Orders() {
             {tabKPIs.totalProducedQty.toLocaleString('tr-TR')} <span className="text-xs font-bold text-slate-400">Çift</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-blue-600 rounded-full" 
                 style={{ width: `${tabKPIs.totalOrderedQty > 0 ? (tabKPIs.totalProducedQty / tabKPIs.totalOrderedQty) * 100 : 0}%` }}
@@ -430,7 +625,7 @@ export default function Orders() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-black uppercase tracking-wider">Sevk Edilen Miktar</span>
             <Truck className="w-4 h-4 text-emerald-600" />
@@ -439,7 +634,7 @@ export default function Orders() {
             {tabKPIs.totalShippedQty.toLocaleString('tr-TR')} <span className="text-xs font-bold text-slate-400">Çift</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-emerald-600 rounded-full" 
                 style={{ width: `${tabKPIs.totalOrderedQty > 0 ? (tabKPIs.totalShippedQty / tabKPIs.totalOrderedQty) * 100 : 0}%` }}
@@ -451,7 +646,7 @@ export default function Orders() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-black uppercase tracking-wider">Kalan Sevkiyat (Bakiye)</span>
             <Clock className="w-4 h-4 text-amber-600" />
@@ -464,9 +659,9 @@ export default function Orders() {
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         {/* Filter and Search Bar */}
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50/50 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
@@ -474,7 +669,7 @@ export default function Orders() {
               placeholder="Sipariş no veya cari adı ile ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>
 
@@ -491,7 +686,7 @@ export default function Orders() {
                 onClick={() => setStatusFilter(f.id)}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer",
-                  statusFilter === f.id ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                  statusFilter === f.id ? "bg-slate-900 text-white" : "bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800"
                 )}
               >
                 {f.label}
@@ -504,21 +699,21 @@ export default function Orders() {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200">
-                <th className="p-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Sipariş & Cari</th>
-                <th className="p-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center">Hedef Sipariş</th>
-                <th className="p-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Üretim Durumu</th>
-                <th className="p-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Sevkiyat Durumu</th>
-                <th className="p-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Kalan Miktar</th>
-                <th className="p-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">Tutar & Tarih</th>
-                <th className="p-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">İşlemler</th>
+              <tr className="bg-slate-50 dark:bg-slate-800/50/90 border-b border-slate-200 dark:border-slate-700">
+                <th className="px-3 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sipariş & Cari</th>
+                <th className="px-3 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center">Hedef Sipariş</th>
+                <th className="px-3 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Üretim Durumu</th>
+                <th className="px-3 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sevkiyat Durumu</th>
+                <th className="px-3 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kalan Miktar</th>
+                <th className="px-3 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Tutar & Tarih</th>
+                <th className="px-3 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">İşlemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-slate-400">
-                    <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <td colSpan={7} className="py-10 text-center text-slate-400">
+                    <ShoppingCart className="w-10 h-10 mx-auto mb-2 opacity-20" />
                     <p className="text-xs font-bold uppercase tracking-wider">Kriterlere uygun sipariş bulunamadı</p>
                   </td>
                 </tr>
@@ -534,47 +729,65 @@ export default function Orders() {
                   const producePercent = stats?.producePercent || 0;
                   const shipPercent = stats?.shipPercent || 0;
 
+                  const linkedInvoices = invoices?.filter(inv => inv.orderId === order.id && inv.status !== 'cancelled') || [];
+                  const linkedWaybills = waybills?.filter(wb => wb.orderId === order.id && wb.status !== 'cancelled') || [];
+                  const hasActiveWaybill = linkedWaybills.length > 0;
+                  const hasActiveInvoice = linkedInvoices.length > 0;
+                  const hasLock = hasActiveInvoice || hasActiveWaybill;
+
                   return (
-                    <tr key={order.id} className="hover:bg-slate-50/70 transition-colors group">
+                    <tr key={order.id} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors group">
                       {/* Order & Contact */}
-                      <td className="p-3.5">
-                        <div className="flex items-center gap-3">
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2.5">
                           <div className={cn(
-                            "w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black uppercase shrink-0 border",
+                            "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black uppercase shrink-0 border",
                             order.type === 'sales' ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
                           )}>
                             {contact?.name?.substring(0, 2) || 'SP'}
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-black text-slate-900">{order.orderNumber}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-black text-slate-900 dark:text-slate-100 font-mono">{order.orderNumber}</span>
+                              <span className={cn(
+                                "text-[9px] font-black px-1.5 py-0.2 rounded border uppercase",
+                                order.type === 'sales' ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              )}>
+                                {order.type === 'sales' ? 'Satış' : 'Alış'}
+                              </span>
                               {getStatusBadge(order.status)}
+                              {hasLock && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded" title="Fatura veya İrsaliyesi kesilmiş">
+                                  <Lock className="w-2.5 h-2.5 text-amber-600" />
+                                  {hasActiveInvoice ? 'Faturalı' : 'İrsaliyeli'}
+                                </span>
+                              )}
                             </div>
-                            <div className="text-xs font-bold text-slate-600 truncate max-w-[180px]">{contact?.name}</div>
+                            <div className="text-xs font-bold text-slate-600 truncate max-w-[170px] mt-0.5">{contact?.name}</div>
                           </div>
                         </div>
                       </td>
 
                       {/* Total Ordered Qty */}
-                      <td className="p-3.5 text-center">
-                        <span className="text-sm font-black text-slate-900 font-mono">
+                      <td className="px-3 py-2.5 text-center">
+                        <span className="text-xs font-black text-slate-900 dark:text-slate-100 font-mono">
                           {totalOrdered.toLocaleString('tr-TR')}
                         </span>
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Çift / Adet</span>
                       </td>
 
                       {/* Production Status */}
-                      <td className="p-3.5 min-w-[170px]">
-                        <div className="space-y-1">
+                      <td className="px-3 py-2.5 min-w-[150px]">
+                        <div className="space-y-0.5">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-blue-700 font-mono">
+                            <span className="font-bold text-blue-700 font-mono text-[11px]">
                               {totalProduced} / {totalOrdered}
                             </span>
-                            <span className="text-[10px] font-black text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded">
+                            <span className="text-[9px] font-black text-blue-700 bg-blue-50 px-1 py-0.2 rounded">
                               %{producePercent}
                             </span>
                           </div>
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-blue-600 rounded-full transition-all"
                               style={{ width: `${producePercent}%` }}
@@ -593,17 +806,17 @@ export default function Orders() {
                       </td>
 
                       {/* Shipment Status */}
-                      <td className="p-3.5 min-w-[170px]">
-                        <div className="space-y-1">
+                      <td className="px-3 py-2.5 min-w-[150px]">
+                        <div className="space-y-0.5">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-emerald-700 font-mono">
+                            <span className="font-bold text-emerald-700 font-mono text-[11px]">
                               {totalShipped} / {totalOrdered}
                             </span>
-                            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                            <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded">
                               %{shipPercent}
                             </span>
                           </div>
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-emerald-600 rounded-full transition-all"
                               style={{ width: `${shipPercent}%` }}
@@ -622,10 +835,10 @@ export default function Orders() {
                       </td>
 
                       {/* Remaining Quantities */}
-                      <td className="p-3.5">
-                        <div className="space-y-0.5 text-xs font-bold font-mono">
+                      <td className="px-3 py-2.5">
+                        <div className="space-y-0.5 text-[11px] font-bold font-mono">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Kalan Üretim:</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Kalan Ür:</span>
                             <span className={cn(remainingProduce > 0 ? "text-blue-700" : "text-slate-400")}>
                               {remainingProduce}
                             </span>
@@ -640,8 +853,8 @@ export default function Orders() {
                       </td>
 
                       {/* Total Price & Date */}
-                      <td className="p-3.5 text-right">
-                        <div className="text-xs font-black text-slate-900 font-mono">
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="text-xs font-black text-slate-900 dark:text-slate-100 font-mono">
                           {order.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
                         </div>
                         <div className="text-[10px] font-semibold text-slate-400">
@@ -650,24 +863,50 @@ export default function Orders() {
                       </td>
 
                       {/* Actions */}
-                      <td className="p-3.5 text-right">
+                      <td className="px-3 py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {/* Waybill Button */}
                           <button 
-                            onClick={() => navigate(`/waybills?orderId=${order.id}&contactId=${order.contactId}&type=${order.type}`)}
-                            title="İrsaliye Kes / Sevk Et"
-                            className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-slate-200 shadow-2xs"
+                            disabled={hasActiveWaybill}
+                            onClick={() => !hasActiveWaybill && navigate(`/waybills?orderId=${order.id}&contactId=${order.contactId}&type=${order.type}`)}
+                            title={hasActiveWaybill 
+                              ? `Siparişin kesilmiş irsaliyesi bulunmaktadır (${linkedWaybills[0]?.waybillNumber || 'İrsaliye'}). İrsaliye iptal edilmedikçe yeniden irsaliye kesilemez.`
+                              : "İrsaliye Kes / Sevk Et"
+                            }
+                            className={cn(
+                              "p-1.5 rounded-lg transition-all flex items-center gap-1 border border-slate-200 dark:border-slate-700 shadow-2xs text-[10px] font-black",
+                              hasActiveWaybill 
+                                ? "bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60" 
+                                : "text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                            )}
                           >
-                            <Truck className="w-3.5 h-3.5 text-indigo-600" />
-                            <span className="hidden xl:inline text-[10px] font-black text-indigo-700">İrsaliye</span>
+                            <Truck className={cn("w-3.5 h-3.5", hasActiveWaybill ? "text-slate-400" : "text-indigo-600")} />
+                            <span className={cn("hidden xl:inline", hasActiveWaybill ? "text-slate-400" : "text-indigo-700")}>
+                              {hasActiveWaybill ? 'İrsaliyeli' : 'İrsaliye'}
+                            </span>
                           </button>
+
+                          {/* Invoice Button */}
                           <button 
-                            onClick={() => navigate(`/invoices?orderId=${order.id}&contactId=${order.contactId}&type=${order.type}`)}
-                            title="Fatura Kes"
-                            className="p-1.5 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-slate-200 shadow-2xs"
+                            disabled={hasActiveInvoice}
+                            onClick={() => !hasActiveInvoice && navigate(`/invoices?orderId=${order.id}&contactId=${order.contactId}&type=${order.type}`)}
+                            title={hasActiveInvoice 
+                              ? `Siparişin kesilmiş faturası bulunmaktadır (${linkedInvoices[0]?.invoiceNumber || 'Fatura'}). Fatura iptal edilmedikçe yeniden faturalandırılamaz.`
+                              : "Fatura Kes"
+                            }
+                            className={cn(
+                              "p-1.5 rounded-lg transition-all flex items-center gap-1 border border-slate-200 dark:border-slate-700 shadow-2xs text-[10px] font-black",
+                              hasActiveInvoice 
+                                ? "bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60" 
+                                : "text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 cursor-pointer"
+                            )}
                           >
-                            <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="hidden xl:inline text-[10px] font-black text-emerald-700">Fatura</span>
+                            <FileText className={cn("w-3.5 h-3.5", hasActiveInvoice ? "text-slate-400" : "text-emerald-600")} />
+                            <span className={cn("hidden xl:inline", hasActiveInvoice ? "text-slate-400" : "text-emerald-700")}>
+                              {hasActiveInvoice ? 'Faturalı' : 'Fatura'}
+                            </span>
                           </button>
+
                           {stats && stats.workOrdersCount === 0 && (
                             <button
                               onClick={() => handleCreateWorkOrders(order.id!)}
@@ -684,20 +923,33 @@ export default function Orders() {
                               setIsDetailModalOpen(true);
                             }}
                             title="Detay & İlerleme Takibi"
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button 
-                            onClick={async () => {
-                              if (confirm('Siparişi silmek istediğinize emin misiniz?')) {
-                                await erpService.deleteOrder(order.id!);
-                              }
-                            }}
-                            title="Sil"
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            onClick={() => handleOpenEditModal(order.id!)}
+                            title={hasLock ? "Fatura veya İrsaliye oluşturulduğu için değiştirilemez" : "Siparişi Düzenle"}
+                            className={cn(
+                              "p-1.5 rounded-lg transition-colors cursor-pointer",
+                              hasLock 
+                                ? "text-slate-300 hover:text-amber-600 hover:bg-amber-50" 
+                                : "text-slate-500 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+                            )}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => handleRequestDelete(order.id!, order.orderNumber, order.grandTotal, contact?.name)}
+                            title={hasLock ? "Fatura veya İrsaliye oluşturulduğu için silinemez" : "Siparişi Sil"}
+                            className={cn(
+                              "p-1.5 rounded-lg transition-colors cursor-pointer",
+                              hasLock 
+                                ? "text-slate-300 hover:text-amber-600 hover:bg-amber-50" 
+                                : "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                            )}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -728,9 +980,9 @@ export default function Orders() {
             <div className="space-y-6">
               {/* Top Summary Status Matrix */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center">
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Toplam Hedef</p>
-                  <h4 className="text-xl font-black text-slate-900 font-mono">
+                  <h4 className="text-xl font-black text-slate-900 dark:text-slate-100 font-mono">
                     {stats?.totalOrdered.toLocaleString('tr-TR')} <span className="text-xs uppercase text-slate-400">Çift</span>
                   </h4>
                 </div>
@@ -768,19 +1020,19 @@ export default function Orders() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Panel: Contact & Order Details */}
                 <div className="lg:col-span-1 space-y-4">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-2">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
                       <User className="w-3.5 h-3.5" /> Cari & Sipariş Detayı
                     </h4>
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase">Cari Ünvan</p>
-                      <p className="text-sm font-black text-slate-900">{contact?.name}</p>
-                      <p className="text-xs text-slate-500 font-semibold mt-0.5">{contact?.phone || 'Telefon Yok'}</p>
+                      <p className="text-sm font-black text-slate-900 dark:text-slate-100">{contact?.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">{contact?.phone || 'Telefon Yok'}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Sipariş Tarihi</span>
-                        <span className="font-bold text-slate-800">{new Date(selectedOrder.date).toLocaleDateString('tr-TR')}</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">{new Date(selectedOrder.date).toLocaleDateString('tr-TR')}</span>
                       </div>
                       <div>
                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Termin Tarihi</span>
@@ -789,7 +1041,7 @@ export default function Orders() {
                         </span>
                       </div>
                     </div>
-                    <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-sm font-black text-indigo-600">
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-sm font-black text-indigo-600">
                       <span>Genel Tutar:</span>
                       <span>{selectedOrder.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</span>
                     </div>
@@ -805,7 +1057,7 @@ export default function Orders() {
                       <Hammer className="w-4 h-4" /> Üretim İş Emirlerini Başlat
                     </button>
                   ) : (
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 flex items-center justify-between">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 flex items-center justify-between">
                       <span>Bağlı İş Emirleri:</span>
                       <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono">{orderWOs.length} Adet</span>
                     </div>
@@ -814,9 +1066,9 @@ export default function Orders() {
 
                 {/* Right Panel: Product Lines Table with Exact Quantities */}
                 <div className="lg:col-span-2 space-y-4">
-                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                    <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                         <Package className="w-4 h-4 text-indigo-600" /> Sipariş Kalemleri ve Aşama Takibi
                       </h4>
                       <span className="text-[10px] font-bold text-slate-400">{selectedOrder.items?.length || 0} Kalem</span>
@@ -824,7 +1076,7 @@ export default function Orders() {
 
                     <div className="overflow-x-auto">
                       <table className="w-full text-left">
-                        <thead className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <thead className="bg-slate-50 dark:bg-slate-800/50/50 border-b border-slate-100 dark:border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-wider">
                           <tr>
                             <th className="p-3">Ürün & Renk</th>
                             <th className="p-3 text-center">Sipariş</th>
@@ -842,9 +1094,9 @@ export default function Orders() {
                             const itemRemainingShip = Math.max(0, item.quantity - itemShipped);
 
                             return (
-                              <tr key={i} className="hover:bg-slate-50">
+                              <tr key={i} className="hover:bg-slate-50 dark:bg-slate-800/50">
                                 <td className="p-3">
-                                  <div className="font-bold text-slate-800 uppercase">{p?.code || '-'}</div>
+                                  <div className="font-bold text-slate-800 dark:text-slate-200 uppercase">{p?.code || '-'}</div>
                                   <div className="text-[10px] text-slate-400 font-semibold">{p?.name}</div>
                                   {item.color && (
                                     <span className="inline-flex items-center gap-1 text-[9px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded mt-0.5 uppercase">
@@ -853,7 +1105,7 @@ export default function Orders() {
                                     </span>
                                   )}
                                 </td>
-                                <td className="p-3 text-center font-black font-mono text-slate-900">
+                                <td className="p-3 text-center font-black font-mono text-slate-900 dark:text-slate-100">
                                   {item.quantity}
                                 </td>
                                 <td className="p-3 text-center">
@@ -882,36 +1134,90 @@ export default function Orders() {
               </div>
 
               {/* Action Bar */}
-              <div className="flex flex-wrap justify-between items-center gap-3 pt-4 border-t border-slate-200">
-                <div className="text-xs font-bold text-slate-500">
+              <div className="flex flex-wrap justify-between items-center gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="text-xs font-bold text-slate-500 dark:text-slate-400">
                   {selectedOrder.notes && <span>Not: "{selectedOrder.notes}"</span>}
                 </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => {
-                      setIsDetailModalOpen(false);
-                      navigate(`/waybills?orderId=${selectedOrder.id}&contactId=${selectedOrder.contactId}&type=${selectedOrder.type}`);
-                    }}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase flex items-center gap-2 shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
-                  >
-                    <Truck className="w-4 h-4" />
-                    <span>İrsaliye Kes / Sevk Et</span>
-                  </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const selWaybills = waybills?.filter(wb => wb.orderId === selectedOrder.id && wb.status !== 'cancelled') || [];
+                    const selInvoices = invoices?.filter(inv => inv.orderId === selectedOrder.id && inv.status !== 'cancelled') || [];
+                    const hasSelWaybill = selWaybills.length > 0;
+                    const hasSelInvoice = selInvoices.length > 0;
+                    const isLocked = hasSelWaybill || hasSelInvoice;
 
-                  <button 
-                    onClick={() => {
-                      setIsDetailModalOpen(false);
-                      navigate(`/invoices?orderId=${selectedOrder.id}&contactId=${selectedOrder.contactId}&type=${selectedOrder.type}`);
-                    }}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase flex items-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Fatura Kes</span>
-                  </button>
+                    return (
+                      <>
+                        <button 
+                          onClick={() => {
+                            const id = selectedOrder.id;
+                            setIsDetailModalOpen(false);
+                            handleOpenEditModal(id);
+                          }}
+                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase flex items-center gap-1.5 transition-all cursor-pointer border border-blue-200"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span>Düzenle</span>
+                        </button>
+
+                        <button 
+                          onClick={() => {
+                            const id = selectedOrder.id;
+                            const num = selectedOrder.orderNumber;
+                            const total = selectedOrder.grandTotal;
+                            const cName = contact?.name;
+                            handleRequestDelete(id, num, total, cName);
+                          }}
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase flex items-center gap-1.5 transition-all cursor-pointer border border-rose-200"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Sil</span>
+                        </button>
+
+                        <button 
+                          disabled={hasSelWaybill}
+                          onClick={() => {
+                            if (hasSelWaybill) return;
+                            setIsDetailModalOpen(false);
+                            navigate(`/waybills?orderId=${selectedOrder.id}&contactId=${selectedOrder.contactId}&type=${selectedOrder.type}`);
+                          }}
+                          title={hasSelWaybill ? `Siparişin kesilmiş irsaliyesi bulunmaktadır (${selWaybills[0]?.waybillNumber}). İptal edilmedikçe yeniden irsaliye kesilemez.` : "İrsaliye Kes"}
+                          className={cn(
+                            "px-4 py-2.5 rounded-xl font-bold text-xs uppercase flex items-center gap-2 transition-all border",
+                            hasSelWaybill
+                              ? "bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60 shadow-none"
+                              : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 cursor-pointer border-transparent"
+                          )}
+                        >
+                          <Truck className="w-4 h-4" />
+                          <span>{hasSelWaybill ? 'İrsaliyesi Kesilmiş' : 'İrsaliye Kes'}</span>
+                        </button>
+
+                        <button 
+                          disabled={hasSelInvoice}
+                          onClick={() => {
+                            if (hasSelInvoice) return;
+                            setIsDetailModalOpen(false);
+                            navigate(`/invoices?orderId=${selectedOrder.id}&contactId=${selectedOrder.contactId}&type=${selectedOrder.type}`);
+                          }}
+                          title={hasSelInvoice ? `Siparişin kesilmiş faturası bulunmaktadır (${selInvoices[0]?.invoiceNumber}). İptal edilmedikçe yeniden faturalandırılamaz.` : "Fatura Kes"}
+                          className={cn(
+                            "px-4 py-2.5 rounded-xl font-bold text-xs uppercase flex items-center gap-2 transition-all border",
+                            hasSelInvoice
+                              ? "bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60 shadow-none"
+                              : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 cursor-pointer border-transparent"
+                          )}
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>{hasSelInvoice ? 'Faturalandırılmış' : 'Fatura Kes'}</span>
+                        </button>
+                      </>
+                    );
+                  })()}
 
                   <button 
                     onClick={() => setIsDetailModalOpen(false)}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-bold text-xs uppercase cursor-pointer"
+                    className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl font-bold text-xs uppercase cursor-pointer"
                   >
                     Kapat
                   </button>
@@ -922,75 +1228,106 @@ export default function Orders() {
         })()}
       </Modal>
 
-      {/* Add Order Modal (Size 2XL) */}
+      {/* Add / Edit Order Modal (Size 2XL) */}
       <Modal 
         isOpen={isAddModalOpen} 
         onClose={() => { setIsAddModalOpen(false); resetForm(); }} 
-        title={activeTab === 'sales' ? "Yeni Satış Siparişi Oluştur" : "Yeni Alış Siparişi Oluştur"} 
+        title={
+          editingOrderId 
+            ? (formOrderType === 'sales' ? `Satış Siparişini Düzenle (#${orderNumber || editingOrderId})` : `Alış Siparişini Düzenle (#${orderNumber || editingOrderId})`)
+            : (formOrderType === 'sales' ? "Yeni Satış Siparişi Oluştur" : "Yeni Alış Siparişi Oluştur")
+        } 
         size="2xl"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Header Inputs */}
-            <div className="space-y-4 lg:col-span-1 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200 pb-2">
+            <div className="space-y-4 lg:col-span-1 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700 pb-2">
                 Sipariş Bilgileri
               </h4>
+
+              {/* Order Type Toggle */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sipariş Türü</label>
+                <div className="grid grid-cols-2 gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setFormOrderType('sales')}
+                    className={cn(
+                      "py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                      formOrderType === 'sales' ? "bg-indigo-600 text-white shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
+                    )}
+                  >
+                    Satış Siparişi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormOrderType('purchase')}
+                    className={cn(
+                      "py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                      formOrderType === 'purchase' ? "bg-emerald-600 text-white shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
+                    )}
+                  >
+                    Alış Siparişi
+                  </button>
+                </div>
+              </div>
               
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cari Seçimi</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cari Seçimi</label>
                 <select 
                   required
                   value={selectedContactId || ''}
                   onChange={(e) => setSelectedContactId(Number(e.target.value))}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold bg-white outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold bg-white dark:bg-slate-900 outline-none"
                 >
                   <option value="">Cari Seçiniz...</option>
-                  {contacts?.filter(c => c.type === (activeTab === 'sales' ? 'customer' : 'supplier')).map(c => (
+                  {contacts?.filter(c => c.type === (formOrderType === 'sales' ? 'customer' : 'supplier')).map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sipariş No</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sipariş No</label>
                 <input 
                   type="text" 
                   value={orderNumber}
                   onChange={(e) => setOrderNumber(e.target.value)}
                   placeholder="Otomatik oluşturulacak..."
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold uppercase bg-white outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono font-bold uppercase bg-white dark:bg-slate-900 outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sipariş Tarihi</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sipariş Tarihi</label>
                   <input 
                     type="date" 
                     value={orderDate}
                     onChange={(e) => setOrderDate(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl p-2 text-xs font-bold bg-white outline-none"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs font-bold bg-white dark:bg-slate-900 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Termin Tarihi</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Termin Tarihi</label>
                   <input 
                     type="date" 
                     value={deliveryDate}
                     onChange={(e) => setDeliveryDate(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl p-2 text-xs font-bold bg-white outline-none"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs font-bold bg-white dark:bg-slate-900 outline-none"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sipariş Notu</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sipariş Notu</label>
                 <textarea 
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={2}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-medium bg-white outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium bg-white dark:bg-slate-900 outline-none"
                 />
               </div>
 
@@ -1021,7 +1358,7 @@ export default function Orders() {
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                     <Package className="w-4 h-4 text-indigo-600" /> Sipariş Kalemleri ({orderItems.length})
                   </h4>
                   <p className="text-[10px] text-slate-400">Eklenen ürünlerin miktar, renk, iskonto ve birim fiyatlarını düzenleyebilirsiniz.</p>
@@ -1035,9 +1372,9 @@ export default function Orders() {
                 </button>
               </div>
 
-              <div className="border border-slate-200 rounded-2xl overflow-hidden min-h-[260px] max-h-[380px] overflow-y-auto bg-white shadow-2xs">
+              <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden min-h-[260px] max-h-[380px] overflow-y-auto bg-white dark:bg-slate-900 shadow-2xs">
                 <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200 sticky top-0 z-10">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
                     <tr>
                       <th className="p-3">Ürün & Renk / Detay</th>
                       <th className="p-3 text-center w-28">Miktar</th>
@@ -1063,19 +1400,19 @@ export default function Orders() {
                         const lineTotal = lineNet + lineTax;
 
                         return (
-                          <tr key={index} className="hover:bg-slate-50 transition-colors">
+                          <tr key={index} className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors">
                             <td className="p-3">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono font-black text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-[11px] uppercase">
+                                <span className="font-mono font-black text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-[11px] uppercase">
                                   {item.code}
                                 </span>
                                 {item.moldCode && (
-                                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1 py-0.5 rounded">
+                                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
                                     Kalıp: {item.moldCode}
                                   </span>
                                 )}
                               </div>
-                              <div className="font-bold text-xs text-slate-800 mt-1 uppercase">{item.name}</div>
+                              <div className="font-bold text-xs text-slate-800 dark:text-slate-200 mt-1 uppercase">{item.name}</div>
                               
                               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                 {item.color && (
@@ -1089,7 +1426,7 @@ export default function Orders() {
                                   </span>
                                 ) : null}
                                 {item.notes && (
-                                  <span className="text-[10px] text-slate-500 italic">
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 italic">
                                     Not: {item.notes}
                                   </span>
                                 )}
@@ -1102,7 +1439,7 @@ export default function Orders() {
                                   min="1" 
                                   value={item.quantity} 
                                   onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                                  className="w-16 p-1 text-center font-black font-mono border border-slate-200 rounded-lg text-xs bg-white text-slate-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                  className="w-16 p-1 text-center font-black font-mono border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500 outline-none"
                                 />
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">
                                   {item.unit || 'Çift'}
@@ -1116,7 +1453,7 @@ export default function Orders() {
                                 min="0"
                                 value={item.unitPrice}
                                 onChange={(e) => updateItem(index, 'unitPrice', Number(e.target.value))}
-                                className="w-20 p-1 text-right font-mono font-bold border border-slate-200 rounded-lg text-xs bg-white text-slate-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                className="w-20 p-1 text-right font-mono font-bold border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500 outline-none"
                               />
                             </td>
                             <td className="p-3 text-center">
@@ -1126,7 +1463,7 @@ export default function Orders() {
                                 max="100"
                                 value={item.discountRate || 0}
                                 onChange={(e) => updateItem(index, 'discountRate', Number(e.target.value))}
-                                className="w-12 p-1 text-center font-mono font-bold border border-slate-200 rounded-lg text-xs bg-white text-slate-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                className="w-12 p-1 text-center font-mono font-bold border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500 outline-none"
                               />
                             </td>
                             <td className="p-3 text-right font-mono font-black text-indigo-700">
@@ -1150,19 +1487,21 @@ export default function Orders() {
                 </table>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase cursor-pointer"
+                  onClick={() => { setIsAddModalOpen(false); resetForm(); }}
+                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold uppercase cursor-pointer"
                 >
                   Vazgeç
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md cursor-pointer"
+                  disabled={isProcessing}
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md cursor-pointer flex items-center gap-2"
                 >
-                  Siparişi Kaydet
+                  {isProcessing && <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  <span>{editingOrderId ? "Değişiklikleri Kaydet" : "Siparişi Kaydet"}</span>
                 </button>
               </div>
             </div>
@@ -1170,12 +1509,107 @@ export default function Orders() {
         </form>
       </Modal>
 
+      {/* Delete Confirmation In-App Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          if (!isProcessing) {
+            setIsDeleteModalOpen(false);
+            setDeleteTarget(null);
+          }
+        }}
+        title="Siparişi Silme Onayı"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl">
+            <div className="p-2 bg-rose-100 rounded-xl text-rose-600 shrink-0">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div className="space-y-1 text-xs">
+              <p className="font-black text-rose-900">
+                "{deleteTarget?.orderNumber}" numaralı siparişi silmek istediğinize emin misiniz?
+              </p>
+              <p className="text-rose-700 font-semibold">
+                {deleteTarget?.contactName && <span>Cari: <b>{deleteTarget.contactName}</b><br /></span>}
+                {deleteTarget?.grandTotal !== undefined && <span>Tutar: <b>{deleteTarget.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</b><br /></span>}
+                Bu işlem geri alınamaz. Siparişe bağlı tüm kalemler ve henüz faturası/irsaliyesi kesilmemiş iş emirleri de silinecektir.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              disabled={isProcessing}
+              onClick={() => {
+                setIsDeleteModalOpen(false);
+                setDeleteTarget(null);
+              }}
+              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              disabled={isProcessing}
+              onClick={handleConfirmDelete}
+              className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              {isProcessing && <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+              <span>Evet, Siparişi Sil</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Blocked / Protected Order Warning Modal */}
+      <Modal
+        isOpen={isBlockedModalOpen}
+        onClose={() => {
+          setIsBlockedModalOpen(false);
+          setBlockedReason(null);
+        }}
+        title="İşlem Yapılamaz"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+            <div className="p-2 bg-amber-100 rounded-xl text-amber-600 shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <h4 className="font-black text-amber-900 text-sm">Sipariş Korumalı</h4>
+              <p className="text-amber-800 font-semibold leading-relaxed">
+                {blockedReason}
+              </p>
+              <p className="text-amber-700 text-[11px]">
+                Siparişi silmek veya düzenlemek için öncelikle ilgili fatura ve irsaliyeleri iptal etmeniz veya silmeniz gerekmektedir.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsBlockedModalOpen(false);
+                setBlockedReason(null);
+              }}
+              className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase cursor-pointer"
+            >
+              Tamam
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Advanced Product & Variant Selection Modal */}
       <ProductSelectorModal
         isOpen={isProductSelectorOpen}
         onClose={() => setIsProductSelectorOpen(false)}
         onAddItem={handleAddItemFromModal}
-        orderType={activeTab}
+        orderType={formOrderType}
         products={products || []}
         templates={templates || []}
       />

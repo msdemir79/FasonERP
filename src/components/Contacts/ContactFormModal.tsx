@@ -269,7 +269,7 @@ export default function ContactFormModal({
         )}
 
         {/* Tab Headers */}
-        <div className="flex border-b border-slate-200 gap-2 pb-2">
+        <div className="flex border-b border-slate-200 dark:border-slate-700 gap-2 pb-2">
           <button
             type="button"
             onClick={() => setActiveTab('general')}
@@ -277,7 +277,7 @@ export default function ContactFormModal({
               "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
               activeTab === 'general'
                 ? "bg-indigo-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
             )}
           >
             <Building2 className="w-3.5 h-3.5" />
@@ -290,7 +290,7 @@ export default function ContactFormModal({
               "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
               activeTab === 'contact'
                 ? "bg-indigo-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
             )}
           >
             <Phone className="w-3.5 h-3.5" />
@@ -303,7 +303,7 @@ export default function ContactFormModal({
               "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
               activeTab === 'financial'
                 ? "bg-indigo-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
             )}
           >
             <CreditCard className="w-3.5 h-3.5" />
@@ -316,7 +316,7 @@ export default function ContactFormModal({
               "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
               activeTab === 'notes'
                 ? "bg-indigo-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
             )}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -337,7 +337,7 @@ export default function ContactFormModal({
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   placeholder="Örn: CAR-001"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
                 />
               </div>
 
@@ -365,7 +365,7 @@ export default function ContactFormModal({
                 />
                 <datalist id="tdhp-contact-accounts-quick">
                   {suggestedAccounts.map((acc) => (
-                    <option key={`quick-${acc.id || acc.code}`} value={acc.code}>
+                    <option key={`quick-${acc.code}`} value={acc.code}>
                       {acc.code} - {acc.name}
                     </option>
                   ))}
@@ -397,7 +397,7 @@ export default function ContactFormModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Örn: Eren Kundura Toptan San. Tic. Ltd. Şti."
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase text-slate-900"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase text-slate-900 dark:text-slate-100"
                 />
               </div>
             </div>
@@ -412,7 +412,7 @@ export default function ContactFormModal({
                   value={companyTitle}
                   onChange={(e) => setCompanyTitle(e.target.value)}
                   placeholder="Fatura başlığı ile aynı değilse giriniz"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
@@ -425,7 +425,7 @@ export default function ContactFormModal({
                   value={contactPerson}
                   onChange={(e) => setContactPerson(e.target.value)}
                   placeholder="Örn: Ahmet Yılmaz (Satın Alma Müdürü)"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
             </div>
@@ -443,7 +443,7 @@ export default function ContactFormModal({
                       "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center",
                       type === 'customer'
                         ? "bg-indigo-50 border-indigo-600 text-indigo-700 shadow-sm"
-                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:bg-slate-800/50"
                     )}
                   >
                     Müşteri (Alıcı)
@@ -455,7 +455,7 @@ export default function ContactFormModal({
                       "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center",
                       type === 'supplier'
                         ? "bg-amber-50 border-amber-600 text-amber-800 shadow-sm"
-                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:bg-slate-800/50"
                     )}
                   >
                     Tedarikçi (Satıcı)
@@ -467,7 +467,7 @@ export default function ContactFormModal({
                       "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center",
                       type === 'both'
                         ? "bg-emerald-50 border-emerald-600 text-emerald-800 shadow-sm"
-                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:bg-slate-800/50"
                     )}
                   >
                     Her İkisi
@@ -482,7 +482,7 @@ export default function ContactFormModal({
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900"
                 >
                   <option value="">Kategori Seçiniz</option>
                   {CATEGORY_OPTIONS.map((cat) => (
@@ -495,9 +495,9 @@ export default function ContactFormModal({
             </div>
 
             {!initialData && (
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                     Açılış / Devir Bakiyesi (₺)
                   </label>
                   <span className="text-[10px] text-slate-400">
@@ -511,11 +511,11 @@ export default function ContactFormModal({
                     value={balance}
                     onChange={(e) => setBalance(parseFloat(e.target.value) || 0)}
                     placeholder="0.00"
-                    className="w-full border border-slate-200 bg-white rounded-lg p-2.5 text-sm font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                    className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg p-2.5 text-sm font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                   <div className={cn(
                     "px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap",
-                    balance > 0 ? "bg-emerald-100 text-emerald-800" : balance < 0 ? "bg-rose-100 text-rose-800" : "bg-slate-200 text-slate-700"
+                    balance > 0 ? "bg-emerald-100 text-emerald-800" : balance < 0 ? "bg-rose-100 text-rose-800" : "bg-slate-200 text-slate-700 dark:text-slate-200"
                   )}>
                     {balance > 0 ? 'Alacağımız Var' : balance < 0 ? 'Borcumuz Var' : 'Sıfır Bakiye'}
                   </div>
@@ -538,7 +538,7 @@ export default function ContactFormModal({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="0212 XXX XX XX"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
@@ -551,7 +551,7 @@ export default function ContactFormModal({
                   value={mobile}
                   onChange={(e) => setMobile(e.target.value)}
                   placeholder="05XX XXX XX XX"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
             </div>
@@ -566,7 +566,7 @@ export default function ContactFormModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="muhasebe@firma.com"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none font-medium"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none font-medium"
                 />
               </div>
 
@@ -579,7 +579,7 @@ export default function ContactFormModal({
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
                   placeholder="www.firma.com.tr"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none font-medium"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none font-medium"
                 />
               </div>
             </div>
@@ -592,7 +592,7 @@ export default function ContactFormModal({
                 <select
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-900"
                 >
                   <option value="">Şehir Seçiniz</option>
                   {TURKISH_CITIES.map((c) => (
@@ -612,7 +612,7 @@ export default function ContactFormModal({
                   value={district}
                   onChange={(e) => setDistrict(e.target.value)}
                   placeholder="Örn: Güngören / İkitelli"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
             </div>
@@ -626,7 +626,7 @@ export default function ContactFormModal({
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Fatura ve tebligat adresi"
-                className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+                className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
               />
             </div>
 
@@ -639,7 +639,7 @@ export default function ContactFormModal({
                 value={shippingAddress}
                 onChange={(e) => setShippingAddress(e.target.value)}
                 placeholder="Ürünlerin teslim edileceği depo / ambar lokasyonu"
-                className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+                className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
               />
             </div>
           </div>
@@ -658,7 +658,7 @@ export default function ContactFormModal({
                   value={taxOffice}
                   onChange={(e) => setTaxOffice(e.target.value)}
                   placeholder="Örn: Merter V.D."
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
@@ -672,7 +672,7 @@ export default function ContactFormModal({
                   value={taxNumber}
                   onChange={(e) => setTaxNumber(e.target.value)}
                   placeholder="10 Haneli VKN"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
@@ -686,14 +686,14 @@ export default function ContactFormModal({
                   value={tcKimlik}
                   onChange={(e) => setTcKimlik(e.target.value)}
                   placeholder="11 Haneli TCKN"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                   Ödeme Vadesi (Gün)
                 </label>
                 <input
@@ -702,12 +702,12 @@ export default function ContactFormModal({
                   value={paymentTermDays}
                   onChange={(e) => setPaymentTermDays(e.target.value === '' ? '' : parseInt(e.target.value))}
                   placeholder="Örn: 30 / 60 gün"
-                  className="w-full border border-slate-200 bg-white rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                   Kredi / Risk Limiti (₺)
                 </label>
                 <input
@@ -717,12 +717,12 @@ export default function ContactFormModal({
                   value={creditLimit}
                   onChange={(e) => setCreditLimit(e.target.value === '' ? '' : parseFloat(e.target.value))}
                   placeholder="Örn: 250000"
-                  className="w-full border border-slate-200 bg-white rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                   Özel İskonto Oranı (%)
                 </label>
                 <input
@@ -733,13 +733,13 @@ export default function ContactFormModal({
                   value={discountRate}
                   onChange={(e) => setDiscountRate(e.target.value === '' ? '' : parseFloat(e.target.value))}
                   placeholder="Örn: 5 (%5 indirim)"
-                  className="w-full border border-slate-200 bg-white rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
             </div>
 
-            <div className="border-t border-slate-200 pt-4 space-y-4">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-4">
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                 <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
                 Banka Hesap & IBAN Bilgileri
               </h4>
@@ -754,7 +754,7 @@ export default function ContactFormModal({
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
                     placeholder="Örn: Garanti BBVA - Merter Şb."
-                    className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                 </div>
 
@@ -767,7 +767,7 @@ export default function ContactFormModal({
                     value={bankAccountName}
                     onChange={(e) => setBankAccountName(e.target.value)}
                     placeholder="Banka hesabındaki resmi ad"
-                    className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                 </div>
               </div>
@@ -782,15 +782,15 @@ export default function ContactFormModal({
                   value={iban}
                   onChange={(e) => setIban(e.target.value)}
                   placeholder="TRXX XXXX XXXX XXXX XXXX XXXX XX"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
                 />
               </div>
             </div>
 
             {/* TEK DÜZEN HESAP PLANI (TDHP) MUHASEBE BAĞLANTISI */}
-            <div className="border-t border-slate-200 pt-4 space-y-3">
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                   <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
                   Tek Düzen Muhasebe Hesap Planı (TDHP) Entegrasyonu
                 </h4>
@@ -816,11 +816,11 @@ export default function ContactFormModal({
                       onChange={(e) => setAccountCode(e.target.value)}
                       placeholder={type === 'supplier' ? 'Örn: 320.01.001' : 'Örn: 120.01.001'}
                       list="tdhp-contact-accounts-tab3"
-                      className="w-full border border-indigo-200 bg-white rounded-lg p-2.5 text-xs font-mono font-bold text-indigo-950 focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
+                      className="w-full border border-indigo-200 bg-white dark:bg-slate-900 rounded-lg p-2.5 text-xs font-mono font-bold text-indigo-950 focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
                     />
                     <datalist id="tdhp-contact-accounts-tab3">
                       {suggestedAccounts.map((acc) => (
-                        <option key={`tab3-${acc.id || acc.code}`} value={acc.code}>
+                        <option key={`tab3-${acc.code}`} value={acc.code}>
                           {acc.code} - {acc.name}
                         </option>
                       ))}
@@ -843,7 +843,7 @@ export default function ContactFormModal({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                       Hızlı Hesap Grubu
                     </label>
                     <div className="flex gap-2">
@@ -862,7 +862,7 @@ export default function ContactFormModal({
                         }}
                         className={cn(
                           "flex-1 py-2 rounded-lg text-[10px] font-bold border text-center transition-all",
-                          accountCode.startsWith('120') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          accountCode.startsWith('120') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50"
                         )}
                       >
                         120 Alıcılar
@@ -882,7 +882,7 @@ export default function ContactFormModal({
                         }}
                         className={cn(
                           "flex-1 py-2 rounded-lg text-[10px] font-bold border text-center transition-all",
-                          accountCode.startsWith('320') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          accountCode.startsWith('320') ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-800/50"
                         )}
                       >
                         320 Satıcılar
@@ -891,7 +891,7 @@ export default function ContactFormModal({
                   </div>
                 </div>
 
-                <div className="text-[11px] text-slate-600 bg-white/70 p-3 rounded-lg border border-indigo-100 flex items-start gap-2">
+                <div className="text-[11px] text-slate-600 bg-white dark:bg-slate-900/70 p-3 rounded-lg border border-indigo-100 flex items-start gap-2">
                   <span className="text-indigo-600 font-bold">ℹ️</span>
                   <span>
                     <strong>Otomatik Yevmiye & Defter-i Kebir Entegrasyonu:</strong> Bu cariye kesilen satış veya alış faturaları ile kasa/banka/çek tahsilat-tediyeleri onaylandığında, genel hesap yerine doğrudan burada tanımlanan muavin koduna kaydedilir. Böylece Mizan ve Muavin Defterinde bu carinin net borç/alacak durumu kuruşu kuruşuna listelenir.
@@ -914,18 +914,18 @@ export default function ContactFormModal({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Cari ile ilgili özel anlaşmalar, teslimat şartları, iskonto kuralları veya dahili uyarılar..."
-                className="w-full border border-slate-200 rounded-lg p-3 text-xs focus:ring-1 focus:ring-indigo-500 outline-none leading-relaxed"
+                className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs focus:ring-1 focus:ring-indigo-500 outline-none leading-relaxed"
               />
             </div>
           </div>
         )}
 
         {/* Bottom Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+        <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 uppercase tracking-wider"
+            className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-100 uppercase tracking-wider"
           >
             İptal
           </button>

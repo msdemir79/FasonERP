@@ -234,14 +234,14 @@ export default function OrderDeliveryReport() {
     <div className="space-y-6">
       
       {/* Üst Bar & Sekme Seçimi */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
           <button
             onClick={() => setActiveTab('fulfillment')}
             className={cn(
               "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
-              activeTab === 'fulfillment' ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+              activeTab === 'fulfillment' ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
             )}
           >
             <ShoppingCart className="w-4 h-4 text-indigo-600" />
@@ -251,7 +251,7 @@ export default function OrderDeliveryReport() {
             onClick={() => setActiveTab('pending_invoices')}
             className={cn(
               "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
-              activeTab === 'pending_invoices' ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+              activeTab === 'pending_invoices' ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
             )}
           >
             <Truck className="w-4 h-4 text-amber-600" />
@@ -265,7 +265,7 @@ export default function OrderDeliveryReport() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={activeTab === 'fulfillment' ? handlePrintFulfillment : handlePrintPendingWaybills}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
           >
             <Printer className="w-4 h-4 text-slate-600" />
             Yazdır (A4)
@@ -284,21 +284,21 @@ export default function OrderDeliveryReport() {
       {/* KPI Kartları */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">Toplam Sipariş</span>
             <ShoppingCart className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
+          <div className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">
             {stats.totalPairsOrdered.toLocaleString('tr-TR')} <span className="text-xs font-bold text-slate-400">Çift</span>
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 mt-1">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">
             {stats.totalOrdersCount} Adet Satış Siparişi
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">Sevk Edilen Miktar</span>
             <Truck className="w-4 h-4 text-emerald-600" />
           </div>
@@ -310,28 +310,28 @@ export default function OrderDeliveryReport() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">Kalan Sevk Bakiyesi</span>
             <Clock className="w-4 h-4 text-amber-600" />
           </div>
           <div className="text-2xl font-black text-amber-700 font-mono">
             {stats.totalPairsRemaining.toLocaleString('tr-TR')} <span className="text-xs font-bold text-slate-400">Çift</span>
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 mt-1">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">
             Bekleyen Sevkiyat
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">Açık İrsaliyeler</span>
             <Receipt className="w-4 h-4 text-purple-600" />
           </div>
           <div className="text-2xl font-black text-purple-800 font-mono">
             {stats.pendingWaybillsCount} <span className="text-xs font-bold text-slate-400">İrsaliye</span>
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 mt-1">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">
             ₺{stats.pendingWaybillTotal.toLocaleString('tr-TR')} Fatura Bekliyor
           </div>
         </div>
@@ -340,9 +340,9 @@ export default function OrderDeliveryReport() {
 
       {/* Tab 1: Sipariş Karşılama */}
       {activeTab === 'fulfillment' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
           
-          <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -351,39 +351,39 @@ export default function OrderDeliveryReport() {
                   placeholder="Sipariş no veya müşteri ara..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-3 py-1.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 w-56"
+                  className="pl-9 pr-3 py-1.5 text-xs font-medium bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 w-56"
                 />
               </div>
 
-              <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs">
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs">
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className={cn("px-3 py-1 font-bold rounded-lg transition-all cursor-pointer", statusFilter === 'all' ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600")}
+                  className={cn("px-3 py-1 font-bold rounded-lg transition-all cursor-pointer", statusFilter === 'all' ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-xs" : "text-slate-600")}
                 >
                   Tümü
                 </button>
                 <button
                   onClick={() => setStatusFilter('completed')}
-                  className={cn("px-3 py-1 font-bold rounded-lg transition-all cursor-pointer", statusFilter === 'completed' ? "bg-white text-emerald-700 shadow-xs" : "text-slate-600")}
+                  className={cn("px-3 py-1 font-bold rounded-lg transition-all cursor-pointer", statusFilter === 'completed' ? "bg-white dark:bg-slate-900 text-emerald-700 shadow-xs" : "text-slate-600")}
                 >
                   Tam Sevk
                 </button>
                 <button
                   onClick={() => setStatusFilter('partial')}
-                  className={cn("px-3 py-1 font-bold rounded-lg transition-all cursor-pointer", statusFilter === 'partial' ? "bg-white text-amber-700 shadow-xs" : "text-slate-600")}
+                  className={cn("px-3 py-1 font-bold rounded-lg transition-all cursor-pointer", statusFilter === 'partial' ? "bg-white dark:bg-slate-900 text-amber-700 shadow-xs" : "text-slate-600")}
                 >
                   Kısmi Sevk
                 </button>
                 <button
                   onClick={() => setStatusFilter('pending')}
-                  className={cn("px-3 py-1 font-bold rounded-lg transition-all cursor-pointer", statusFilter === 'pending' ? "bg-white text-rose-700 shadow-xs" : "text-slate-600")}
+                  className={cn("px-3 py-1 font-bold rounded-lg transition-all cursor-pointer", statusFilter === 'pending' ? "bg-white dark:bg-slate-900 text-rose-700 shadow-xs" : "text-slate-600")}
                 >
                   Bekleyen
                 </button>
               </div>
             </div>
 
-            <span className="text-xs font-bold text-slate-500">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
               {filteredOrders.length} Sipariş Listeleniyor
             </span>
           </div>
@@ -391,7 +391,7 @@ export default function OrderDeliveryReport() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                   <th className="py-3 px-3">Sipariş No</th>
                   <th className="py-3 px-3">Tarih</th>
                   <th className="py-3 px-3">Müşteri</th>
@@ -411,17 +411,17 @@ export default function OrderDeliveryReport() {
                   </tr>
                 ) : (
                   filteredOrders.map(o => (
-                    <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 px-3 font-mono font-bold text-slate-700">
+                    <tr key={o.id} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors">
+                      <td className="py-3 px-3 font-mono font-bold text-slate-700 dark:text-slate-200">
                         {o.orderNumber}
                       </td>
                       <td className="py-3 px-3 text-slate-600 font-medium">
                         {new Date(o.date).toLocaleDateString('tr-TR')}
                       </td>
-                      <td className="py-3 px-3 font-bold text-slate-900">
+                      <td className="py-3 px-3 font-bold text-slate-900 dark:text-slate-100">
                         {o.customerName}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">
+                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
                         {o.totalOrderedPairs}
                       </td>
                       <td className="py-3 px-3 text-right font-mono font-black text-emerald-700">
@@ -432,7 +432,7 @@ export default function OrderDeliveryReport() {
                       </td>
                       <td className="py-3 px-3 w-36">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                          <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                             <div 
                               className={cn(
                                 "h-full rounded-full",
@@ -446,7 +446,7 @@ export default function OrderDeliveryReport() {
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
                         ₺{o.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                       </td>
                     </tr>
@@ -461,21 +461,21 @@ export default function OrderDeliveryReport() {
 
       {/* Tab 2: Açık İrsaliyeler */}
       {activeTab === 'pending_invoices' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
           
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
                 <Truck className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-100">
                   Faturalaşmamış Açık Sevk İrsaliyeleri
                 </h3>
                 <p className="text-[10px] text-slate-400 font-semibold">VUK 231/5 gereği sevk irsaliyesi düzenlendikten sonra en geç 7 gün içinde faturası kesilmelidir.</p>
               </div>
             </div>
-            <span className="text-xs font-bold text-slate-500">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
               {pendingWaybills.length} Açık İrsaliye
             </span>
           </div>
@@ -483,7 +483,7 @@ export default function OrderDeliveryReport() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                   <th className="py-3 px-3">İrsaliye No</th>
                   <th className="py-3 px-3">Düzenleme Tarihi</th>
                   <th className="py-3 px-3">Müşteri</th>
@@ -504,20 +504,20 @@ export default function OrderDeliveryReport() {
                   pendingWaybills.map(w => {
                     const isOverdue = w.diffDays > 7;
                     return (
-                      <tr key={w.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-3 font-mono font-bold text-slate-700">
+                      <tr key={w.id} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors">
+                        <td className="py-3 px-3 font-mono font-bold text-slate-700 dark:text-slate-200">
                           {w.waybillNumber}
                         </td>
                         <td className="py-3 px-3 text-slate-600 font-medium">
                           {new Date(w.date).toLocaleDateString('tr-TR')}
                         </td>
-                        <td className="py-3 px-3 font-bold text-slate-900">
+                        <td className="py-3 px-3 font-bold text-slate-900 dark:text-slate-100">
                           {w.customerName}
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
                           {w.totalQuantity} Çift
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
                           ₺{w.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                         </td>
                         <td className="py-3 px-3 text-center font-mono font-bold">

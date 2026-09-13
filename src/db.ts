@@ -104,6 +104,10 @@ export class ProERPDatabase extends Dexie {
       roles: '++id, code, name, isSystem',
       auditLogs: '++id, userId, action, module, timestamp'
     });
+
+    this.version(16).stores({
+      collectionReceipts: '++id, receiptNumber, type, date, contactId, instrument, isAccounted, cashBoxId, bankAccountId'
+    });
   }
 }
 
@@ -562,6 +566,94 @@ export async function seedDatabase() {
             ]
           }
         ]);
+      }
+      // 10. Self-Healing: Repair any corrupted Turkish character sequences (e.g. zİylan -> ZİYLAN or Ziylan)
+      try {
+        const allContacts = await db.contacts.toArray();
+        const contactIdToNameMap = new Map<number, string>();
+
+        for (const c of allContacts) {
+          if (!c.id) continue;
+          let fixedName = c.name;
+          let fixedTitle = c.companyTitle;
+          let needsUpdate = false;
+
+          // Repair 'zİ' or lowercase followed by uppercase İ
+          if (fixedName && /[a-zğüşıöç]İ/.test(fixedName)) {
+            fixedName = fixedName.replace(/([a-zğüşıöç])İ/g, '$1i');
+            needsUpdate = true;
+          }
+          if (fixedTitle && /[a-zğüşıöç]İ/.test(fixedTitle)) {
+            fixedTitle = fixedTitle.replace(/([a-zğüşıöç])İ/g, '$1i');
+            needsUpdate = true;
+          }
+
+          if (needsUpdate) {
+            await db.contacts.update(c.id, {
+              name: fixedName,
+              companyTitle: fixedTitle
+            });
+            contactIdToNameMap.set(c.id, fixedName);
+          } else {
+            contactIdToNameMap.set(c.id, c.name);
+          }
+        }
+
+        // Sync collection receipts with authentic contact names
+        const allReceipts = await db.collectionReceipts.toArray();
+        for (const r of allReceipts) {
+          if (!r.id) continue;
+          let newContactName = r.contactName;
+          if (r.contactId && contactIdToNameMap.has(r.contactId)) {
+            newContactName = contactIdToNameMap.get(r.contactId)!;
+          } else if (newContactName && /[a-zğüşıöç]İ/.test(newContactName)) {
+            newContactName = newContactName.replace(/([a-zğüşıöç])İ/g, '$1i');
+          }
+          if (newContactName && newContactName !== r.contactName) {
+            await db.collectionReceipts.update(r.id, { contactName: newContactName });
+          }
+        }
+
+        // Sync checks with authentic contact names
+        const allChecks = await db.checks.toArray();
+        for (const chk of allChecks) {
+          if (!chk.id) continue;
+          let newContactName = chk.contactName;
+          let newDrawer = chk.drawer;
+          let changed = false;
+
+          if (chk.contactId && contactIdToNameMap.has(chk.contactId)) {
+            newContactName = contactIdToNameMap.get(chk.contactId)!;
+            changed = true;
+          } else if (newContactName && /[a-zğüşıöç]İ/.test(newContactName)) {
+            newContactName = newContactName.replace(/([a-zğüşıöç])İ/g, '$1i');
+            changed = true;
+          }
+
+          if (newDrawer && /[a-zğüşıöç]İ/.test(newDrawer)) {
+            newDrawer = newDrawer.replace(/([a-zğüşıöç])İ/g, '$1i');
+            changed = true;
+          }
+
+          if (changed) {
+            await db.checks.update(chk.id, {
+              contactName: newContactName,
+              drawer: newDrawer
+            });
+          }
+        }
+
+        // Clean account names with corrupted sequences
+        const allAccs = await db.accounts.toArray();
+        for (const acc of allAccs) {
+          if (!acc.id) continue;
+          if (acc.name && /[a-zğüşıöç]İ/.test(acc.name)) {
+            const repairedName = acc.name.replace(/([a-zğüşıöç])İ/g, '$1i');
+            await db.accounts.update(acc.id, { name: repairedName });
+          }
+        }
+      } catch (repairErr) {
+        console.error('Türkçe karakter onarım hatası:', repairErr);
       }
     } finally {
       // Keep promise resolved so subsequent callers immediately return

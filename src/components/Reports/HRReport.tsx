@@ -150,16 +150,16 @@ export default function HRReport() {
     <div className="space-y-6">
       
       {/* Üst Bar: Dönem Seçici, Filtreler & Butonlar */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         
         {/* Sol Taraf: Ay & Yıl ve Filtreler */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
             <Calendar className="w-4 h-4 text-indigo-600 ml-2" />
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer py-1 px-2"
+              className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer py-1 px-2"
             >
               <option value={1}>Ocak</option>
               <option value={2}>Şubat</option>
@@ -178,7 +178,7 @@ export default function HRReport() {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer py-1 px-2 border-l border-slate-200"
+              className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer py-1 px-2 border-l border-slate-200 dark:border-slate-700"
             >
               <option value={2025}>2025</option>
               <option value={2026}>2026</option>
@@ -186,12 +186,12 @@ export default function HRReport() {
             </select>
           </div>
 
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
               onClick={() => setSgkFilter('all')}
               className={cn(
                 "px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                sgkFilter === 'all' ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                sgkFilter === 'all' ? "bg-white dark:bg-slate-900 text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
               )}
             >
               Tümü ({payrolls.filter(p => p.month === selectedMonth && p.year === selectedYear).length})
@@ -200,7 +200,7 @@ export default function HRReport() {
               onClick={() => setSgkFilter('sgk_li')}
               className={cn(
                 "px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                sgkFilter === 'sgk_li' ? "bg-white text-emerald-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                sgkFilter === 'sgk_li' ? "bg-white dark:bg-slate-900 text-emerald-700 shadow-xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
               )}
             >
               SGK'lı
@@ -209,7 +209,7 @@ export default function HRReport() {
               onClick={() => setSgkFilter('sgk_siz')}
               className={cn(
                 "px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                sgkFilter === 'sgk_siz' ? "bg-white text-amber-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                sgkFilter === 'sgk_siz' ? "bg-white dark:bg-slate-900 text-amber-700 shadow-xs" : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
               )}
             >
               Yevmiyeli
@@ -223,7 +223,7 @@ export default function HRReport() {
               placeholder="Personel veya departman ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-3 py-2 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-52"
+              className="pl-9 pr-3 py-2 text-xs font-medium bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-52"
             />
           </div>
         </div>
@@ -232,7 +232,7 @@ export default function HRReport() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={handlePrintPayroll}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
           >
             <Printer className="w-4 h-4 text-slate-600" />
             Yazdır (A4)
@@ -247,10 +247,10 @@ export default function HRReport() {
           </button>
           <button
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer border border-slate-200"
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
             title="CSV formatında veri seti indir"
           >
-            <FileDown className="w-3.5 h-3.5 text-slate-500" />
+            <FileDown className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             CSV
           </button>
         </div>
@@ -259,54 +259,54 @@ export default function HRReport() {
       {/* KPI Kartları */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">Toplam Personel</span>
             <Users className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
+          <div className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">
             {stats.totalCount} <span className="text-xs font-bold text-slate-400">Kişi</span>
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 mt-1">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">
             <span className="text-emerald-700">{stats.sgkLiCount} SGK'lı</span> • <span className="text-amber-700">{stats.dailyCount} Yevmiyeli</span>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">Toplam Net Maaş</span>
             <DollarSign className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-black text-emerald-700 font-mono">
             ₺{stats.totalNet.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 mt-1">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">
             Hak Edilen Net Maaş Tutarı
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">SGK & Vergi Kesintisi</span>
             <ShieldCheck className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-2xl font-black text-blue-700 font-mono">
             ₺{stats.totalLegalDeduction.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 mt-1">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">
             İşçi SGK + Gelir/Damga Vergisi
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">İşveren Toplam Maliyeti</span>
             <Building2 className="w-4 h-4 text-purple-600" />
           </div>
           <div className="text-2xl font-black text-purple-800 font-mono">
             ₺{stats.totalEmployerCost.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] font-semibold text-slate-500 mt-1">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">
             Net + İşçi/İşveren SGK + Vergiler
           </div>
         </div>
@@ -314,20 +314,20 @@ export default function HRReport() {
       </div>
 
       {/* Bordro İcmal Tablosu */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
               <Users className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-100">
                 Personel Bordro & Maliyet İcmal Tablosu
               </h3>
               <p className="text-[10px] text-slate-400 font-semibold">Resmi ve gayriresmi ücret tahakkuku ve şirket maliyeti</p>
             </div>
           </div>
-          <span className="text-[11px] font-bold text-slate-500">
+          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
             {filteredPayrolls.length} Kayıt Listeleniyor
           </span>
         </div>
@@ -335,7 +335,7 @@ export default function HRReport() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                 <th className="py-3 px-3">Kod</th>
                 <th className="py-3 px-3">Personel</th>
                 <th className="py-3 px-3">Departman</th>
@@ -362,11 +362,11 @@ export default function HRReport() {
                 </tr>
               ) : (
                 filteredPayrolls.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-3 font-mono font-bold text-slate-500 text-[11px]">
+                  <tr key={p.id} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors">
+                    <td className="py-3 px-3 font-mono font-bold text-slate-500 dark:text-slate-400 text-[11px]">
                       {p.employeeCode}
                     </td>
-                    <td className="py-3 px-3 font-black text-slate-900">
+                    <td className="py-3 px-3 font-black text-slate-900 dark:text-slate-100">
                       {p.employeeName}
                     </td>
                     <td className="py-3 px-3 text-slate-600 font-medium">
@@ -383,13 +383,13 @@ export default function HRReport() {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-2 text-center font-mono font-bold text-slate-700">
+                    <td className="py-3 px-2 text-center font-mono font-bold text-slate-700 dark:text-slate-200">
                       {p.daysWorked}
                     </td>
                     <td className="py-3 px-2 text-center font-mono font-semibold text-slate-600">
                       {p.overtimeHours > 0 ? `${p.overtimeHours} sa` : '-'}
                     </td>
-                    <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">
+                    <td className="py-3 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
                       ₺{p.totalGrossPay.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-3 px-3 text-right font-mono font-medium text-slate-600">
@@ -427,7 +427,7 @@ export default function HRReport() {
                           Fiş: #{p.journalEntryId || 'OK'}
                         </span>
                       ) : (
-                        <span className="inline-block text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                        <span className="inline-block text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                           Bekliyor
                         </span>
                       )}
@@ -438,17 +438,17 @@ export default function HRReport() {
             </tbody>
             {filteredPayrolls.length > 0 && (
               <tfoot>
-                <tr className="bg-slate-100/90 font-black text-slate-900 border-t-2 border-slate-300">
+                <tr className="bg-slate-100 dark:bg-slate-800/90 font-black text-slate-900 dark:text-slate-100 border-t-2 border-slate-300">
                   <td colSpan={6} className="py-3.5 px-3 text-right uppercase text-[10px] tracking-wider text-slate-600">
                     Genel İcmal Toplamı:
                   </td>
                   <td className="py-3.5 px-3 text-right font-mono">
                     ₺{stats.totalGross.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                   </td>
-                  <td className="py-3.5 px-3 text-right font-mono text-slate-700">
+                  <td className="py-3.5 px-3 text-right font-mono text-slate-700 dark:text-slate-200">
                     ₺{filteredPayrolls.reduce((s, p) => s + (p.employeeSgkShare || 0) + (p.employeeUnemploymentShare || 0), 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                   </td>
-                  <td className="py-3.5 px-3 text-right font-mono text-slate-700">
+                  <td className="py-3.5 px-3 text-right font-mono text-slate-700 dark:text-slate-200">
                     ₺{filteredPayrolls.reduce((s, p) => s + (p.incomeTax || 0) + (p.stampTax || 0), 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="py-3.5 px-3 text-right font-mono text-rose-700">
@@ -457,7 +457,7 @@ export default function HRReport() {
                   <td className="py-3.5 px-3 text-right font-mono text-emerald-800 bg-emerald-100/60">
                     ₺{stats.totalNet.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                   </td>
-                  <td className="py-3.5 px-3 text-right font-mono text-slate-700">
+                  <td className="py-3.5 px-3 text-right font-mono text-slate-700 dark:text-slate-200">
                     ₺{stats.totalEmployerSgk.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="py-3.5 px-3 text-right font-mono text-purple-900 bg-purple-100/60">

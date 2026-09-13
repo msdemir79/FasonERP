@@ -34,7 +34,14 @@ import {
   Grid,
   BookOpen,
   BarChart3,
-  ExternalLink
+  ExternalLink,
+  FileText,
+  Receipt,
+  Calendar,
+  ArrowUpRight,
+  ArrowDownLeft,
+  FileDown,
+  RotateCcw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -45,6 +52,10 @@ import BarcodePrintModal from './BarcodePrintModal';
 import { resizeAndOptimizeImage } from '../utils/imageUtils';
 import PageHeader from './PageHeader';
 import { StockCategoryType, Product, AssortmentTemplate, BarcodeVariant } from '../types';
+import { printTabularReport } from '../lib/printService';
+import { exportToCsv } from '../lib/exportService';
+import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 // Category Definitions & Configurations
 export interface CategoryConfig {
@@ -120,6 +131,7 @@ export default function Inventory() {
   const products = useLiveQuery(() => db.products.toArray());
   const templates = useLiveQuery(() => db.assortmentTemplates.toArray());
   const tdhpAccounts = useLiveQuery(() => db.accounts.toArray());
+  const inventoryLogs = useLiveQuery(() => db.inventoryLogs.toArray());
 
   // Navigation & Filter States
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<'all' | StockCategoryType>('all');
@@ -131,6 +143,7 @@ export default function Inventory() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -138,6 +151,149 @@ export default function Inventory() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Statement / Movement Ledger Modal Filter States
+  const [statementTypeFilter, setStatementTypeFilter] = useState<'all' | 'in' | 'out' | 'production_in' | 'production_out'>('all');
+  const [statementSearch, setStatementSearch] = useState('');
+  const [statementDateRange, setStatementDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
+
+  // Compute movement logs and running balance for selectedProduct
+  const productLogs = useMemo(() => {
+    if (!selectedProduct || !inventoryLogs) return [];
+    
+    let filtered = inventoryLogs.filter(l => l.productId === selectedProduct.id);
+
+    if (statementDateRange.start) {
+      const startDate = new Date(statementDateRange.start);
+      startDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(l => l.date && new Date(l.date) >= startDate);
+    }
+    if (statementDateRange.end) {
+      const endDate = new Date(statementDateRange.end);
+      endDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(l => l.date && new Date(l.date) <= endDate);
+    }
+
+    if (statementTypeFilter !== 'all') {
+      filtered = filtered.filter(l => l.type === statementTypeFilter);
+    }
+
+    if (statementSearch.trim()) {
+      const s = statementSearch.toLowerCase();
+      filtered = filtered.filter(l => 
+        (l.description || '').toLowerCase().includes(s) ||
+        (l.color || '').toLowerCase().includes(s) ||
+        (l.size || '').toLowerCase().includes(s)
+      );
+    }
+
+    // Sort chronologically (oldest to newest) to calculate running balance accurately
+    const sorted = [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    let runningBalance = 0;
+    const withBalance = sorted.map(log => {
+      const qty = Number(log.quantity) || 0;
+      runningBalance += qty;
+      return {
+        ...log,
+        runningBalance
+      };
+    });
+
+    return withBalance.reverse();
+  }, [selectedProduct, inventoryLogs, statementDateRange, statementTypeFilter, statementSearch]);
+
+  const statementStats = useMemo(() => {
+    if (!productLogs || productLogs.length === 0) {
+      return { totalIn: 0, totalOut: 0, netChange: 0, totalCount: 0 };
+    }
+    let totalIn = 0;
+    let totalOut = 0;
+    productLogs.forEach(l => {
+      const q = Number(l.quantity) || 0;
+      if (q > 0) totalIn += q;
+      else totalOut += Math.abs(q);
+    });
+    return {
+      totalIn,
+      totalOut,
+      netChange: totalIn - totalOut,
+      totalCount: productLogs.length
+    };
+  }, [productLogs]);
+
+  const handlePrintStatement = () => {
+    if (!selectedProduct || !productLogs || productLogs.length === 0) return;
+
+    const headers = ['TARİH & SAAT', 'HAREKET TİPİ', 'VARYANT / RENK / BEDEN', 'GİRİŞ (+)', 'ÇIKIŞ (-)', 'YÜRÜYEN BAKİYE', 'AÇIKLAMA'];
+    const rows = productLogs.map(l => {
+      const dateFormatted = l.date ? format(new Date(l.date), 'dd.MM.yyyy HH:mm', { locale: tr }) : '-';
+      const typeLabel = 
+        l.type === 'in' ? 'Stok Girişi' :
+        l.type === 'out' ? 'Stok Çıkışı' :
+        l.type === 'production_in' ? 'Üretim Girişi' :
+        l.type === 'production_out' ? 'Hammadde Sarf' : l.type;
+
+      const variantLabel = [l.color, l.size].filter(Boolean).join(' / ') || '-';
+      const qty = Number(l.quantity) || 0;
+      const inQty = qty > 0 ? `+${qty}` : '-';
+      const outQty = qty < 0 ? `${Math.abs(qty)}` : '-';
+
+      return [
+        dateFormatted,
+        typeLabel,
+        variantLabel,
+        inQty,
+        outQty,
+        `${l.runningBalance} ${selectedProduct.unit}`,
+        l.description || '-'
+      ];
+    });
+
+    printTabularReport(
+      `Stok Kart Ekstresi: ${selectedProduct.name} (${selectedProduct.code})`,
+      `Detaylı Stok Hareket Ve Bakiyeleri Dökümü - Birim: ${selectedProduct.unit}`,
+      headers,
+      rows,
+      [
+        { label: 'Mevcut Stok', value: `${selectedProduct.stock} ${selectedProduct.unit}` },
+        { label: 'Toplam Giriş', value: `+${statementStats.totalIn} ${selectedProduct.unit}` },
+        { label: 'Toplam Çıkış', value: `-${statementStats.totalOut} ${selectedProduct.unit}` },
+        { label: 'İşlem Adedi', value: statementStats.totalCount }
+      ]
+    );
+  };
+
+  const handleExportStatementCsv = () => {
+    if (!selectedProduct || !productLogs || productLogs.length === 0) return;
+
+    const headers = ['Tarih', 'Ürün Kodu', 'Ürün Adı', 'Hareket Tipi', 'Renk/Beden', 'Giriş', 'Çıkış', 'Yürüyen Bakiye', 'Birim', 'Açıklama'];
+    const rows = productLogs.map(l => {
+      const dateFormatted = l.date ? format(new Date(l.date), 'dd.MM.yyyy HH:mm', { locale: tr }) : '-';
+      const typeLabel = 
+        l.type === 'in' ? 'Stok Girişi' :
+        l.type === 'out' ? 'Stok Çıkışı' :
+        l.type === 'production_in' ? 'Üretim Girişi' :
+        l.type === 'production_out' ? 'Hammadde Sarf' : l.type;
+
+      const variantLabel = [l.color, l.size].filter(Boolean).join(' / ') || '-';
+      const qty = Number(l.quantity) || 0;
+      return [
+        dateFormatted,
+        selectedProduct.code,
+        selectedProduct.name,
+        typeLabel,
+        variantLabel,
+        qty > 0 ? qty : 0,
+        qty < 0 ? Math.abs(qty) : 0,
+        l.runningBalance,
+        selectedProduct.unit,
+        l.description || '-'
+      ];
+    });
+
+    exportToCsv(`${selectedProduct.code}_Stok_Ekstresi.csv`, headers, rows);
+  };
 
   // Active Tab inside Add/Edit Modal: 'general' | 'matrix' | 'images' | 'barcodes' | 'accounting'
   const [activeTab, setActiveTab] = useState<'general' | 'matrix' | 'images' | 'barcodes' | 'accounting'>('general');
@@ -775,7 +931,7 @@ export default function Inventory() {
 
             <button
               onClick={() => setIsTemplateModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
             >
               <Ruler className="w-3.5 h-3.5 text-indigo-500" />
               <span>Asorti Şablonları</span>
@@ -783,9 +939,9 @@ export default function Inventory() {
 
             <button
               onClick={() => setIsSettingsModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
             >
-              <Settings className="w-3.5 h-3.5 text-slate-500" />
+              <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>Barkod Ayarları</span>
             </button>
 
@@ -809,13 +965,13 @@ export default function Inventory() {
             "p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between group",
             selectedCategoryTab === 'all'
               ? "bg-slate-900 border-slate-900 text-white shadow-xl shadow-slate-900/10"
-              : "bg-white border-slate-200/80 hover:border-slate-300 text-slate-800"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 hover:border-slate-300 text-slate-800 dark:text-slate-200"
           )}
         >
           <div className="flex items-center justify-between mb-2">
             <span className={cn(
               "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md",
-              selectedCategoryTab === 'all' ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              selectedCategoryTab === 'all' ? "bg-white dark:bg-slate-900/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600"
             )}>
               TÜMÜ
             </span>
@@ -823,7 +979,7 @@ export default function Inventory() {
           </div>
           <div>
             <div className="text-2xl font-black">{categoryCounts.all}</div>
-            <div className={cn("text-[11px] font-semibold mt-0.5", selectedCategoryTab === 'all' ? "text-slate-300" : "text-slate-500")}>
+            <div className={cn("text-[11px] font-semibold mt-0.5", selectedCategoryTab === 'all' ? "text-slate-300" : "text-slate-500 dark:text-slate-400")}>
               Toplam Stok Kartı
             </div>
           </div>
@@ -843,13 +999,13 @@ export default function Inventory() {
                 "p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between group",
                 isSelected
                   ? "bg-slate-900 border-slate-900 text-white shadow-xl shadow-slate-900/10"
-                  : "bg-white border-slate-200/80 hover:border-slate-300 text-slate-800"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 hover:border-slate-300 text-slate-800 dark:text-slate-200"
               )}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className={cn(
                   "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md",
-                  isSelected ? "bg-white/20 text-white" : `${cfg.bgClass} ${cfg.textClass}`
+                  isSelected ? "bg-white dark:bg-slate-900/20 text-white" : `${cfg.bgClass} ${cfg.textClass}`
                 )}>
                   {cfg.badge}
                 </span>
@@ -857,7 +1013,7 @@ export default function Inventory() {
               </div>
               <div>
                 <div className="text-2xl font-black">{categoryCounts[catKey]}</div>
-                <div className={cn("text-[11px] font-semibold mt-0.5 truncate", isSelected ? "text-slate-300" : "text-slate-500")}>
+                <div className={cn("text-[11px] font-semibold mt-0.5 truncate", isSelected ? "text-slate-300" : "text-slate-500 dark:text-slate-400")}>
                   {cfg.title.split(' ')[0]} Kartları
                 </div>
               </div>
@@ -867,7 +1023,7 @@ export default function Inventory() {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 shadow-sm">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -875,7 +1031,7 @@ export default function Inventory() {
             placeholder="Stok Kodu, Ürün Adı, Marka, Barkod veya Renk ile ara..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all"
+            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white dark:bg-slate-900 transition-all"
           />
           {searchTerm && (
             <button
@@ -894,7 +1050,7 @@ export default function Inventory() {
               "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border",
               filterLowStock
                 ? "bg-rose-50 border-rose-200 text-rose-700 shadow-sm"
-                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
             )}
           >
             <AlertTriangle className={cn("w-3.5 h-3.5", filterLowStock ? "text-rose-600" : "text-slate-400")} />
@@ -907,7 +1063,7 @@ export default function Inventory() {
               "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border",
               filterVariantOnly
                 ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm"
-                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
             )}
           >
             <Grid className={cn("w-3.5 h-3.5", filterVariantOnly ? "text-indigo-600" : "text-slate-400")} />
@@ -917,13 +1073,13 @@ export default function Inventory() {
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
         {filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-            <div className="w-16 h-16 rounded-3xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-300 mb-4">
+            <div className="w-16 h-16 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-300 mb-4">
               <Boxes className="w-8 h-8" />
             </div>
-            <h3 className="text-base font-black text-slate-800 uppercase tracking-tight">Kayıtlı Stok Bulunamadı</h3>
+            <h3 className="text-base font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">Kayıtlı Stok Bulunamadı</h3>
             <p className="text-xs text-slate-400 font-semibold max-w-sm mt-1 mb-6">
               Arama kriterlerinize uygun kart bulunamadı veya henüz stok kartı eklenmedi.
             </p>
@@ -938,7 +1094,7 @@ export default function Inventory() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                <tr className="bg-slate-50 dark:bg-slate-800/50/80 border-b border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 text-[10px] font-black text-slate-400 uppercase tracking-wider">
                   <th className="py-4 px-5">Stok / Malzeme Kartı</th>
                   <th className="py-4 px-4">Kategori & Tür</th>
                   <th className="py-4 px-4">Beden & Varyant</th>
@@ -957,12 +1113,12 @@ export default function Inventory() {
                   return (
                     <tr 
                       key={product.id} 
-                      className="hover:bg-slate-50/80 transition-colors group"
+                      className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors group"
                     >
                       {/* Product Name & Code */}
                       <td className="py-3.5 px-5">
                         <div className="flex items-center gap-3.5">
-                          <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden flex-shrink-0 flex items-center justify-center">
                             {product.image ? (
                               <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                             ) : (
@@ -971,7 +1127,7 @@ export default function Inventory() {
                           </div>
                           <div className="space-y-0.5">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-[10px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                              <span className="font-mono text-[10px] font-black px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
                                 {product.code}
                               </span>
                               {product.accountingCode && (
@@ -985,7 +1141,7 @@ export default function Inventory() {
                                 </span>
                               )}
                             </div>
-                            <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                            <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 transition-colors">
                               {product.name}
                             </div>
                             {product.brand && (
@@ -1008,7 +1164,7 @@ export default function Inventory() {
                             {cfg.badge}
                           </span>
                           {product.subType && (
-                            <div className="text-[10px] text-slate-500 font-bold uppercase">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">
                               {product.subType}
                             </div>
                           )}
@@ -1022,7 +1178,7 @@ export default function Inventory() {
                             {product.colors && product.colors.length > 0 ? (
                               <div className="flex items-center gap-1 flex-wrap">
                                 {product.colors.map(col => (
-                                  <span key={col} className="text-[9px] font-black uppercase px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                                  <span key={col} className="text-[9px] font-black uppercase px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-md border border-slate-200 dark:border-slate-700">
                                     {col}
                                   </span>
                                 ))}
@@ -1044,7 +1200,7 @@ export default function Inventory() {
                       {/* Prices */}
                       <td className="py-3.5 px-4">
                         <div className="space-y-0.5">
-                          <div className="text-[11px] font-bold text-slate-700">
+                          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
                             ₺{(product.sellingPrice || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                           </div>
                           <div className="text-[9px] text-slate-400 font-bold">
@@ -1058,10 +1214,10 @@ export default function Inventory() {
                         <div className="space-y-1">
                           <div className={cn(
                             "text-sm font-black font-mono inline-flex items-center gap-1",
-                            isLow ? "text-rose-600" : "text-slate-900"
+                            isLow ? "text-rose-600" : "text-slate-900 dark:text-slate-100"
                           )}>
                             <span>{product.stock}</span>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">{product.unit}</span>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">{product.unit}</span>
                           </div>
                           {isLow && (
                             <div className="text-[9px] font-black text-rose-500 uppercase tracking-tight flex items-center justify-end gap-1">
@@ -1083,7 +1239,7 @@ export default function Inventory() {
                           <button
                             onClick={() => { setSelectedProduct(product); setIsDetailModalOpen(true); }}
                             title="Kart Detayı"
-                            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors"
+                            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 hover:text-slate-900 dark:text-slate-100 transition-colors"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -1116,11 +1272,26 @@ export default function Inventory() {
                             <ArrowUp className="w-3.5 h-3.5" />
                           </button>
 
+                          {/* Stok Ekstresi / Hareket Raporu Button */}
+                          <button
+                            onClick={() => {
+                              setSelectedProduct(product);
+                              setStatementDateRange({ start: '', end: '' });
+                              setStatementTypeFilter('all');
+                              setStatementSearch('');
+                              setIsStatementModalOpen(true);
+                            }}
+                            title="Stok Kart Ekstresi / Hareket Raporu"
+                            className="p-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-600 transition-colors cursor-pointer"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Edit Button */}
                           <button
                             onClick={() => handleOpenEditModal(product)}
                             title="Kartı Düzenle"
-                            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors"
+                            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 hover:text-slate-900 dark:text-slate-100 transition-colors"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -1166,11 +1337,11 @@ export default function Inventory() {
                         "p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between gap-3 relative",
                         isSelected
                           ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                          : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
+                          : "bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
                       )}
                     >
                       <div className="flex items-center justify-between w-full">
-                        <IconComp className={cn("w-5 h-5", isSelected ? "text-white" : "text-slate-500")} />
+                        <IconComp className={cn("w-5 h-5", isSelected ? "text-white" : "text-slate-500 dark:text-slate-400")} />
                         {isSelected && <Check className="w-4 h-4 text-white" />}
                       </div>
                       <div>
@@ -1187,10 +1358,10 @@ export default function Inventory() {
           )}
 
           {/* Subtype customizable input and quick select chips */}
-          <div className="space-y-3 bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
+          <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50/70 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Tag className="w-3.5 h-3.5 text-indigo-600" />
                   <span>Malzeme / Ürün Alt Türü (Serbestçe Yazabilir veya Seçebilirsiniz)</span>
                 </label>
@@ -1230,7 +1401,7 @@ export default function Inventory() {
                     }
                   }}
                   placeholder="Örn: Termo Taban, Poliüretan Taban, Vidala Deri, 8mm Eva, Ortopedik Mostra, Kilitli Toka..."
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none shadow-sm transition-all"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 placeholder:text-slate-400 placeholder:font-normal focus:bg-white dark:bg-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none shadow-sm transition-all"
                   list="subtype-suggestions"
                 />
                 <datalist id="subtype-suggestions">
@@ -1274,7 +1445,7 @@ export default function Inventory() {
                         "px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border",
                         isSelected
                           ? "bg-indigo-600 border-indigo-600 text-white shadow-sm font-black"
-                          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 hover:text-slate-900 dark:text-slate-100"
                       )}
                     >
                       {st}
@@ -1286,7 +1457,7 @@ export default function Inventory() {
           </div>
 
           {/* Step Tabs Navigation */}
-          <div className="flex border-b border-slate-200/80 gap-6">
+          <div className="flex border-b border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 gap-6">
             <button
               type="button"
               onClick={() => setActiveTab('general')}
@@ -1356,7 +1527,7 @@ export default function Inventory() {
                     value={productForm.code}
                     onChange={e => setProductForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
                     placeholder="Örn: AYK-102, TAB-3645, VID-01"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold uppercase focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold uppercase focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                 </div>
 
@@ -1370,7 +1541,7 @@ export default function Inventory() {
                     value={productForm.name}
                     onChange={e => setProductForm(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Örn: Oxford Deri Klasik Ayakkabı, Termo Taban Siyah, Siyah Vidala Deri..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                 </div>
               </div>
@@ -1383,7 +1554,7 @@ export default function Inventory() {
                     value={productForm.brand}
                     onChange={e => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
                     placeholder="Örn: ProShoes, DeriSan..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                 </div>
 
@@ -1397,7 +1568,7 @@ export default function Inventory() {
                     value={subType}
                     onChange={e => setSubType(e.target.value)}
                     placeholder="Örn: Termo Taban, 8mm Eva, Spor, Bot..."
-                    className="w-full bg-slate-50 border border-indigo-200 rounded-xl p-3 text-xs font-bold text-indigo-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-indigo-200 rounded-xl p-3 text-xs font-bold text-indigo-900 focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                     list="subtype-general-suggestions"
                   />
                   <datalist id="subtype-general-suggestions">
@@ -1415,7 +1586,7 @@ export default function Inventory() {
                   <select
                     value={productForm.unit}
                     onChange={e => setProductForm(prev => ({ ...prev, unit: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   >
                     {(CATEGORY_CONFIGS[categoryType]?.defaultUnits || ['Çift', 'Adet', 'Kg', 'dm²', 'Metre']).map(u => (
                       <option key={u} value={u}>{u}</option>
@@ -1430,21 +1601,21 @@ export default function Inventory() {
                     value={productForm.shelf}
                     onChange={e => setProductForm(prev => ({ ...prev, shelf: e.target.value }))}
                     placeholder="Örn: A-12, Taban-04..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                 </div>
               </div>
 
               {/* Pricing & Stock Numbers */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alış Fiyatı (₺)</label>
+                  <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Alış Fiyatı (₺)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={productForm.buyingPrice}
                     onChange={e => setProductForm(prev => ({ ...prev, buyingPrice: Number(e.target.value) }))}
-                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold outline-none"
                   />
                 </div>
 
@@ -1455,12 +1626,12 @@ export default function Inventory() {
                     step="0.01"
                     value={productForm.sellingPrice}
                     onChange={e => setProductForm(prev => ({ ...prev, sellingPrice: Number(e.target.value) }))}
-                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-indigo-600 outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-indigo-600 outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                     {hasSizeVariants ? 'Toplam Stok (Oto)' : 'Başlangıç Stoğu'}
                   </label>
                   <input
@@ -1468,7 +1639,7 @@ export default function Inventory() {
                     disabled={hasSizeVariants && Object.keys(matrixData).length > 0}
                     value={productForm.stock}
                     onChange={e => setProductForm(prev => ({ ...prev, stock: Number(e.target.value) }))}
-                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-black outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-black outline-none"
                   />
                 </div>
 
@@ -1478,7 +1649,7 @@ export default function Inventory() {
                     type="number"
                     value={productForm.minStock}
                     onChange={e => setProductForm(prev => ({ ...prev, minStock: Number(e.target.value) }))}
-                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold outline-none"
                   />
                 </div>
               </div>
@@ -1490,18 +1661,18 @@ export default function Inventory() {
                     <BookOpen className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-800 flex items-center flex-wrap gap-1.5">
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center flex-wrap gap-1.5">
                       <span>TDHP Stok Kodu:</span>
-                      <span className="font-mono bg-white px-2 py-0.5 rounded border border-indigo-200 text-indigo-700 font-black">
+                      <span className="font-mono bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-indigo-200 text-indigo-700 font-black">
                         {productForm.accountingCode || 'Belirtilmedi'}
                       </span>
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        | Satış: <span className="font-mono text-slate-700 font-bold">{productForm.salesAccountCode || '600.01'}</span>
-                        | Alış: <span className="font-mono text-slate-700 font-bold">{productForm.purchaseAccountCode || '150.01'}</span>
-                        | KDV: <span className="font-mono text-slate-700 font-bold">%{productForm.vatRate ?? 20}</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                        | Satış: <span className="font-mono text-slate-700 dark:text-slate-200 font-bold">{productForm.salesAccountCode || '600.01'}</span>
+                        | Alış: <span className="font-mono text-slate-700 dark:text-slate-200 font-bold">{productForm.purchaseAccountCode || '150.01'}</span>
+                        | KDV: <span className="font-mono text-slate-700 dark:text-slate-200 font-bold">%{productForm.vatRate ?? 20}</span>
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 font-normal">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">
                       Fatura ve stok hareketlerinde bu hesap kodlarına otomatik yevmiye kaydı işlenir.
                     </p>
                   </div>
@@ -1516,18 +1687,18 @@ export default function Inventory() {
               </div>
 
               {/* Color Options for ALL Categories (Deri, Kumaş, Bağcık, Mostra, Fuspet, Taban vb.) */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Palette className="w-4 h-4 text-indigo-600" />
-                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                    <label className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                       Renk Seçenekleri & Varyantlar
                     </label>
                     <span className="text-[10px] font-black bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full border border-indigo-200">
                       {colors.length} Renk Tanımlı
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-500 font-semibold">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
                     {categoryType === 'raw_material' ? 'Deri, Suni Deri, Kumaş, Astar renkleri' :
                      categoryType === 'accessory' ? 'Bağcık, Toka, İplik, Fermuar renkleri' :
                      categoryType === 'semi_finished' ? 'Mostra, Fuspet, Taban renk varyantları' : 'Ayakkabı renk varyantları'}
@@ -1543,7 +1714,7 @@ export default function Inventory() {
                       value={newColor}
                       onChange={e => setNewColor(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColor(); } }}
-                      className="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                      className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                     />
                     <button
                       type="button"
@@ -1574,7 +1745,7 @@ export default function Inventory() {
                             "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1",
                             isAdded
                               ? "bg-indigo-600 text-white shadow-sm"
-                              : "bg-white border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+                              : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
                           )}
                         >
                           {quickCol}
@@ -1590,7 +1761,7 @@ export default function Inventory() {
                       {colors.map(col => (
                         <span
                           key={col}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border-2 border-indigo-100 rounded-xl text-xs font-black uppercase text-indigo-950 shadow-sm"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900 border-2 border-indigo-100 rounded-xl text-xs font-black uppercase text-indigo-950 shadow-sm"
                         >
                           <span className="w-2 h-2 rounded-full bg-indigo-600" />
                           {col}
@@ -1635,10 +1806,10 @@ export default function Inventory() {
           {activeTab === 'matrix' && hasSizeVariants && (
             <div className="space-y-6">
               {/* Color & Template selector */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
                 {/* Colors */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                     1. Renk Varyantları
                   </label>
                   <div className="flex gap-2">
@@ -1648,7 +1819,7 @@ export default function Inventory() {
                       value={newColor}
                       onChange={e => setNewColor(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColor(); } }}
-                      className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold uppercase outline-none"
+                      className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold uppercase outline-none"
                     />
                     <button
                       type="button"
@@ -1660,7 +1831,7 @@ export default function Inventory() {
                   </div>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {colors.map(col => (
-                      <span key={col} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-black uppercase text-slate-700 shadow-sm">
+                      <span key={col} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-black uppercase text-slate-700 dark:text-slate-200 shadow-sm">
                         {col}
                         <button type="button" onClick={() => removeColor(col)} className="text-slate-400 hover:text-rose-500">
                           <X className="w-3.5 h-3.5" />
@@ -1672,13 +1843,13 @@ export default function Inventory() {
 
                 {/* Assortment Template */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                     2. Asorti / Numara Şablonu
                   </label>
                   <select
                     value={selectedTemplateId || ''}
                     onChange={e => setSelectedTemplateId(Number(e.target.value) || undefined)}
-                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold outline-none"
                   >
                     <option value="">Şablon Seçiniz</option>
                     {templates?.map(t => (
@@ -1707,7 +1878,7 @@ export default function Inventory() {
               {/* Live Matrix Table */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                     <Grid className="w-4 h-4 text-indigo-600" /> Canlı Stok Matrisi
                   </h4>
                   <div className="text-[10px] text-slate-400 font-bold">
@@ -1715,13 +1886,13 @@ export default function Inventory() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm">
+                <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-900 shadow-sm">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
+                      <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                         <th className="p-3 text-left font-black text-slate-600 uppercase w-32">Renk / Numara</th>
                         {templates?.find(t => t.id === (selectedTemplateId || selectedProduct?.assortmentTemplateId))?.items.map((it, idx) => (
-                          <th key={idx} className="p-3 text-center border-l border-slate-200 font-black text-slate-800">
+                          <th key={idx} className="p-3 text-center border-l border-slate-200 dark:border-slate-700 font-black text-slate-800 dark:text-slate-200">
                             {it.size}
                             <div className="text-[9px] text-slate-400 font-semibold">Oran: {it.quantity}</div>
                           </th>
@@ -1741,10 +1912,10 @@ export default function Inventory() {
                         </tr>
                       ) : (
                         colors.map(col => (
-                          <tr key={col} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
-                            <td className="p-3 font-black text-slate-900 uppercase">{col}</td>
+                          <tr key={col} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:bg-slate-800/50/50">
+                            <td className="p-3 font-black text-slate-900 dark:text-slate-100 uppercase">{col}</td>
                             {templates?.find(t => t.id === (selectedTemplateId || selectedProduct?.assortmentTemplateId))?.items.map((it, sIdx) => (
-                              <td key={sIdx} className="p-1.5 border-l border-slate-100">
+                              <td key={sIdx} className="p-1.5 border-l border-slate-100 dark:border-slate-800">
                                 <input
                                   type="number"
                                   min="0"
@@ -1760,7 +1931,7 @@ export default function Inventory() {
                                       }
                                     }));
                                   }}
-                                  className="w-full text-center py-2 border border-slate-200 rounded-lg font-black text-slate-800 focus:bg-indigo-50/50 focus:border-indigo-300 outline-none"
+                                  className="w-full text-center py-2 border border-slate-200 dark:border-slate-700 rounded-lg font-black text-slate-800 dark:text-slate-200 focus:bg-indigo-50/50 focus:border-indigo-300 outline-none"
                                 />
                               </td>
                             ))}
@@ -1777,7 +1948,7 @@ export default function Inventory() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('general')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100"
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
                 >
                   Geri Dön
                 </button>
@@ -1802,12 +1973,12 @@ export default function Inventory() {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                     Ana Katalog Fotoğrafı
                   </label>
-                  <div className="aspect-square bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl overflow-hidden relative flex items-center justify-center group hover:border-indigo-400 transition-colors">
+                  <div className="aspect-square bg-slate-50 dark:bg-slate-800/50 border-2 border-dashed border-slate-300 rounded-2xl overflow-hidden relative flex items-center justify-center group hover:border-indigo-400 transition-colors">
                     {mainImage ? (
                       <>
                         <img src={mainImage} alt="Main" className="w-full h-full object-contain" />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          <label className="cursor-pointer bg-white text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold">
+                          <label className="cursor-pointer bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold">
                             Değiştir
                             <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                           </label>
@@ -1823,7 +1994,7 @@ export default function Inventory() {
                     ) : (
                       <label className="cursor-pointer flex flex-col items-center justify-center p-6 text-center">
                         <Camera className="w-8 h-8 text-slate-300 mb-2 group-hover:text-indigo-500 transition-colors" />
-                        <span className="text-xs font-bold text-slate-500">Fotoğraf Yükle</span>
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Fotoğraf Yükle</span>
                         <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                       </label>
                     )}
@@ -1836,7 +2007,7 @@ export default function Inventory() {
                     Renk Varyantı Fotoğrafları
                   </label>
                   {colors.length === 0 ? (
-                    <div className="p-8 bg-slate-50 border border-slate-200 rounded-2xl text-center text-slate-400 text-xs font-semibold">
+                    <div className="p-8 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-center text-slate-400 text-xs font-semibold">
                       Varyant sekmesinden renk tanımladığınızda renk bazlı fotoğraflar buraya eklenebilir.
                     </div>
                   ) : (
@@ -1844,8 +2015,8 @@ export default function Inventory() {
                       {colors.map(col => {
                         const colImg = colorImages.find(ci => ci.color === col)?.image;
                         return (
-                          <div key={col} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                            <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-700">
+                          <div key={col} className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+                            <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-700 dark:text-slate-200">
                               <span>{col}</span>
                               {colImg && (
                                 <button
@@ -1857,7 +2028,7 @@ export default function Inventory() {
                                 </button>
                               )}
                             </div>
-                            <label className="cursor-pointer block aspect-square bg-white border border-dashed border-slate-300 rounded-lg overflow-hidden flex items-center justify-center hover:border-indigo-400 transition-colors">
+                            <label className="cursor-pointer block aspect-square bg-white dark:bg-slate-900 border border-dashed border-slate-300 rounded-lg overflow-hidden flex items-center justify-center hover:border-indigo-400 transition-colors">
                               {colImg ? (
                                 <img src={colImg} alt={col} className="w-full h-full object-contain" />
                               ) : (
@@ -1878,7 +2049,7 @@ export default function Inventory() {
                 <button
                   type="button"
                   onClick={() => setActiveTab(hasSizeVariants ? 'matrix' : 'general')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100"
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
                 >
                   Geri Dön
                 </button>
@@ -1904,7 +2075,7 @@ export default function Inventory() {
                     onClick={() => setBarcodeSubTab('box')}
                     className={cn(
                       "px-4 py-2 rounded-xl text-xs font-bold transition-all",
-                      barcodeSubTab === 'box' ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      barcodeSubTab === 'box' ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
                     )}
                   >
                     Koli / Kutu Barkodları
@@ -1915,7 +2086,7 @@ export default function Inventory() {
                       onClick={() => setBarcodeSubTab('variants')}
                       className={cn(
                         "px-4 py-2 rounded-xl text-xs font-bold transition-all",
-                        barcodeSubTab === 'variants' ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        barcodeSubTab === 'variants' ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200"
                       )}
                     >
                       Beden & Varyant Barkodları
@@ -1938,8 +2109,8 @@ export default function Inventory() {
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {colorBoxBarcodes.map((b, idx) => (
-                      <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                        <div className="flex items-center justify-between text-xs font-black text-slate-700 uppercase">
+                      <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between text-xs font-black text-slate-700 dark:text-slate-200 uppercase">
                           <span>{b.color} Koli Barkodu</span>
                           <button
                             type="button"
@@ -1957,7 +2128,7 @@ export default function Inventory() {
                             updated[idx].barcode = e.target.value;
                             setColorBoxBarcodes(updated);
                           }}
-                          className="w-full bg-white border border-slate-200 rounded-lg p-2 font-mono text-xs font-bold outline-none"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2 font-mono text-xs font-bold outline-none"
                         />
                       </div>
                     ))}
@@ -1966,7 +2137,7 @@ export default function Inventory() {
                   <button
                     type="button"
                     onClick={() => setColorBoxBarcodes(prev => [...prev, { color: colors[0] || 'Genel', barcode: `869${Date.now().toString().slice(-9)}` }])}
-                    className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
                   >
                     <Plus className="w-4 h-4" /> Elle Koli Barkodu Ekle
                   </button>
@@ -1975,8 +2146,8 @@ export default function Inventory() {
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-72 overflow-y-auto p-1">
                     {variantBarcodes.map((v, idx) => (
-                      <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-                        <div className="flex items-center justify-between text-xs font-black text-slate-700 uppercase">
+                      <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-black text-slate-700 dark:text-slate-200 uppercase">
                           <span>{v.color} / No: {v.size}</span>
                           <button
                             type="button"
@@ -1994,7 +2165,7 @@ export default function Inventory() {
                             updated[idx].barcode = e.target.value;
                             setVariantBarcodes(updated);
                           }}
-                          className="w-full bg-white border border-slate-200 rounded-lg p-2 font-mono text-xs font-bold outline-none"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2 font-mono text-xs font-bold outline-none"
                         />
                       </div>
                     ))}
@@ -2003,7 +2174,7 @@ export default function Inventory() {
                   <button
                     type="button"
                     onClick={() => setVariantBarcodes(prev => [...prev, { color: colors[0] || 'Genel', size: 'Standart', barcode: `869${Date.now().toString().slice(-9)}`, stock: 0 }])}
-                    className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
                   >
                     <Plus className="w-4 h-4" /> Elle Varyant Barkodu Ekle
                   </button>
@@ -2011,11 +2182,11 @@ export default function Inventory() {
               )}
 
               {/* Submit / Save Bar */}
-              <div className="flex justify-between pt-6 border-t border-slate-200">
+              <div className="flex justify-between pt-6 border-t border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setActiveTab('images')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100"
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
                 >
                   Geri Dön
                 </button>
@@ -2023,7 +2194,7 @@ export default function Inventory() {
                   <button
                     type="button"
                     onClick={() => { setIsAddModalOpen(false); resetForm(); }}
-                    className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-500 hover:bg-slate-100"
+                    className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800"
                   >
                     Vazgeç
                   </button>
@@ -2048,7 +2219,7 @@ export default function Inventory() {
                     <BookOpen className="w-4 h-4 text-indigo-600" />
                     Tek Düzen Hesap Planı (TDHP) Entegrasyonu
                   </div>
-                  <span className="text-[11px] font-bold text-indigo-600 bg-white px-2.5 py-0.5 rounded-full border border-indigo-200">
+                  <span className="text-[11px] font-bold text-indigo-600 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-full border border-indigo-200">
                     Otomatik Yevmiye Eşlemesi
                   </span>
                 </div>
@@ -2071,10 +2242,10 @@ export default function Inventory() {
                         purchaseAccountCode: '620.01',
                         vatRate: 20
                       }))}
-                      className="p-2 bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
+                      className="p-2 bg-white dark:bg-slate-900 hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
                     >
                       <div className="text-[11px] font-black group-hover:text-white text-indigo-900">Mamul (Ayakkabı)</div>
-                      <div className="text-[10px] text-slate-500 group-hover:text-indigo-100 font-mono">157 / 600 / 620</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 group-hover:text-indigo-100 font-mono">157 / 600 / 620</div>
                     </button>
 
                     <button
@@ -2086,10 +2257,10 @@ export default function Inventory() {
                         purchaseAccountCode: '150.01',
                         vatRate: 20
                       }))}
-                      className="p-2 bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
+                      className="p-2 bg-white dark:bg-slate-900 hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
                     >
                       <div className="text-[11px] font-black group-hover:text-white text-indigo-900">İlk Madde (Deri/Kumaş)</div>
-                      <div className="text-[10px] text-slate-500 group-hover:text-indigo-100 font-mono">150.01 / 600 / 150</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 group-hover:text-indigo-100 font-mono">150.01 / 600 / 150</div>
                     </button>
 
                     <button
@@ -2101,10 +2272,10 @@ export default function Inventory() {
                         purchaseAccountCode: '710.01',
                         vatRate: 20
                       }))}
-                      className="p-2 bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
+                      className="p-2 bg-white dark:bg-slate-900 hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
                     >
                       <div className="text-[11px] font-black group-hover:text-white text-indigo-900">Yarı Mamul (Taban/Mostra)</div>
-                      <div className="text-[10px] text-slate-500 group-hover:text-indigo-100 font-mono">152.01 / 600 / 710</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 group-hover:text-indigo-100 font-mono">152.01 / 600 / 710</div>
                     </button>
 
                     <button
@@ -2116,10 +2287,10 @@ export default function Inventory() {
                         purchaseAccountCode: '153.01',
                         vatRate: 20
                       }))}
-                      className="p-2 bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
+                      className="p-2 bg-white dark:bg-slate-900 hover:bg-indigo-600 hover:text-white border border-indigo-200/70 rounded-xl text-left transition-all group shadow-sm"
                     >
                       <div className="text-[11px] font-black group-hover:text-white text-indigo-900">Ticari Mal / Aksesuar</div>
-                      <div className="text-[10px] text-slate-500 group-hover:text-indigo-100 font-mono">153.01 / 600 / 153</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 group-hover:text-indigo-100 font-mono">153.01 / 600 / 153</div>
                     </button>
                   </div>
                 </div>
@@ -2128,9 +2299,9 @@ export default function Inventory() {
               {/* Form inputs */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* 1. Stok Hesabı */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                    <label className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                       1. Stok Bilanço Hesabı (Aktif)
                     </label>
                     <span className="text-[10px] font-bold text-indigo-600">150, 152, 153, 157 Grubu</span>
@@ -2141,7 +2312,7 @@ export default function Inventory() {
                     onChange={e => setProductForm(prev => ({ ...prev, accountingCode: e.target.value }))}
                     list="tdhp-stock-accounts"
                     placeholder="Örn: 157.01, 150.01..."
-                    className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                   <div className="text-[11px] mt-1">
                     {productForm.accountingCode?.trim() && (
@@ -2158,15 +2329,15 @@ export default function Inventory() {
                       )
                     )}
                     {!productForm.accountingCode?.trim() && (
-                      <span className="text-slate-500">Envanter giriş/çıkışlarında borç/alacak çalışan aktif stok hesabı.</span>
+                      <span className="text-slate-500 dark:text-slate-400">Envanter giriş/çıkışlarında borç/alacak çalışan aktif stok hesabı.</span>
                     )}
                   </div>
                 </div>
 
                 {/* 2. Satış Gelir Hesabı */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                    <label className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                       2. Yurtiçi Satış Gelir Hesabı
                     </label>
                     <span className="text-[10px] font-bold text-indigo-600">600 Grubu</span>
@@ -2177,7 +2348,7 @@ export default function Inventory() {
                     onChange={e => setProductForm(prev => ({ ...prev, salesAccountCode: e.target.value }))}
                     list="tdhp-sales-accounts"
                     placeholder="Örn: 600.01 (Mamul Satışları)..."
-                    className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                   <div className="text-[11px] mt-1">
                     {productForm.salesAccountCode?.trim() && (
@@ -2194,15 +2365,15 @@ export default function Inventory() {
                       )
                     )}
                     {!productForm.salesAccountCode?.trim() && (
-                      <span className="text-slate-500">Satış faturasında alacak kaydı açılacak gelir hesabı.</span>
+                      <span className="text-slate-500 dark:text-slate-400">Satış faturasında alacak kaydı açılacak gelir hesabı.</span>
                     )}
                   </div>
                 </div>
 
                 {/* 3. Alış / Maliyet Hesabı */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                    <label className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                       3. Alış / Maliyet Hesabı
                     </label>
                     <span className="text-[10px] font-bold text-indigo-600">150, 620, 710 Grubu</span>
@@ -2213,7 +2384,7 @@ export default function Inventory() {
                     onChange={e => setProductForm(prev => ({ ...prev, purchaseAccountCode: e.target.value }))}
                     list="tdhp-purchase-accounts"
                     placeholder="Örn: 620.01 (Mamul Maliyeti) veya 150.01..."
-                    className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                   <div className="text-[11px] mt-1">
                     {productForm.purchaseAccountCode?.trim() && (
@@ -2230,15 +2401,15 @@ export default function Inventory() {
                       )
                     )}
                     {!productForm.purchaseAccountCode?.trim() && (
-                      <span className="text-slate-500">Alış faturasında veya satılan mamul maliyeti mahsubunda kullanılır.</span>
+                      <span className="text-slate-500 dark:text-slate-400">Alış faturasında veya satılan mamul maliyeti mahsubunda kullanılır.</span>
                     )}
                   </div>
                 </div>
 
                 {/* 4. KDV Oranı (%) */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                    <label className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                       4. Varsayılan KDV Oranı (%)
                     </label>
                     <span className="text-[10px] font-bold text-indigo-600">391 / 191 Hesapları</span>
@@ -2248,7 +2419,7 @@ export default function Inventory() {
                       type="number"
                       value={productForm.vatRate}
                       onChange={e => setProductForm(prev => ({ ...prev, vatRate: Number(e.target.value) }))}
-                      className="w-24 bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                      className="w-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
                     />
                     <div className="flex gap-1.5 flex-1">
                       {[0, 1, 10, 20].map(rate => (
@@ -2260,7 +2431,7 @@ export default function Inventory() {
                             "flex-1 py-2 rounded-xl text-xs font-bold border transition-all",
                             productForm.vatRate === rate
                               ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                              : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800"
                           )}
                         >
                           %{rate}
@@ -2268,7 +2439,7 @@ export default function Inventory() {
                       ))}
                     </div>
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Fatura hesaplamalarında 391 Hesaplanan KDV veya 191 İndirilecek KDV için uygulanır.
                   </p>
                 </div>
@@ -2301,11 +2472,11 @@ export default function Inventory() {
               </datalist>
 
               {/* Submit / Save Bar */}
-              <div className="flex justify-between pt-6 border-t border-slate-200">
+              <div className="flex justify-between pt-6 border-t border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setActiveTab('general')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100"
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
                 >
                   Genel Bilgilere Dön
                 </button>
@@ -2313,7 +2484,7 @@ export default function Inventory() {
                   <button
                     type="button"
                     onClick={() => { setIsAddModalOpen(false); resetForm(); }}
-                    className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-500 hover:bg-slate-100"
+                    className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800"
                   >
                     Vazgeç
                   </button>
@@ -2347,9 +2518,9 @@ export default function Inventory() {
           return (
             <div className="space-y-6">
               {/* Product Header Profile */}
-              <div className="flex flex-col md:flex-row items-start justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="flex flex-col md:flex-row items-start justify-between gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <div className="w-20 h-20 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
                     {selectedProduct.image ? (
                       <img src={selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-contain" />
                     ) : (
@@ -2364,11 +2535,11 @@ export default function Inventory() {
                       )}>
                         {cfg.badge}
                       </span>
-                      <span className="font-mono text-[10px] font-black px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                      <span className="font-mono text-[10px] font-black px-2 py-0.5 rounded bg-slate-200 text-slate-700 dark:text-slate-200">
                         {selectedProduct.code}
                       </span>
                     </div>
-                    <h3 className="text-lg font-black text-slate-900">{selectedProduct.name}</h3>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">{selectedProduct.name}</h3>
                     <div className="text-xs font-bold text-slate-400 uppercase">
                       {selectedProduct.brand} {selectedProduct.subType && `• ${selectedProduct.subType}`}
                     </div>
@@ -2390,28 +2561,28 @@ export default function Inventory() {
 
               {/* Price & Shelf Info */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Alış Fiyatı</div>
-                  <div className="text-sm font-black font-mono text-slate-800 mt-0.5">
+                  <div className="text-sm font-black font-mono text-slate-800 dark:text-slate-200 mt-0.5">
                     ₺{(selectedProduct.buyingPrice || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
 
-                <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Satış Fiyatı</div>
                   <div className="text-sm font-black font-mono text-indigo-600 mt-0.5">
                     ₺{(selectedProduct.sellingPrice || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
 
-                <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Depo Raf</div>
-                  <div className="text-sm font-black text-slate-800 mt-0.5">
+                  <div className="text-sm font-black text-slate-800 dark:text-slate-200 mt-0.5">
                     {selectedProduct.shelf || 'Tanımlanmadı'}
                   </div>
                 </div>
 
-                <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Kritik Limit</div>
                   <div className="text-sm font-black font-mono text-rose-600 mt-0.5">
                     {selectedProduct.minStock || 0} {selectedProduct.unit}
@@ -2425,37 +2596,37 @@ export default function Inventory() {
                   <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-indigo-600" /> Tek Düzen Hesap Planı (TDHP) Eşleşmeleri
                   </h4>
-                  <span className="text-[10px] font-mono font-bold bg-white text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                  <span className="text-[10px] font-mono font-bold bg-white dark:bg-slate-900 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200">
                     KDV: %{selectedProduct.vatRate ?? 20}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                  <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-100 shadow-sm">
                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Stok Hesabı (Aktif)</div>
                     <div className="font-mono font-black text-xs text-indigo-700 mt-1">
                       {selectedProduct.accountingCode || '157.01 (Varsayılan)'}
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                       {tdhpAccounts?.find(a => a.code === selectedProduct.accountingCode)?.name || 'Mamuller / Stok Hesabı'}
                     </div>
                   </div>
 
-                  <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-100 shadow-sm">
                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Satış Gelir Hesabı</div>
-                    <div className="font-mono font-black text-xs text-slate-800 mt-1">
+                    <div className="font-mono font-black text-xs text-slate-800 dark:text-slate-200 mt-1">
                       {selectedProduct.salesAccountCode || '600.01 (Varsayılan)'}
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                       {tdhpAccounts?.find(a => a.code === selectedProduct.salesAccountCode)?.name || 'Yurtiçi Satışlar'}
                     </div>
                   </div>
 
-                  <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-100 shadow-sm">
                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Alış / Maliyet Hesabı</div>
-                    <div className="font-mono font-black text-xs text-slate-800 mt-1">
+                    <div className="font-mono font-black text-xs text-slate-800 dark:text-slate-200 mt-1">
                       {selectedProduct.purchaseAccountCode || '620.01 (Varsayılan)'}
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                       {tdhpAccounts?.find(a => a.code === selectedProduct.purchaseAccountCode)?.name || 'Satılan Malzeme/Mamul'}
                     </div>
                   </div>
@@ -2464,9 +2635,9 @@ export default function Inventory() {
 
               {/* Defined Color Options (For all categories: Suni Deri, Kumaş, Bağcık, Mostra, Ayakkabı vs.) */}
               {selectedProduct.colors && selectedProduct.colors.length > 0 && (
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                       <Palette className="w-4 h-4 text-indigo-600" /> Tanımlı Renk Seçenekleri
                     </h4>
                     <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
@@ -2477,7 +2648,7 @@ export default function Inventory() {
                     {selectedProduct.colors.map(c => (
                       <span
                         key={c}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase text-slate-800 shadow-sm"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-black uppercase text-slate-800 dark:text-slate-200 shadow-sm"
                       >
                         <span className="w-2 h-2 rounded-full bg-indigo-600" />
                         {c}
@@ -2489,9 +2660,9 @@ export default function Inventory() {
 
               {/* Size Matrix Breakdown (If available) */}
               {(selectedProduct.hasSizeVariants || selectedProduct.isFootwear) && selectedProduct.variantBarcodes && selectedProduct.variantBarcodes.length > 0 && (
-                <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                       <Grid className="w-4 h-4 text-indigo-600" /> Beden & Numara Bazlı Stok Dağılımı
                     </h4>
                     <span className="text-[10px] font-bold text-slate-400">
@@ -2501,9 +2672,9 @@ export default function Inventory() {
 
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                     {selectedProduct.variantBarcodes.map((vb, idx) => (
-                      <div key={idx} className="p-2.5 bg-white border border-slate-200 rounded-xl text-center space-y-0.5 shadow-sm">
+                      <div key={idx} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-center space-y-0.5 shadow-sm">
                         <div className="text-[9px] font-black text-slate-400 uppercase truncate">{vb.color}</div>
-                        <div className="text-xs font-black text-slate-800">No: {vb.size}</div>
+                        <div className="text-xs font-black text-slate-800 dark:text-slate-200">No: {vb.size}</div>
                         <div className="text-sm font-black text-indigo-600 font-mono">{vb.stock || 0}</div>
                       </div>
                     ))}
@@ -2520,7 +2691,7 @@ export default function Inventory() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                 {deleteConfirmId === selectedProduct.id ? (
                   <div className="flex items-center gap-2 bg-rose-50 p-2 rounded-xl border border-rose-200">
                     <span className="text-xs font-black text-rose-700 px-2">Silmek istiyor musunuz?</span>
@@ -2532,7 +2703,7 @@ export default function Inventory() {
                     </button>
                     <button
                       onClick={() => setDeleteConfirmId(null)}
-                      className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold"
+                      className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold"
                     >
                       İptal
                     </button>
@@ -2550,9 +2721,22 @@ export default function Inventory() {
                   <button
                     onClick={() => {
                       setIsDetailModalOpen(false);
+                      setStatementDateRange({ start: '', end: '' });
+                      setStatementTypeFilter('all');
+                      setStatementSearch('');
+                      setIsStatementModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-purple-600" /> Stok Ekstresi / Hareketler
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsDetailModalOpen(false);
                       setIsPrintModalOpen(true);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors"
                   >
                     <Barcode className="w-4 h-4" /> Barkod Yazdır
                   </button>
@@ -2584,10 +2768,10 @@ export default function Inventory() {
       >
         {selectedProduct && (
           <form onSubmit={handleAdjustStockSubmit} className="space-y-4">
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-1">
               <div className="text-[10px] font-bold text-slate-400 uppercase">Seçili Kart</div>
-              <div className="text-xs font-black text-slate-900">{selectedProduct.name} ({selectedProduct.code})</div>
-              <div className="text-xs font-semibold text-slate-500">
+              <div className="text-xs font-black text-slate-900 dark:text-slate-100">{selectedProduct.name} ({selectedProduct.code})</div>
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                 Güncel Stok: <span className="font-mono font-black text-indigo-600">{selectedProduct.stock} {selectedProduct.unit}</span>
               </div>
             </div>
@@ -2598,7 +2782,7 @@ export default function Inventory() {
                 <select
                   value={adjustData.type}
                   onChange={e => setAdjustData(prev => ({ ...prev, type: e.target.value as 'in' | 'out' }))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold outline-none"
                 >
                   <option value="in">Stok Girişi (+)</option>
                   <option value="out">Stok Çıkışı (-)</option>
@@ -2614,7 +2798,7 @@ export default function Inventory() {
                   min="0.01"
                   value={adjustData.quantity}
                   onChange={e => setAdjustData(prev => ({ ...prev, quantity: Number(e.target.value) }))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-black outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-black outline-none"
                 />
               </div>
             </div>
@@ -2627,7 +2811,7 @@ export default function Inventory() {
                   <select
                     value={adjustData.selectedColor}
                     onChange={e => setAdjustData(prev => ({ ...prev, selectedColor: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold outline-none"
                   >
                     <option value="">Genel / Tümü</option>
                     {selectedProduct.colors.map(c => (
@@ -2642,7 +2826,7 @@ export default function Inventory() {
                     <select
                       value={adjustData.selectedSize}
                       onChange={e => setAdjustData(prev => ({ ...prev, selectedSize: e.target.value }))}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold outline-none"
                     >
                       <option value="">Tüm Bedenler</option>
                       {selectedProduct.variantBarcodes?.map((v, i) => (
@@ -2662,7 +2846,7 @@ export default function Inventory() {
                 value={adjustData.description}
                 onChange={e => setAdjustData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Örn: İmalat girişi, Fire çıkışı, Sayım düzeltmesi..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold outline-none"
               />
             </div>
 
@@ -2687,8 +2871,8 @@ export default function Inventory() {
       >
         <div className="space-y-6">
           {/* Create new template */}
-          <form onSubmit={handleSaveTemplate} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-            <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Yeni Şablon Ekle</h4>
+          <form onSubmit={handleSaveTemplate} className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3">
+            <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">Yeni Şablon Ekle</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase">Şablon Adı</label>
@@ -2698,7 +2882,7 @@ export default function Inventory() {
                   placeholder="Örn: Erkek 40-45 (12'li), Taban 36-45..."
                   value={newTemplateName}
                   onChange={e => setNewTemplateName(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold outline-none"
                 />
               </div>
               <div className="flex items-end">
@@ -2714,15 +2898,15 @@ export default function Inventory() {
 
           {/* Existing Templates list */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Mevcut Şablonlar</h4>
+            <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">Mevcut Şablonlar</h4>
             <div className="space-y-2">
               {templates?.map(t => (
-                <div key={t.id} className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                <div key={t.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="text-xs font-black text-slate-900">{t.name}</div>
+                    <div className="text-xs font-black text-slate-900 dark:text-slate-100">{t.name}</div>
                     <div className="flex flex-wrap gap-1">
                       {t.items.map((it, idx) => (
-                        <span key={idx} className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
+                        <span key={idx} className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-600">
                           {it.size} ({it.quantity})
                         </span>
                       ))}
@@ -2756,7 +2940,7 @@ export default function Inventory() {
             <select
               value={barcodeSettings.barcodeType}
               onChange={e => setBarcodeSettings(prev => ({ ...prev, barcodeType: e.target.value as any }))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none"
             >
               <option value="CODE-128">CODE-128 (Esnek Alfamerik & Kompakt)</option>
               <option value="EAN-13">EAN-13 (Uluslararası Perakende Standart)</option>
@@ -2771,7 +2955,7 @@ export default function Inventory() {
               value={barcodeSettings.barcodePrefix}
               onChange={e => setBarcodeSettings(prev => ({ ...prev, barcodePrefix: e.target.value }))}
               placeholder="Örn: 869"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none"
             />
           </div>
 
@@ -2781,7 +2965,7 @@ export default function Inventory() {
               type="number"
               value={barcodeSettings.nextBarcodeSequence}
               onChange={e => setBarcodeSettings(prev => ({ ...prev, nextBarcodeSequence: Number(e.target.value) }))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none"
             />
           </div>
 
@@ -2803,6 +2987,243 @@ export default function Inventory() {
         product={selectedProduct}
         templates={templates}
       />
+
+      {/* ========================================================================= */}
+      {/* STOK KART EKSTRESİ & HAREKET RAPORU MODAL                               */}
+      {/* ========================================================================= */}
+      <Modal
+        isOpen={isStatementModalOpen}
+        onClose={() => setIsStatementModalOpen(false)}
+        title={`Stok Kart Ekstresi: ${selectedProduct?.name || ''}`}
+        size="2xl"
+      >
+        {selectedProduct && (
+          <div className="space-y-5">
+            {/* Stock Summary Header Card */}
+            <div className="p-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl shadow-sm space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900/10 flex items-center justify-center shrink-0 border border-white/10">
+                    <FileText className="w-5 h-5 text-purple-300" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-white dark:bg-slate-900/15 text-purple-200">
+                        {selectedProduct.code}
+                      </span>
+                      {selectedProduct.brand && (
+                        <span className="text-[10px] text-slate-300 uppercase font-bold tracking-wider">
+                          {selectedProduct.brand}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-base font-black text-white">{selectedProduct.name}</h3>
+                  </div>
+                </div>
+
+                {/* Print & Export Actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrintStatement}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-900/10 hover:bg-white dark:bg-slate-900/20 text-white rounded-xl text-xs font-bold transition-all cursor-pointer border border-white/15"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-purple-300" />
+                    <span>Ekstre Yazdır</span>
+                  </button>
+                  <button
+                    onClick={handleExportStatementCsv}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+                  >
+                    <FileDown className="w-3.5 h-3.5" />
+                    <span>Excel'e Aktar</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                <div className="bg-white dark:bg-slate-900/5 p-2.5 rounded-xl border border-white/10">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Mevcut Stok</div>
+                  <div className="text-base font-black font-mono text-emerald-400 mt-0.5">
+                    {selectedProduct.stock} <span className="text-xs uppercase">{selectedProduct.unit}</span>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900/5 p-2.5 rounded-xl border border-white/10">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam Giriş (+)</div>
+                  <div className="text-base font-black font-mono text-indigo-300 mt-0.5">
+                    +{statementStats.totalIn} <span className="text-xs uppercase">{selectedProduct.unit}</span>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900/5 p-2.5 rounded-xl border border-white/10">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam Çıkış (-)</div>
+                  <div className="text-base font-black font-mono text-rose-300 mt-0.5">
+                    -{statementStats.totalOut} <span className="text-xs uppercase">{selectedProduct.unit}</span>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900/5 p-2.5 rounded-xl border border-white/10">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">İşlem Adedi</div>
+                  <div className="text-base font-black font-mono text-amber-300 mt-0.5">
+                    {statementStats.totalCount} <span className="text-xs">Hareket</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Toolbar */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 rounded-2xl space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex-1 min-w-[200px] relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={statementSearch}
+                    onChange={e => setStatementSearch(e.target.value)}
+                    placeholder="Açıklama, renk veya beden ile filtrele..."
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500/20"
+                  />
+                  {statementSearch && (
+                    <button onClick={() => setStatementSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400 ml-1.5" />
+                  <input
+                    type="date"
+                    value={statementDateRange.start}
+                    onChange={e => setStatementDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="text-xs font-bold text-slate-700 dark:text-slate-200 outline-none bg-transparent"
+                  />
+                  <span className="text-slate-300 font-black">-</span>
+                  <input
+                    type="date"
+                    value={statementDateRange.end}
+                    onChange={e => setStatementDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="text-xs font-bold text-slate-700 dark:text-slate-200 outline-none bg-transparent pr-1"
+                  />
+                </div>
+
+                {(statementDateRange.start || statementDateRange.end || statementSearch || statementTypeFilter !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setStatementDateRange({ start: '', end: '' });
+                      setStatementTypeFilter('all');
+                      setStatementSearch('');
+                    }}
+                    className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                    title="Filtreleri Temizle"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Sıfırla</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Movement Type Filter Tabs */}
+              <div className="flex flex-wrap gap-1 border-t border-slate-200 dark:border-slate-700/60 pt-2">
+                {[
+                  { id: 'all', label: 'Tüm Hareketler' },
+                  { id: 'in', label: 'Stok Girişi (+)' },
+                  { id: 'out', label: 'Stok Çıkışı (-)' },
+                  { id: 'production_in', label: 'Üretim Girişi (+)' },
+                  { id: 'production_out', label: 'Hammadde Sarf (-)' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setStatementTypeFilter(tab.id as any)}
+                    className={cn(
+                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                      statementTypeFilter === tab.id
+                        ? "bg-purple-600 text-white shadow-xs"
+                        : "bg-white dark:bg-slate-900 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Movement Ledger Table */}
+            <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
+              <div className="max-h-[380px] overflow-y-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Tarih & Saat</th>
+                      <th className="py-3 px-3">Hareket Tipi</th>
+                      <th className="py-3 px-3">Renk / Beden</th>
+                      <th className="py-3 px-3 text-right">Giriş (+)</th>
+                      <th className="py-3 px-3 text-right">Çıkış (-)</th>
+                      <th className="py-3 px-3 text-right font-black text-slate-700 dark:text-slate-200">Yürüyen Bakiye</th>
+                      <th className="py-3 px-4">Açıklama / Belge</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs font-semibold">
+                    {productLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-slate-400">
+                          <Receipt className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                          <p className="font-bold text-slate-600">Henüz Stok Hareketi Bulunmuyor</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">Seçilen kriterlere uygun stok kartı hareketi kaydedilmedi.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      productLogs.map((log, idx) => {
+                        const qty = Number(log.quantity) || 0;
+                        const isIn = qty > 0;
+                        const dateFormatted = log.date ? format(new Date(log.date), 'dd.MM.yyyy HH:mm', { locale: tr }) : '-';
+                        
+                        const typeBadge = 
+                          log.type === 'in' ? { label: 'Stok Girişi', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' } :
+                          log.type === 'out' ? { label: 'Stok Çıkışı', bg: 'bg-rose-50 text-rose-700 border-rose-200' } :
+                          log.type === 'production_in' ? { label: 'Üretim Girişi', bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' } :
+                          log.type === 'production_out' ? { label: 'Hammadde Sarf', bg: 'bg-amber-50 text-amber-700 border-amber-200' } :
+                          { label: log.type, bg: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700' };
+
+                        const variantText = [log.color, log.size].filter(Boolean).join(' / ') || '-';
+
+                        return (
+                          <tr key={log.id || idx} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors">
+                            <td className="py-3 px-4 font-mono text-[11px] text-slate-600">
+                              {dateFormatted}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className={cn("inline-block px-2 py-0.5 rounded text-[10px] font-bold border", typeBadge.bg)}>
+                                {typeBadge.label}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-slate-700 dark:text-slate-200 text-[11px]">
+                              {variantText}
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600">
+                              {isIn ? `+${qty}` : '-'}
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-rose-600">
+                              {!isIn ? `-${Math.abs(qty)}` : '-'}
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono font-black text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-800/50/50">
+                              {log.runningBalance} <span className="text-[10px] text-slate-400 font-semibold">{selectedProduct.unit}</span>
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 text-[11px]">
+                              {log.description || '-'}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

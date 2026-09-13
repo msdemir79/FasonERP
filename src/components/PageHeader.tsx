@@ -55,22 +55,9 @@ const colorStyles: Record<PageHeaderColor, {
   slate: {
     gradient: 'from-slate-700 to-slate-900 text-white',
     shadow: 'shadow-slate-800/20 ring-1 ring-slate-600/30',
-    badge: 'bg-slate-100 text-slate-700 border-slate-200',
+    badge: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700',
   },
 };
-
-function formatTitleCase(text: string): string {
-  if (!text) return text;
-  // If text is ALL CAPS, convert it to Title Case (Turkish localized)
-  if (text === text.toUpperCase() && text !== text.toLowerCase()) {
-    return text
-      .toLocaleLowerCase('tr-TR')
-      .split(' ')
-      .map(word => word.length > 0 ? word.charAt(0).toLocaleUpperCase('tr-TR') + word.slice(1) : '')
-      .join(' ');
-  }
-  return text;
-}
 
 export default function PageHeader({
   title,
@@ -83,21 +70,21 @@ export default function PageHeader({
   className
 }: PageHeaderProps) {
   const styles = colorStyles[iconColor] || colorStyles.indigo;
-  const formattedTitle = formatTitleCase(title);
+  const formattedTitle = title;
 
   const appSettings = useLiveQuery(() => db.settings.get('global_settings'));
   const companyLogo = appSettings?.company?.logo;
 
   return (
-    <div className={cn("bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 font-sans", className)}>
+    <div className={cn("bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 font-sans transition-colors duration-200", className)}>
       <div className="flex items-center gap-3.5 min-w-0">
         {companyLogo ? (
           <div className="relative shrink-0 group">
-            <div className="w-11 h-11 rounded-xl bg-white border border-slate-200/90 p-1 flex items-center justify-center shadow-xs overflow-hidden transition-transform group-hover:scale-105">
+            <div className="w-11 h-11 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center shadow-xs overflow-hidden transition-transform group-hover:scale-105">
               <img src={companyLogo} alt="Firma Logosu" className="max-w-full max-h-full object-contain" />
             </div>
             <div className={cn(
-              "absolute -bottom-1 -right-1 w-5 h-5 rounded-md flex items-center justify-center text-white shadow-xs bg-gradient-to-br ring-2 ring-white",
+              "absolute -bottom-1 -right-1 w-5 h-5 rounded-md flex items-center justify-center text-white shadow-xs bg-gradient-to-br ring-2 ring-white dark:ring-slate-900",
               styles.gradient
             )}>
               <Icon className="w-3 h-3" />
@@ -114,7 +101,7 @@ export default function PageHeader({
         )}
         <div className="space-y-0.5 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-base md:text-lg font-bold text-slate-900 tracking-tight leading-snug truncate normal-case">
+            <h1 className="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-snug truncate normal-case">
               {formattedTitle}
             </h1>
             {badge && (
@@ -124,7 +111,7 @@ export default function PageHeader({
             )}
           </div>
           {subtitle && (
-            <p className="text-xs text-slate-500 font-normal truncate">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-normal truncate">
               {subtitle}
             </p>
           )}

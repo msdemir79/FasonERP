@@ -11,14 +11,14 @@ export default function StockReportTab() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-2">
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-wrap items-center gap-2">
         <button
           onClick={() => setStockSubTab('summary')}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
             stockSubTab === 'summary' 
               ? "bg-indigo-600 text-white shadow-xs" 
-              : "text-slate-600 hover:bg-slate-100"
+              : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
           )}
         >
           <Package className="w-4 h-4" />
@@ -31,7 +31,7 @@ export default function StockReportTab() {
             "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
             stockSubTab === 'detail' 
               ? "bg-indigo-600 text-white shadow-xs" 
-              : "text-slate-600 hover:bg-slate-100"
+              : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
           )}
         >
           <Layers className="w-4 h-4" />
@@ -44,7 +44,7 @@ export default function StockReportTab() {
             "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
             stockSubTab === 'movements' 
               ? "bg-indigo-600 text-white shadow-xs" 
-              : "text-slate-600 hover:bg-slate-100"
+              : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
           )}
         >
           <ArrowLeftRight className="w-4 h-4" />
@@ -57,7 +57,7 @@ export default function StockReportTab() {
             "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
             stockSubTab === 'broken' 
               ? "bg-indigo-600 text-white shadow-xs" 
-              : "text-slate-600 hover:bg-slate-100"
+              : "text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
           )}
         >
           <AlertTriangle className="w-4 h-4" />

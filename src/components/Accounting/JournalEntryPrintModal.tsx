@@ -78,7 +78,7 @@ export default function JournalEntryPrintModal({ entry, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 sm:p-8 space-y-6 my-8 print:p-0 print:m-0 print:shadow-none">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-3xl w-full p-6 sm:p-8 space-y-6 my-8 print:p-0 print:m-0 print:shadow-none">
         {/* Top Control Bar (Hidden on print) */}
         <div className="flex items-center justify-between border-b pb-4 print:hidden">
           <div>
@@ -113,12 +113,12 @@ export default function JournalEntryPrintModal({ entry, onClose }: Props) {
         </div>
 
         {/* Printable Canvas */}
-        <div ref={printContentRef} className="border-2 border-gray-900 p-6 space-y-5 rounded bg-white">
+        <div ref={printContentRef} className="border-2 border-gray-900 p-6 space-y-5 rounded bg-white dark:bg-slate-900">
           {/* Header */}
           <div className="flex justify-between items-start border-b-2 border-gray-900 pb-3 gap-4">
             <div className="flex items-center gap-3">
               {companySettings?.logo ? (
-                <div className="w-10 h-10 rounded bg-white border border-gray-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                <div className="w-10 h-10 rounded bg-white dark:bg-slate-900 border border-gray-300 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
                   <img src={companySettings.logo} alt={companySettings.companyName} className="max-w-full max-h-full object-contain" />
                 </div>
               ) : null}
@@ -166,7 +166,7 @@ export default function JournalEntryPrintModal({ entry, onClose }: Props) {
             </thead>
             <tbody className="divide-y divide-gray-200 text-gray-800">
               {entry.lines.map((l, i) => (
-                <tr key={l.id || i}>
+                <tr key={`print-line-${l.id || i}-${l.accountCode}`}>
                   <td className="py-2 px-3 font-mono font-bold border-r border-gray-300">{l.accountCode}</td>
                   <td className="py-2 px-3 font-medium border-r border-gray-300">{l.accountName}</td>
                   <td className="py-2 px-3 border-r border-gray-300">{l.description || '-'}</td>

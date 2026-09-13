@@ -184,9 +184,9 @@ export default function Accounting() {
 
             <button
               onClick={() => setIsAccountModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:bg-slate-800/50 shadow-xs transition-colors cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 text-slate-500" />
+              <Plus className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>Yeni Alt Hesap</span>
             </button>
 
@@ -203,7 +203,7 @@ export default function Accounting() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Kayıtlı Yevmiye Fişi</span>
             <span className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
@@ -214,7 +214,7 @@ export default function Accounting() {
           <p className="text-xs text-emerald-600 font-medium mt-1">Borç/Alacak Dengeli</p>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Toplam Yevmiye Hacmi</span>
             <span className="p-2 rounded-lg bg-blue-50 text-blue-600">
@@ -227,7 +227,7 @@ export default function Accounting() {
           <p className="text-xs text-gray-500 mt-1">Genel Toplam Borç = Alacak</p>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">600 Satış Gelirleri</span>
             <span className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
@@ -240,7 +240,7 @@ export default function Accounting() {
           <p className="text-xs text-gray-500 mt-1">Brüt Yurtiçi Satışlar</p>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dönem Net Faaliyet Kârı</span>
             <span className={`p-2 rounded-lg ${netIncome >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
@@ -365,7 +365,7 @@ export default function Accounting() {
       {/* TAB 1: Yevmiye Defteri (Journal Entries) */}
       {activeTab === 'entries' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-lg border border-gray-200">
             <div className="flex items-center gap-2 flex-1 max-w-md">
               <Search className="w-4 h-4 text-gray-400" />
               <input
@@ -381,7 +381,7 @@ export default function Accounting() {
               <select
                 value={entryTypeFilter}
                 onChange={(e) => setEntryTypeFilter(e.target.value)}
-                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-700"
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white dark:bg-slate-900 text-gray-700"
               >
                 <option value="all">Tüm Fiş Türleri</option>
                 <option value="mahsup">Mahsup Fişleri</option>
@@ -392,7 +392,7 @@ export default function Accounting() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50 text-gray-600 font-semibold">
@@ -417,7 +417,7 @@ export default function Accounting() {
                     </tr>
                   ) : (
                     filteredEntries.map((entry) => (
-                      <tr key={entry.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={`entry-${entry.id || entry.entryNumber}`} className="hover:bg-gray-50 transition-colors">
                         <td className="py-3 px-4 font-mono font-bold text-indigo-600">
                           {entry.entryNumber}
                         </td>
@@ -508,7 +508,7 @@ export default function Accounting() {
       {/* TAB 3: Mizan Raporu (Trial Balance) */}
       {activeTab === 'mizan' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-lg border border-gray-200">
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
                 <input
@@ -523,7 +523,7 @@ export default function Accounting() {
               <select
                 value={mizanLevelFilter}
                 onChange={(e) => setMizanLevelFilter(e.target.value as any)}
-                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-700"
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white dark:bg-slate-900 text-gray-700"
               >
                 <option value="all">Tüm Seviyeler (Sınıf, Grup, Ana, Alt)</option>
                 <option value="class">Sadece Sınıflar (1, 2, 3, 4, 5, 6, 7)</option>
@@ -543,7 +543,7 @@ export default function Accounting() {
             </button>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 text-xs">
                 <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-300">
@@ -605,7 +605,7 @@ export default function Accounting() {
       {/* TAB 4: Defter-i Kebir (Büyük Defter) */}
       {activeTab === 'kebir' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-lg border border-gray-200">
             <div className="flex items-center gap-3">
               <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
                 Hesap Seçimi:
@@ -613,10 +613,10 @@ export default function Accounting() {
               <select
                 value={selectedKebirCode}
                 onChange={(e) => setSelectedKebirCode(e.target.value)}
-                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white text-gray-900 font-mono font-bold min-w-[280px]"
+                className="text-xs border border-gray-300 rounded-md py-1.5 px-2.5 bg-white dark:bg-slate-900 text-gray-900 font-mono font-bold min-w-[280px]"
               >
                 {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.code}>
+                  <option key={`kebir-opt-${acc.code}`} value={acc.code}>
                     {acc.code} - {acc.name}
                   </option>
                 ))}
@@ -633,7 +633,7 @@ export default function Accounting() {
             </button>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 text-xs">
                 <thead className="bg-gray-100 text-gray-700 font-bold border-b border-gray-300">
@@ -688,7 +688,7 @@ export default function Accounting() {
       {activeTab === 'financial' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* GELİR TABLOSU */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-base font-bold text-gray-900">Özet Gelir Tablosu (6 Grubu)</h2>
               <span className="text-xs text-gray-500">TL Bazında</span>
@@ -733,7 +733,7 @@ export default function Accounting() {
           </div>
 
           {/* BİLANÇO ÖZETİ */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-base font-bold text-gray-900">Özet Bilanço Göstergesi</h2>
               <span className="text-xs text-gray-500">Aktif = Pasif</span>
@@ -775,7 +775,7 @@ export default function Accounting() {
       {/* TAB 6: Entegrasyon Merkezi */}
       {activeTab === 'integration' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">ERP Modülleri Otomatik TDHP Entegrasyonu</h2>
@@ -812,7 +812,7 @@ export default function Accounting() {
           </div>
 
           {/* Invoices accounting status list */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="p-4 border-b border-gray-200 bg-gray-50">
               <h3 className="text-sm font-bold text-gray-900">Faturaların Muhasebe Durumu</h3>
             </div>

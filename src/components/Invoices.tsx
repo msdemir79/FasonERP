@@ -36,7 +36,8 @@ import {
   RotateCcw,
   FileX,
   Info,
-  ShieldAlert
+  ShieldAlert,
+  Truck
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { InvoicePrintModal } from './Invoices/InvoicePrintModal';
@@ -53,6 +54,8 @@ export default function Invoices() {
   const [createInvoiceType, setCreateInvoiceType] = useState<InvoiceType>('sales');
   const [preselectedContactId, setPreselectedContactId] = useState<number | undefined>(undefined);
   const [preselectedOrderId, setPreselectedOrderId] = useState<number | undefined>(undefined);
+  const [preselectedWaybillId, setPreselectedWaybillId] = useState<number | undefined>(undefined);
+  const [isGlobalWaybillSelectorOpen, setIsGlobalWaybillSelectorOpen] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
@@ -76,14 +79,20 @@ export default function Invoices() {
   const orders = useLiveQuery(() => db.orders.toArray(), []);
   const products = useLiveQuery(() => db.products.toArray(), []);
 
-  // Handle URL params if directed from Orders or Contacts
+  // Handle URL params if directed from Orders, Waybills, or Contacts
   useEffect(() => {
     const orderIdParam = searchParams.get('orderId');
+    const waybillIdParam = searchParams.get('waybillId');
     const contactIdParam = searchParams.get('contactId');
     const typeParam = searchParams.get('type') as InvoiceType;
+    const actionParam = searchParams.get('action');
 
-    if (orderIdParam || contactIdParam) {
+    if (actionParam === 'selectWaybill' || searchParams.get('openWaybillSelector') === 'true') {
+      setIsGlobalWaybillSelectorOpen(true);
+      setSearchParams({});
+    } else if (orderIdParam || waybillIdParam || contactIdParam) {
       if (orderIdParam) setPreselectedOrderId(Number(orderIdParam));
+      if (waybillIdParam) setPreselectedWaybillId(Number(waybillIdParam));
       if (contactIdParam) setPreselectedContactId(Number(contactIdParam));
       if (typeParam) setCreateInvoiceType(typeParam);
       setIsCreateModalOpen(true);
@@ -112,8 +121,9 @@ export default function Invoices() {
       const matchNumber = inv.invoiceNumber?.toLowerCase().includes(term);
       const matchContact = contact?.name?.toLowerCase().includes(term);
       const matchOrder = inv.orderNumber?.toLowerCase().includes(term);
+      const matchWaybill = inv.waybillNumber?.toLowerCase().includes(term);
       const matchEttn = inv.ettn?.toLowerCase().includes(term);
-      return matchNumber || matchContact || matchOrder || matchEttn;
+      return matchNumber || matchContact || matchOrder || matchWaybill || matchEttn;
     }
     return true;
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
@@ -173,7 +183,7 @@ export default function Invoices() {
           </div>
           <button 
             onClick={() => setNotification(null)}
-            className="text-slate-400 hover:text-slate-700 p-1"
+            className="text-slate-400 hover:text-slate-700 dark:text-slate-200 p-1"
           >
             <X className="w-4 h-4" />
           </button>
@@ -191,11 +201,20 @@ export default function Invoices() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setIsResetModalOpen(true)}
-              className="bg-white border border-rose-200 hover:bg-rose-50 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              className="bg-white dark:bg-slate-900 border border-rose-200 hover:bg-rose-50 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
               title="Tüm faturaları ve stok hareketlerini sıfırla"
             >
               <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
               <span className="hidden sm:inline">Sıfırla</span>
+            </button>
+
+            <button
+              onClick={() => setIsGlobalWaybillSelectorOpen(true)}
+              className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              title="Depodan sevk edilmiş açık irsaliyeleri faturaya dönüştür"
+            >
+              <Truck className="w-3.5 h-3.5 text-purple-600" />
+              <span>İrsaliyeyi Faturalandır</span>
             </button>
 
             <button
@@ -219,15 +238,15 @@ export default function Invoices() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Satış Faturaları</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Satış Faturaları</span>
             <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
               <ArrowUpRight className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-slate-800 font-mono">
+            <div className="text-2xl font-black text-slate-800 dark:text-slate-200 font-mono">
               ₺{totalSalesAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-[11px] text-slate-400 font-medium mt-1">
@@ -236,15 +255,15 @@ export default function Invoices() {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Alış Faturaları</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Alış Faturaları</span>
             <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
               <ArrowDownLeft className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-slate-800 font-mono">
+            <div className="text-2xl font-black text-slate-800 dark:text-slate-200 font-mono">
               ₺{totalPurchaseAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-[11px] text-slate-400 font-medium mt-1">
@@ -253,9 +272,9 @@ export default function Invoices() {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hesaplanan KDV</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hesaplanan KDV</span>
             <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
               <Percent className="w-5 h-5" />
             </div>
@@ -270,9 +289,9 @@ export default function Invoices() {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ödenecek Net KDV</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Ödenecek Net KDV</span>
             <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
               <DollarSign className="w-5 h-5" />
             </div>
@@ -292,16 +311,16 @@ export default function Invoices() {
       </div>
 
       {/* Main Table Card */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         {/* Filter Bar */}
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex bg-slate-200/70 p-1 rounded-xl">
               <button 
                 onClick={() => setActiveTab('all')}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
-                  activeTab === 'all' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  activeTab === 'all' ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
                 )}
               >
                 Tümü ({invoices?.length || 0})
@@ -310,7 +329,7 @@ export default function Invoices() {
                 onClick={() => setActiveTab('sales')}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
-                  activeTab === 'sales' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-indigo-600"
+                  activeTab === 'sales' ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-indigo-600"
                 )}
               >
                 Satış ({salesInvoices.length})
@@ -319,7 +338,7 @@ export default function Invoices() {
                 onClick={() => setActiveTab('purchase')}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
-                  activeTab === 'purchase' ? "bg-white text-amber-600 shadow-sm" : "text-slate-500 hover:text-amber-600"
+                  activeTab === 'purchase' ? "bg-white dark:bg-slate-900 text-amber-600 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-amber-600"
                 )}
               >
                 Alış ({purchaseInvoices.length})
@@ -331,7 +350,7 @@ export default function Invoices() {
                 onClick={() => setStatusFilter('all')}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                  statusFilter === 'all' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  statusFilter === 'all' ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
                 )}
               >
                 Tüm Durumlar
@@ -340,7 +359,7 @@ export default function Invoices() {
                 onClick={() => setStatusFilter('issued')}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                  statusFilter === 'issued' ? "bg-emerald-600 text-white shadow-sm" : "text-slate-500 hover:text-emerald-700"
+                  statusFilter === 'issued' ? "bg-emerald-600 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-emerald-700"
                 )}
               >
                 Kesildi
@@ -349,7 +368,7 @@ export default function Invoices() {
                 onClick={() => setStatusFilter('draft')}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                  statusFilter === 'draft' ? "bg-slate-700 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  statusFilter === 'draft' ? "bg-slate-700 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200"
                 )}
               >
                 Taslak
@@ -358,7 +377,7 @@ export default function Invoices() {
                 onClick={() => setStatusFilter('cancelled')}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                  statusFilter === 'cancelled' ? "bg-rose-600 text-white shadow-sm" : "text-slate-500 hover:text-rose-700"
+                  statusFilter === 'cancelled' ? "bg-rose-600 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-rose-700"
                 )}
               >
                 İptal
@@ -373,7 +392,7 @@ export default function Invoices() {
               placeholder="Fatura no, cari adı, sipariş no veya ETTN ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder:text-slate-300"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder:text-slate-300"
             />
           </div>
         </div>
@@ -382,27 +401,27 @@ export default function Invoices() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/70 border-b border-slate-100">
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fatura No & ETTN</th>
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Cari / Ünvan</th>
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tarih / Vade</th>
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tür & Senaryo</th>
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">İlişkili Sipariş</th>
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">KDV Matrahı</th>
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">KDV</th>
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Genel Toplam</th>
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Durum</th>
-                <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">İşlemler</th>
+              <tr className="bg-slate-50 dark:bg-slate-800/50/90 border-b border-slate-200 dark:border-slate-700">
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fatura No & ETTN</th>
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cari / Ünvan</th>
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tarih / Vade</th>
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tür & Senaryo</th>
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sipariş & İrsaliye</th>
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">KDV Matrahı</th>
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">KDV</th>
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Genel Toplam</th>
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center">Durum</th>
+                <th className="px-3.5 py-2.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">İşlemler</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50 text-xs">
+            <tbody className="divide-y divide-slate-100 text-xs">
               {filteredInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-20 text-center">
+                  <td colSpan={10} className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center text-slate-300">
-                      <Receipt className="w-14 h-14 mb-3 opacity-20" />
-                      <p className="text-sm font-bold uppercase tracking-wider text-slate-400">Kayıtlı Fatura Bulunamadı</p>
-                      <p className="text-xs text-slate-400 mt-1 max-w-md">
+                      <Receipt className="w-12 h-12 mb-2 opacity-20" />
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Kayıtlı Fatura Bulunamadı</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 max-w-md">
                         Yukarıdaki butonlardan yeni bir Satış veya Alış faturası oluşturabilir veya siparişlerden doğrudan fatura kesebilirsiniz.
                       </p>
                     </div>
@@ -414,10 +433,10 @@ export default function Invoices() {
                   const isSales = invoice.type === 'sales';
 
                   return (
-                    <tr key={invoice.id} className="hover:bg-slate-50/80 transition-colors group">
-                      <td className="px-5 py-4">
+                    <tr key={`inv-row-${invoice.id}`} className="hover:bg-slate-50 dark:bg-slate-800/50/80 transition-colors group">
+                      <td className="px-3.5 py-2.5">
                         <div className="flex flex-col">
-                          <span className="font-mono font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                             {invoice.invoiceNumber}
                           </span>
                           {invoice.ettn && (
@@ -428,7 +447,7 @@ export default function Invoices() {
                         </div>
                       </td>
 
-                      <td className="px-5 py-4">
+                      <td className="px-3.5 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <div className={cn(
                             "w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black uppercase shrink-0",
@@ -437,14 +456,14 @@ export default function Invoices() {
                             {contact?.name ? contact.name.substring(0, 2) : 'C'}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-800 line-clamp-1">{contact?.name || 'Bilinmeyen Cari'}</div>
+                            <div className="font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{contact?.name || 'Bilinmeyen Cari'}</div>
                             <div className="text-[10px] text-slate-400">{contact?.taxOffice ? `${contact.taxOffice} V.D.` : ''}</div>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 font-mono">
-                        <div className="text-slate-700 font-semibold">
+                      <td className="px-3.5 py-2.5 font-mono">
+                        <div className="text-slate-700 dark:text-slate-200 font-semibold">
                           {new Date(invoice.date).toLocaleDateString('tr-TR')}
                         </div>
                         {invoice.dueDate && (
@@ -455,15 +474,15 @@ export default function Invoices() {
                         )}
                       </td>
 
-                      <td className="px-5 py-4">
-                        <div className="flex flex-col items-start gap-1">
+                      <td className="px-3.5 py-2.5">
+                        <div className="flex flex-col items-start gap-0.5">
                           <span className={cn(
                             "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
                             isSales ? "bg-indigo-100 text-indigo-800" : "bg-amber-100 text-amber-800"
                           )}>
                             {isSales ? 'Satış Faturası' : 'Alış Faturası'}
                           </span>
-                          <span className="text-[10px] text-slate-500 font-medium capitalize">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize">
                             {invoice.scenario === 'commercial' ? 'Ticari Fatura' :
                              invoice.scenario === 'basic' ? 'Temel Fatura' :
                              invoice.scenario === 'return' ? 'İade Faturası' :
@@ -473,39 +492,48 @@ export default function Invoices() {
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 font-mono text-slate-600">
-                        {invoice.orderNumber ? (
-                          <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md font-bold text-[11px] border border-slate-200">
-                            {invoice.orderNumber}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">-</span>
-                        )}
+                      <td className="px-3.5 py-2.5 font-mono text-slate-600">
+                        <div className="flex flex-col gap-0.5 items-start">
+                          {invoice.orderNumber && (
+                            <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded font-bold text-[10px] border border-slate-200 dark:border-slate-700">
+                              Sip: {invoice.orderNumber}
+                            </span>
+                          )}
+                          {invoice.waybillNumber && (
+                            <span className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded font-bold text-[10px] border border-purple-200 flex items-center gap-1">
+                              <Truck className="w-2.5 h-2.5 text-purple-600" />
+                              İrs: {invoice.waybillNumber}
+                            </span>
+                          )}
+                          {!invoice.orderNumber && !invoice.waybillNumber && (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </div>
                       </td>
 
-                      <td className="px-5 py-4 text-right font-mono text-slate-600">
+                      <td className="px-3.5 py-2.5 text-right font-mono text-slate-600">
                         ₺{invoice.subtotal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
 
-                      <td className="px-5 py-4 text-right font-mono text-slate-600">
+                      <td className="px-3.5 py-2.5 text-right font-mono text-slate-600">
                         <div>₺{invoice.taxTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         {invoice.withholdingAmount ? (
                           <div className="text-[9px] text-purple-600 font-medium">Tevk: -₺{invoice.withholdingAmount.toFixed(2)}</div>
                         ) : null}
                       </td>
 
-                      <td className="px-5 py-4 text-right font-mono font-bold text-sm">
-                        <span className={isSales ? "text-slate-900" : "text-amber-700"}>
+                      <td className="px-3.5 py-2.5 text-right font-mono font-bold text-xs">
+                        <span className={isSales ? "text-slate-900 dark:text-slate-100" : "text-amber-700"}>
                           ₺{invoice.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </td>
 
-                      <td className="px-5 py-4 text-center">
+                      <td className="px-3.5 py-2.5 text-center">
                         <span className={cn(
-                          "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1",
+                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1",
                           invoice.status === 'issued' ? "bg-emerald-100 text-emerald-800" :
                           invoice.status === 'cancelled' ? "bg-rose-100 text-rose-800" :
-                          "bg-slate-100 text-slate-700"
+                          "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                         )}>
                           {invoice.status === 'issued' && <CheckCircle2 className="w-3 h-3" />}
                           {invoice.status === 'issued' ? 'Kesildi' :
@@ -513,21 +541,21 @@ export default function Invoices() {
                         </span>
                       </td>
 
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-3.5 py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openViewModal(invoice.id!)}
                             title="Görüntüle & Yazdır"
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-200 shadow-sm"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white dark:bg-slate-900 rounded-lg transition-all border border-transparent hover:border-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
 
                           {invoice.status === 'draft' && (
                             <button
                               onClick={() => handleApproveDraft(invoice)}
                               title="Resmileştir / Kes"
-                              className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-200 shadow-sm"
+                              className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-white dark:bg-slate-900 rounded-lg transition-all border border-transparent hover:border-slate-200 dark:border-slate-700 shadow-sm"
                             >
                               <Check className="w-4 h-4" />
                             </button>
@@ -548,7 +576,7 @@ export default function Invoices() {
                             <button
                               onClick={() => openActionModalForInvoice(invoice)}
                               title={invoice.status === 'cancelled' ? "İptal Edilmiş Faturayı Kalıcı Olarak Temizle" : "Taslağı Sil"}
-                              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-200 shadow-sm"
+                              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-white dark:bg-slate-900 rounded-lg transition-all border border-transparent hover:border-slate-200 dark:border-slate-700 shadow-sm"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -571,14 +599,34 @@ export default function Invoices() {
           initialType={createInvoiceType}
           initialContactId={preselectedContactId}
           initialOrderId={preselectedOrderId}
+          initialWaybillId={preselectedWaybillId}
           onClose={() => {
             setIsCreateModalOpen(false);
             setPreselectedContactId(undefined);
             setPreselectedOrderId(undefined);
+            setPreselectedWaybillId(undefined);
           }}
           onSuccess={(invoiceId) => {
             setIsCreateModalOpen(false);
+            setPreselectedContactId(undefined);
+            setPreselectedOrderId(undefined);
+            setPreselectedWaybillId(undefined);
             openViewModal(invoiceId);
+          }}
+        />
+      )}
+
+      {/* GLOBAL WAYBILL SELECTOR MODAL */}
+      {isGlobalWaybillSelectorOpen && (
+        <GlobalWaybillSelectorModal
+          isOpen={isGlobalWaybillSelectorOpen}
+          onClose={() => setIsGlobalWaybillSelectorOpen(false)}
+          onSelectWaybill={(wb) => {
+            setIsGlobalWaybillSelectorOpen(false);
+            setCreateInvoiceType(wb.type);
+            setPreselectedContactId(wb.contactId);
+            setPreselectedWaybillId(wb.id);
+            setIsCreateModalOpen(true);
           }}
         />
       )}
@@ -649,6 +697,7 @@ interface CreateInvoiceModalProps {
   initialType: InvoiceType;
   initialContactId?: number;
   initialOrderId?: number;
+  initialWaybillId?: number;
   onClose: () => void;
   onSuccess: (invoiceId: number) => void;
 }
@@ -658,6 +707,7 @@ function CreateInvoiceModal({
   initialType,
   initialContactId,
   initialOrderId,
+  initialWaybillId,
   onClose,
   onSuccess
 }: CreateInvoiceModalProps) {
@@ -673,6 +723,8 @@ function CreateInvoiceModal({
   const [isStockDeducted, setIsStockDeducted] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState<number | undefined>(initialOrderId);
   const [selectedOrderNumber, setSelectedOrderNumber] = useState<string | undefined>('');
+  const [selectedWaybillId, setSelectedWaybillId] = useState<number | undefined>(initialWaybillId);
+  const [selectedWaybillNumber, setSelectedWaybillNumber] = useState<string | undefined>('');
 
   // Items State
   const [items, setItems] = useState<Omit<InvoiceItem, 'id' | 'invoiceId'>[]>([]);
@@ -680,6 +732,10 @@ function CreateInvoiceModal({
   // Sub-modal for importing open order items
   const [isOrderSelectorOpen, setIsOrderSelectorOpen] = useState(false);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+
+  // Sub-modal for importing open waybill items
+  const [isWaybillSelectorOpen, setIsWaybillSelectorOpen] = useState(false);
+  const [pendingWaybills, setPendingWaybills] = useState<any[]>([]);
 
   // Queries
   const contacts = useLiveQuery(() => db.contacts.toArray(), []);
@@ -695,26 +751,121 @@ function CreateInvoiceModal({
     initInvoiceInfo();
   }, [type]);
 
-  // Load pending orders when contact changes
+  // Load pending orders and waybills when contact changes
   useEffect(() => {
-    async function loadOrders() {
+    async function loadOrdersAndWaybills() {
       if (contactId) {
-        const ords = await erpService.getPendingOrdersForInvoicing(Number(contactId), type);
+        const [ords, wbs] = await Promise.all([
+          erpService.getPendingOrdersForInvoicing(Number(contactId), type),
+          erpService.getPendingWaybillsForInvoicing(Number(contactId), type)
+        ]);
         setPendingOrders(ords);
+        setPendingWaybills(wbs);
 
-        // If an initial order ID was passed, auto-load its remaining items
-        if (initialOrderId && ords.some(o => o.id === initialOrderId)) {
+        // If an initial waybill ID was passed, auto-load its items
+        if (initialWaybillId) {
+          let targetWb = wbs.find(w => w.id === initialWaybillId);
+          if (!targetWb) {
+            const rawWb = await db.waybills.get(initialWaybillId);
+            if (rawWb) {
+              const rawItems = await db.waybillItems.where('waybillId').equals(initialWaybillId).toArray();
+              targetWb = { ...rawWb, items: rawItems };
+            }
+          }
+          if (targetWb) {
+            await importWaybillItems(targetWb);
+          }
+        } else if (initialOrderId && ords.some(o => o.id === initialOrderId)) {
+          // If an initial order ID was passed, auto-load its remaining items
           const target = ords.find(o => o.id === initialOrderId);
           if (target) {
             importOrderItems(target);
           }
         }
+      } else if (initialWaybillId) {
+        // If contact not yet set, load waybill first
+        const rawWb = await db.waybills.get(initialWaybillId);
+        if (rawWb) {
+          const rawItems = await db.waybillItems.where('waybillId').equals(initialWaybillId).toArray();
+          const targetWb = { ...rawWb, items: rawItems };
+          if (targetWb.contactId) setContactId(targetWb.contactId);
+          if (targetWb.type) setType(targetWb.type);
+          await importWaybillItems(targetWb);
+        }
       } else {
         setPendingOrders([]);
+        setPendingWaybills([]);
       }
     }
-    loadOrders();
-  }, [contactId, type, initialOrderId]);
+    loadOrdersAndWaybills();
+  }, [contactId, type, initialOrderId, initialWaybillId]);
+
+  // Helper to import items from a waybill
+  const importWaybillItems = async (wb: any) => {
+    setSelectedWaybillId(wb.id);
+    setSelectedWaybillNumber(wb.waybillNumber);
+    if (wb.orderId) {
+      setSelectedOrderId(wb.orderId);
+      setSelectedOrderNumber(wb.orderNumber || '');
+    }
+    if (wb.contactId && !contactId) {
+      setContactId(wb.contactId);
+    }
+    if (wb.type) {
+      setType(wb.type);
+    }
+
+    // Crucial: Waybill already handled physical stock deduction/addition!
+    setIsStockDeducted(false);
+
+    let wbItems = wb.items;
+    if (!wbItems || wbItems.length === 0) {
+      wbItems = await db.waybillItems.where('waybillId').equals(wb.id).toArray();
+    }
+
+    if (wbItems && wbItems.length > 0) {
+      const mappedItems: Omit<InvoiceItem, 'id' | 'invoiceId'>[] = wbItems.map((wi: any) => {
+        const product = products?.find(p => p.id === wi.productId);
+        const qty = wi.quantity || 0;
+        let unitPrice = wi.unitPrice || 0;
+        if (!unitPrice && product) {
+          unitPrice = (wb.type === 'purchase' ? product.buyingPrice : product.sellingPrice) || 0;
+        }
+        const discountRate = wi.discountRate || 0;
+        const taxRate = wi.taxRate || 20;
+
+        const sub = qty * unitPrice;
+        const discAmt = (sub * discountRate) / 100;
+        const taxable = sub - discAmt;
+        const taxAmt = (taxable * taxRate) / 100;
+        const tot = taxable + taxAmt;
+
+        return {
+          productId: wi.productId,
+          orderItemId: wi.orderItemId,
+          productCode: wi.productCode || product?.code || 'STK',
+          productName: wi.productName || product?.name || 'Ürün',
+          color: wi.color,
+          size: wi.size,
+          quantity: qty,
+          unit: wi.unit || 'Çift',
+          unitPrice,
+          discountRate,
+          discountAmount: discAmt,
+          taxRate,
+          taxAmount: taxAmt,
+          total: tot
+        };
+      });
+      setItems(mappedItems);
+    }
+
+    if (wb.notes) {
+      setNotes((prev) => prev ? `${prev}\nİrsaliye Ref: ${wb.waybillNumber}` : `İrsaliye Ref: ${wb.waybillNumber}`);
+    }
+
+    setIsWaybillSelectorOpen(false);
+  };
 
   // Helper to import items from an order
   const importOrderItems = (order: any) => {
@@ -857,6 +1008,8 @@ function CreateInvoiceModal({
       contactId: Number(contactId),
       orderId: selectedOrderId,
       orderNumber: selectedOrderNumber,
+      waybillId: selectedWaybillId,
+      waybillNumber: selectedWaybillNumber,
       date: new Date(date),
       dueDate: dueDate ? new Date(dueDate) : undefined,
       ettn,
@@ -889,10 +1042,10 @@ function CreateInvoiceModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl w-full max-w-5xl shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-5xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
         
         {/* Modal Header */}
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={cn(
               "w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm",
@@ -901,7 +1054,7 @@ function CreateInvoiceModal({
               <Receipt className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-800 tracking-tight">
+              <h2 className="text-lg font-black text-slate-800 dark:text-slate-200 tracking-tight">
                 {type === 'sales' ? 'YENİ SATIŞ FATURASI DÜZENLE' : 'YENİ ALIŞ FATURASI GİRİŞİ'}
               </h2>
               <p className="text-xs text-slate-400 font-medium">
@@ -917,7 +1070,7 @@ function CreateInvoiceModal({
                 onClick={() => setType('sales')}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
-                  type === 'sales' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-indigo-600"
+                  type === 'sales' ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-indigo-600"
                 )}
               >
                 Satış Faturası
@@ -927,7 +1080,7 @@ function CreateInvoiceModal({
                 onClick={() => setType('purchase')}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
-                  type === 'purchase' ? "bg-white text-amber-600 shadow-sm" : "text-slate-500 hover:text-amber-600"
+                  type === 'purchase' ? "bg-white dark:bg-slate-900 text-amber-600 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-amber-600"
                 )}
               >
                 Alış Faturası
@@ -936,7 +1089,7 @@ function CreateInvoiceModal({
 
             <button 
               onClick={onClose}
-              className="w-9 h-9 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+              className="w-9 h-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:bg-slate-800/50 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -967,11 +1120,11 @@ function CreateInvoiceModal({
                   setItems([]);
                 }}
                 required
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               >
                 <option value="">-- Cari Seçiniz --</option>
                 {filteredContacts.map(c => (
-                  <option key={c.id} value={c.id}>
+                  <option key={`inv-contact-opt-${c.id}`} value={c.id}>
                     {c.name} {c.taxOffice ? `(${c.taxOffice} V.D. - ${c.taxNumber || ''})` : ''}
                   </option>
                 ))}
@@ -989,7 +1142,7 @@ function CreateInvoiceModal({
                 onChange={(e) => setInvoiceNumber(e.target.value)}
                 required
                 placeholder="SAT-2026-000001"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
@@ -1001,7 +1154,7 @@ function CreateInvoiceModal({
               <select
                 value={scenario}
                 onChange={(e) => setScenario(e.target.value as InvoiceScenario)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               >
                 <option value="commercial">Ticari Fatura</option>
                 <option value="basic">Temel Fatura</option>
@@ -1021,7 +1174,7 @@ function CreateInvoiceModal({
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
@@ -1034,7 +1187,7 @@ function CreateInvoiceModal({
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
@@ -1057,30 +1210,75 @@ function CreateInvoiceModal({
                 value={ettn}
                 onChange={(e) => setEttn(e.target.value)}
                 placeholder="UUID"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
           </div>
 
-          {/* Import from Orders banner / button */}
-          <div className="bg-gradient-to-r from-indigo-50 to-slate-50 p-4 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Selected Waybill banner if linked */}
+          {selectedWaybillNumber && (
+            <div className="bg-purple-50 border border-purple-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0">
+                  <Truck className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-purple-950 flex items-center gap-2">
+                    <span>Bağlı Sevk İrsaliyesi: <strong>{selectedWaybillNumber}</strong></span>
+                    <span className="bg-purple-200/80 text-purple-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Faturalandırılıyor</span>
+                  </div>
+                  <div className="text-[11px] text-purple-700 mt-0.5">
+                    Bu fatura irsaliye sevkine istinaden düzenlendiği için stok düşümü irsaliyede yapılmıştır (Mükerrer stok hareketi yapılmaz).
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedWaybillId(undefined);
+                  setSelectedWaybillNumber('');
+                }}
+                className="text-xs font-bold text-purple-700 hover:text-purple-900 hover:underline px-2 py-1 self-start sm:self-center cursor-pointer"
+              >
+                İrsaliye Bağlantısını Kaldır
+              </button>
+            </div>
+          )}
+
+          {/* Import from Orders & Waybills banner / buttons */}
+          <div className="bg-gradient-to-r from-indigo-50 to-slate-50 p-4 rounded-2xl border border-indigo-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
                 <ShoppingBag className="w-4 h-4" />
               </div>
               <div>
                 <div className="text-xs font-bold text-indigo-950">
-                  {selectedOrderNumber ? `Bağlı Sipariş: ${selectedOrderNumber}` : 'Siparişten Otomatik Kalem Aktarımı'}
+                  {selectedOrderNumber ? `Bağlı Sipariş: ${selectedOrderNumber}` : 'Sipariş veya İrsaliyeden Otomatik Kalem Aktarımı'}
                 </div>
                 <div className="text-[11px] text-indigo-700/80">
                   {selectedOrderNumber 
                     ? 'Siparişin kalan miktarları aktarıldı. İhtiyacınıza göre kısmi fatura adetlerini satırlarda düzenleyebilirsiniz.'
-                    : 'Cariye ait bekleyen açık siparişleri çağırarak tek tıkla kısmi veya tam fatura kesin.'}
+                    : 'Cariye ait bekleyen açık sipariş veya sevk irsaliyelerini çağırarak tek tıkla fatura kesin.'}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!contactId) {
+                    alert('Lütfen önce bir cari seçiniz.');
+                    return;
+                  }
+                  setIsWaybillSelectorOpen(true);
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm shrink-0 cursor-pointer"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                İrsaliyeden Çağır ({pendingWaybills.length})
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -1090,7 +1288,7 @@ function CreateInvoiceModal({
                   }
                   setIsOrderSelectorOpen(true);
                 }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm shrink-0 cursor-pointer"
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
                 Siparişten Çağır ({pendingOrders.length})
@@ -1099,7 +1297,7 @@ function CreateInvoiceModal({
               <button
                 type="button"
                 onClick={addBlankItem}
-                className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shrink-0"
+                className="bg-white dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Serbest Satır Ekle
@@ -1110,7 +1308,7 @@ function CreateInvoiceModal({
           {/* Invoice Items Table */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                 <Package className="w-4 h-4 text-indigo-600" />
                 Fatura Kalemleri & Satır Detayları ({items.length})
               </h3>
@@ -1119,9 +1317,9 @@ function CreateInvoiceModal({
               </span>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
               <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
                   <tr>
                     <th className="px-3 py-3 w-12 text-center">#</th>
                     <th className="px-3 py-3">Ürün / Hizmet</th>
@@ -1150,7 +1348,7 @@ function CreateInvoiceModal({
                       const prodSizes = itemProd?.assortment?.map(a => a.size) || [];
 
                       return (
-                        <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
+                        <tr key={`inv-item-row-${item.productId || 'p'}-${idx}`} className="hover:bg-slate-50 dark:bg-slate-800/50/60 transition-colors">
                           <td className="px-3 py-2.5 text-center font-mono text-slate-400 font-bold">
                             {idx + 1}
                           </td>
@@ -1158,10 +1356,10 @@ function CreateInvoiceModal({
                             <select
                               value={item.productId || ''}
                               onChange={(e) => updateItemField(idx, 'productId', e.target.value)}
-                              className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800"
+                              className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200"
                             >
                               {products?.map(p => (
-                                <option key={p.id} value={p.id}>
+                                <option key={`inv-prod-opt-${p.id}`} value={p.id}>
                                   [{p.code}] {p.name} {p.isFootwear ? `(Asortili - ${p.multiplier || 8}'li Koli)` : ''}
                                 </option>
                               ))}
@@ -1180,10 +1378,10 @@ function CreateInvoiceModal({
                                 <select
                                   value={item.color || ''}
                                   onChange={(e) => updateItemField(idx, 'color', e.target.value)}
-                                  className="w-20 px-1 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] font-medium text-slate-800"
+                                  className="w-20 px-1 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-[11px] font-medium text-slate-800 dark:text-slate-200"
                                 >
                                   <option value="">Renk Seç</option>
-                                  {prodColors.map(c => <option key={c} value={c}>{c}</option>)}
+                                  {prodColors.map((c, cIdx) => <option key={`inv-color-${c}-${cIdx}`} value={c}>{c}</option>)}
                                 </select>
                               ) : (
                                 <input
@@ -1191,7 +1389,7 @@ function CreateInvoiceModal({
                                   placeholder="Renk"
                                   value={item.color || ''}
                                   onChange={(e) => updateItemField(idx, 'color', e.target.value)}
-                                  className="w-16 px-1.5 py-1 bg-slate-50 border border-slate-200 rounded text-[11px]"
+                                  className="w-16 px-1.5 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-[11px]"
                                 />
                               )}
 
@@ -1199,7 +1397,7 @@ function CreateInvoiceModal({
                                 <select
                                   value={item.size || 'Asorti'}
                                   onChange={(e) => updateItemField(idx, 'size', e.target.value)}
-                                  className="w-24 px-1 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] font-bold text-indigo-700"
+                                  className="w-24 px-1 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-[11px] font-bold text-indigo-700"
                                 >
                                   <option value="Asorti">Asorti</option>
                                   {prodSizes.map(s => <option key={s} value={s}>Beden {s}</option>)}
@@ -1210,7 +1408,7 @@ function CreateInvoiceModal({
                                   placeholder="Beden"
                                   value={item.size || ''}
                                   onChange={(e) => updateItemField(idx, 'size', e.target.value)}
-                                  className="w-14 px-1.5 py-1 bg-slate-50 border border-slate-200 rounded text-[11px]"
+                                  className="w-14 px-1.5 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-[11px]"
                                 />
                               )}
                             </div>
@@ -1222,14 +1420,14 @@ function CreateInvoiceModal({
                               step="any"
                               value={item.quantity}
                               onChange={(e) => updateItemField(idx, 'quantity', Number(e.target.value))}
-                              className="w-20 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono font-bold text-indigo-700"
+                              className="w-20 px-2 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-right font-mono font-bold text-indigo-700"
                             />
                           </td>
                           <td className="px-3 py-2.5">
                             <select
                               value={item.unit || 'Çift'}
                               onChange={(e) => updateItemField(idx, 'unit', e.target.value)}
-                              className="w-16 px-1.5 py-1 bg-slate-50 border border-slate-200 rounded text-[11px]"
+                              className="w-16 px-1.5 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded text-[11px]"
                             >
                               <option value="Çift">Çift</option>
                               <option value="Adet">Adet</option>
@@ -1246,7 +1444,7 @@ function CreateInvoiceModal({
                               step="any"
                               value={item.unitPrice}
                               onChange={(e) => updateItemField(idx, 'unitPrice', Number(e.target.value))}
-                              className="w-24 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono font-bold text-slate-800"
+                              className="w-24 px-2 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-right font-mono font-bold text-slate-800 dark:text-slate-200"
                             />
                           </td>
                           <td className="px-3 py-2.5 text-right">
@@ -1256,14 +1454,14 @@ function CreateInvoiceModal({
                               max="100"
                               value={item.discountRate}
                               onChange={(e) => updateItemField(idx, 'discountRate', Number(e.target.value))}
-                              className="w-16 px-1.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono"
+                              className="w-16 px-1.5 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-right font-mono"
                             />
                           </td>
                           <td className="px-3 py-2.5 text-right">
                             <select
                               value={item.taxRate}
                               onChange={(e) => updateItemField(idx, 'taxRate', Number(e.target.value))}
-                              className="w-16 px-1 py-1 bg-slate-50 border border-slate-200 rounded-lg text-right font-mono font-bold"
+                              className="w-16 px-1 py-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-right font-mono font-bold"
                             >
                               <option value={0}>%0</option>
                               <option value={1}>%1</option>
@@ -1271,7 +1469,7 @@ function CreateInvoiceModal({
                               <option value={20}>%20</option>
                             </select>
                           </td>
-                          <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900">
+                          <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
                             ₺{item.total.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-3 py-2.5 text-center">
@@ -1305,12 +1503,12 @@ function CreateInvoiceModal({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Banka hesap bilgileri, teslimat notu veya e-fatura özel açıklamaları..."
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder:text-slate-300"
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder:text-slate-300"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50/50 cursor-pointer hover:bg-slate-50">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50/50 cursor-pointer hover:bg-slate-50 dark:bg-slate-800/50">
                   <input
                     type="checkbox"
                     checked={isStockDeducted}
@@ -1318,8 +1516,8 @@ function CreateInvoiceModal({
                     className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
                   />
                   <div className="text-xs">
-                    <span className="font-bold text-slate-800 block">Stok Hareketi Otomatik İşlensin (Asorti & Beden Dağılımlı)</span>
-                    <span className="text-slate-500 text-[10px]">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Stok Hareketi Otomatik İşlensin (Asorti & Beden Dağılımlı)</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-[10px]">
                       {type === 'sales' 
                         ? 'Ayakkabı modellerinde stoklar asorti şablonuna göre beden bazında (örn. 40, 41, 42...) depodan anında düşülür ve stok detay raporuna yansır.' 
                         : 'Faturadaki ürünler asorti oranlarına göre depoya stok girişi yapılır.'}
@@ -1329,7 +1527,7 @@ function CreateInvoiceModal({
 
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-slate-600">Kayıt Durumu:</span>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                  <label className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-200 cursor-pointer">
                     <input
                       type="radio"
                       name="status"
@@ -1340,7 +1538,7 @@ function CreateInvoiceModal({
                     />
                     <span>Resmi Olarak Kes (Bakiyeye Yansıt)</span>
                   </label>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                  <label className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-200 cursor-pointer">
                     <input
                       type="radio"
                       name="status"
@@ -1356,7 +1554,7 @@ function CreateInvoiceModal({
             </div>
 
             {/* Calculations Box */}
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
               <div className="flex justify-between text-xs text-slate-600">
                 <span>Ara Toplam (Matrah):</span>
                 <span className="font-mono font-bold">
@@ -1389,8 +1587,8 @@ function CreateInvoiceModal({
                 </div>
               )}
 
-              <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
-                <span className="text-sm font-black text-slate-800 uppercase tracking-wider">
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between items-baseline">
+                <span className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                   Genel Toplam:
                 </span>
                 <span className="text-2xl font-black font-mono text-indigo-600">
@@ -1401,11 +1599,11 @@ function CreateInvoiceModal({
           </div>
 
           {/* Modal Footer Actions */}
-          <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3 -mx-6 -mb-6">
+          <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50/50 flex items-center justify-end gap-3 -mx-6 -mb-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors uppercase tracking-wider"
+              className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:bg-slate-800 transition-colors uppercase tracking-wider"
             >
               Vazgeç
             </button>
@@ -1423,11 +1621,11 @@ function CreateInvoiceModal({
       {/* SUB-MODAL: CHOOSE PENDING ORDER TO IMPORT */}
       {isOrderSelectorOpen && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div className="flex items-center gap-2.5">
                 <ShoppingBag className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-base font-black text-slate-800">
+                <h3 className="text-base font-black text-slate-800 dark:text-slate-200">
                   Faturalandırılacak Siparişi Seçiniz
                 </h3>
               </div>
@@ -1447,18 +1645,18 @@ function CreateInvoiceModal({
               ) : (
                 pendingOrders.map((ord: any) => (
                   <div 
-                    key={ord.id}
-                    className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    key={`inv-pending-ord-${ord.id}`}
+                    className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3"
                     onClick={() => importOrderItems(ord)}
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-slate-800 text-sm">{ord.orderNumber}</span>
-                        <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded font-bold">
+                        <span className="font-mono font-black text-slate-800 dark:text-slate-200 text-sm">{ord.orderNumber}</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 rounded font-bold">
                           {new Date(ord.date).toLocaleDateString('tr-TR')}
                         </span>
                       </div>
-                      <div className="text-xs text-slate-500 mt-1">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         Toplam Kalem: {ord.items?.length || 0} adet ürün kalemi kalan miktar içeriyor.
                       </div>
                     </div>
@@ -1466,7 +1664,7 @@ function CreateInvoiceModal({
                     <div className="flex items-center gap-4">
                       <div className="text-right font-mono">
                         <div className="text-xs text-slate-400">Sipariş Tutarı</div>
-                        <div className="text-sm font-bold text-slate-800">
+                        <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
                           ₺{ord.grandTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
@@ -1489,6 +1687,248 @@ function CreateInvoiceModal({
           </div>
         </div>
       )}
+
+      {/* SUB-MODAL: CHOOSE PENDING WAYBILL TO IMPORT */}
+      {isWaybillSelectorOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-2.5">
+                <Truck className="w-5 h-5 text-purple-600" />
+                <h3 className="text-base font-black text-slate-800 dark:text-slate-200">
+                  Faturalandırılacak İrsaliyeyi Seçiniz
+                </h3>
+              </div>
+              <button 
+                onClick={() => setIsWaybillSelectorOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              {pendingWaybills.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-xs">
+                  Bu cariye ait henüz faturalanmamış açık sevk irsaliyesi bulunmuyor.
+                </div>
+              ) : (
+                pendingWaybills.map((wb: any) => (
+                  <div 
+                    key={`inv-sub-wb-${wb.id}`}
+                    className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-purple-300 hover:bg-purple-50/40 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    onClick={() => importWaybillItems(wb)}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-slate-800 dark:text-slate-200 text-sm">{wb.waybillNumber}</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 rounded font-bold">
+                          {new Date(wb.date).toLocaleDateString('tr-TR')}
+                        </span>
+                        {wb.orderNumber && (
+                          <span className="text-[10px] px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-bold">
+                            Sipariş: {wb.orderNumber}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Toplam Miktar: {wb.totalQuantity || 0} Çift | Kalem Sayısı: {wb.items?.length || 0}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-right font-mono">
+                        <div className="text-xs text-slate-400">İrsaliye Tutarı</div>
+                        <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                          ₺{Number(wb.grandTotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          importWaybillItems(wb);
+                        }}
+                        className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-sm cursor-pointer"
+                      >
+                        Aktar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------------------
+// GLOBAL WAYBILL SELECTOR MODAL (Easily invoice any open waybill across all contacts)
+// -----------------------------------------------------------------------------------------
+function GlobalWaybillSelectorModal({
+  isOpen,
+  onClose,
+  onSelectWaybill
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectWaybill: (waybill: any) => void;
+}) {
+  const [filterType, setFilterType] = useState<'all' | 'sales' | 'purchase'>('all');
+  const [search, setSearch] = useState('');
+
+  const waybills = useLiveQuery(() => db.waybills.toArray(), []);
+  const contacts = useLiveQuery(() => db.contacts.toArray(), []);
+
+  if (!isOpen) return null;
+
+  const pendingWaybills = waybills?.filter(w => {
+    if (w.status !== 'issued') return false;
+    if (w.invoicedStatus === 'invoiced') return false;
+    if (filterType !== 'all' && w.type !== filterType) return false;
+    if (search.trim()) {
+      const term = search.toLowerCase();
+      const contact = contacts?.find(c => c.id === w.contactId);
+      const matchNumber = w.waybillNumber?.toLowerCase().includes(term);
+      const matchContact = contact?.name?.toLowerCase().includes(term);
+      const matchOrder = w.orderNumber?.toLowerCase().includes(term);
+      return matchNumber || matchContact || matchOrder;
+    }
+    return true;
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="p-5 bg-slate-900 text-white flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center">
+              <Truck className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm">Faturalandırılacak İrsaliyeler</h3>
+              <p className="text-[11px] text-slate-400">
+                Depodan sevk edilmiş ve henüz faturası kesilmemiş açık irsaliyeler
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white cursor-pointer">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFilterType('all')}
+              className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer", filterType === 'all' ? "bg-purple-600 text-white" : "bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-700")}
+            >
+              Tümü ({waybills?.filter(w => w.status === 'issued' && w.invoicedStatus !== 'invoiced').length || 0})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('sales')}
+              className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer", filterType === 'sales' ? "bg-purple-600 text-white" : "bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-700")}
+            >
+              Satış Sevk ({waybills?.filter(w => w.status === 'issued' && w.type === 'sales' && w.invoicedStatus !== 'invoiced').length || 0})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('purchase')}
+              className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer", filterType === 'purchase' ? "bg-purple-600 text-white" : "bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-700")}
+            >
+              Alış İrsaliyesi ({waybills?.filter(w => w.status === 'issued' && w.type === 'purchase' && w.invoicedStatus !== 'invoiced').length || 0})
+            </button>
+          </div>
+
+          <div className="relative flex-1 min-w-[200px] max-w-xs">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="İrsaliye no veya cari ara..."
+              className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs"
+            />
+          </div>
+        </div>
+
+        {/* Waybill List */}
+        <div className="p-4 overflow-y-auto space-y-2.5 flex-1">
+          {pendingWaybills.length === 0 ? (
+            <div className="py-12 text-center text-slate-400 text-xs">
+              <Truck className="w-10 h-10 mx-auto mb-2 opacity-25 text-slate-400" />
+              <p className="font-bold">Faturalanmayı bekleyen açık irsaliye bulunmuyor.</p>
+              <p className="text-[11px] mt-1 text-slate-400">Tüm sevk edilmiş irsaliyeler faturalandırılmış veya henüz irsaliye düzenlenmemiş.</p>
+            </div>
+          ) : (
+            pendingWaybills.map((wb) => {
+              const contact = contacts?.find(c => c.id === wb.contactId);
+              const isSales = wb.type === 'sales';
+              return (
+                <div
+                  key={`global-wb-${wb.id}`}
+                  className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-purple-300 hover:bg-purple-50/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 mt-0.5",
+                      isSales ? "bg-indigo-100 text-indigo-700" : "bg-amber-100 text-amber-700"
+                    )}>
+                      {isSales ? 'SEVK' : 'ALIŞ'}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono font-bold text-sm text-slate-900 dark:text-slate-100">{wb.waybillNumber}</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 rounded-md font-semibold">
+                          {new Date(wb.date).toLocaleDateString('tr-TR')}
+                        </span>
+                        {wb.orderNumber && (
+                          <span className="text-[10px] px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md font-bold">
+                            Sipariş: {wb.orderNumber}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs font-bold text-slate-700 dark:text-slate-200 mt-1">
+                        {contact?.name || 'Bilinmeyen Cari'}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-3">
+                        <span>Toplam Adet: <strong>{wb.totalQuantity} Çift</strong></span>
+                        {wb.vehiclePlate && <span>Plaka: {wb.vehiclePlate}</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 self-end sm:self-center">
+                    <div className="text-right">
+                      <div className="text-[10px] text-slate-400 font-semibold uppercase">İrsaliye Tutarı</div>
+                      <div className="text-sm font-black text-slate-900 dark:text-slate-100 font-mono">
+                        ₺{Number(wb.grandTotal || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onSelectWaybill(wb)}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold rounded-xl text-xs transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Receipt className="w-3.5 h-3.5" />
+                      <span>Faturalandır</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1560,10 +2000,10 @@ function InvoiceActionConfirmModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
-        <div className="p-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={cn(
               "w-10 h-10 rounded-2xl flex items-center justify-center shadow-xs",
@@ -1572,15 +2012,15 @@ function InvoiceActionConfirmModal({
               {activeTab === 'cancel' ? <Ban className="w-5 h-5" /> : <Trash2 className="w-5 h-5" />}
             </div>
             <div>
-              <h3 className="text-base font-black text-slate-800 tracking-tight">
+              <h3 className="text-base font-black text-slate-800 dark:text-slate-200 tracking-tight">
                 {isIssued 
                   ? 'Fatura İptali & Silme Kontrolü' 
                   : isDraft 
                     ? 'Taslak Faturayı Sil' 
                     : 'İptal Edilmiş Faturayı Sil'}
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Fatura No: <span className="font-mono font-bold text-slate-700">{invoice.invoiceNumber}</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Fatura No: <span className="font-mono font-bold text-slate-700 dark:text-slate-200">{invoice.invoiceNumber}</span>
               </p>
             </div>
           </div>
@@ -1588,7 +2028,7 @@ function InvoiceActionConfirmModal({
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="w-9 h-9 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+            className="w-9 h-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
@@ -1596,10 +2036,10 @@ function InvoiceActionConfirmModal({
 
         <div className="p-6 space-y-5">
           {/* Invoice Summary Card */}
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Cari Ünvan</span>
-              <span className="font-bold text-slate-800 truncate block">{contactName || 'Belirtilmemiş'}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">{contactName || 'Belirtilmemiş'}</span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Fatura Tutarı</span>
@@ -1609,25 +2049,25 @@ function InvoiceActionConfirmModal({
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Tarih</span>
-              <span className="text-slate-700 block">{new Date(invoice.date).toLocaleDateString('tr-TR')}</span>
+              <span className="text-slate-700 dark:text-slate-200 block">{new Date(invoice.date).toLocaleDateString('tr-TR')}</span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Bağlı Sipariş</span>
-              <span className="font-mono font-bold text-slate-700 block">{invoice.orderNumber || 'Yok'}</span>
+              <span className="font-mono font-bold text-slate-700 dark:text-slate-200 block">{invoice.orderNumber || 'Yok'}</span>
             </div>
           </div>
 
           {/* Mode Switcher for Issued Invoices */}
           {isIssued && (
-            <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl">
+            <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl">
               <button
                 type="button"
                 onClick={() => setActiveTab('cancel')}
                 className={cn(
                   "py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
                   activeTab === 'cancel'
-                    ? "bg-white text-amber-800 shadow-xs border border-slate-200"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white dark:bg-slate-900 text-amber-800 shadow-xs border border-slate-200 dark:border-slate-700"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
                 )}
               >
                 <Ban className="w-4 h-4 text-amber-600" />
@@ -1639,8 +2079,8 @@ function InvoiceActionConfirmModal({
                 className={cn(
                   "py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
                   activeTab === 'delete'
-                    ? "bg-white text-rose-800 shadow-xs border border-slate-200"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white dark:bg-slate-900 text-rose-800 shadow-xs border border-slate-200 dark:border-slate-700"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-100"
                 )}
               >
                 <Trash2 className="w-4 h-4 text-rose-600" />
@@ -1686,7 +2126,7 @@ function InvoiceActionConfirmModal({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1.5">
                   İptal Nedeni (Opsiyonel)
                 </label>
                 <input
@@ -1694,7 +2134,7 @@ function InvoiceActionConfirmModal({
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="Örn: Yanlış miktar girildi / Müşteri talebiyle iptal / Hatalı iskonto"
-                  className="w-full px-4 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full px-4 py-2.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                 />
               </div>
             </div>
@@ -1716,7 +2156,7 @@ function InvoiceActionConfirmModal({
                       : 'Bu iptal edilmiş faturayı listeden tamamen kaldırmak üzeresiniz.'}
                 </p>
                 {isIssued && (
-                  <p className="text-[11px] text-rose-700 bg-white/70 p-2.5 rounded-lg border border-rose-200">
+                  <p className="text-[11px] text-rose-700 bg-white dark:bg-slate-900/70 p-2.5 rounded-lg border border-rose-200">
                     💡 <strong>Tavsiye:</strong> Muhasebe ve e-arşiv fatura numarası bütünlüğünü korumak için silmek yerine <strong>"Faturayı İptal Et"</strong> seçeneğini tercih edebilirsiniz.
                   </p>
                 )}
@@ -1726,12 +2166,12 @@ function InvoiceActionConfirmModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="p-6 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={isProcessing}
-            className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            className="px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
           >
             Vazgeç
           </button>
@@ -1809,7 +2249,7 @@ function ResetInvoicesAndStockModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className="p-6 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
@@ -1830,7 +2270,7 @@ function ResetInvoicesAndStockModal({
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="w-9 h-9 bg-white border border-rose-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+            className="w-9 h-9 bg-white dark:bg-slate-900 border border-rose-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
@@ -1861,12 +2301,12 @@ function ResetInvoicesAndStockModal({
             </label>
 
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
                 <div className="flex items-center gap-2.5">
                   <Receipt className="w-4 h-4 text-indigo-600" />
                   <div>
-                    <div className="text-xs font-bold text-slate-800">Tüm Faturalar ve Kalemleri</div>
-                    <div className="text-[10px] text-slate-500">Satış ve alış fatura kayıtları tamamen silinir.</div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Tüm Faturalar ve Kalemleri</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Satış ve alış fatura kayıtları tamamen silinir.</div>
                   </div>
                 </div>
                 <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -1874,12 +2314,12 @@ function ResetInvoicesAndStockModal({
                 </div>
               </div>
 
-              <label className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl cursor-pointer transition-colors">
+              <label className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer transition-colors">
                 <div className="flex items-center gap-2.5">
                   <Package className="w-4 h-4 text-amber-600" />
                   <div>
-                    <div className="text-xs font-bold text-slate-800">Stok Hareket Geçmişi (Loglar)</div>
-                    <div className="text-[10px] text-slate-500">Raporlardaki tüm giriş, çıkış ve sarf hareket dökümü sıfırlanır.</div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Stok Hareket Geçmişi (Loglar)</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Raporlardaki tüm giriş, çıkış ve sarf hareket dökümü sıfırlanır.</div>
                   </div>
                 </div>
                 <input
@@ -1890,12 +2330,12 @@ function ResetInvoicesAndStockModal({
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl cursor-pointer transition-colors">
+              <label className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer transition-colors">
                 <div className="flex items-center gap-2.5">
                   <ShoppingBag className="w-4 h-4 text-blue-600" />
                   <div>
-                    <div className="text-xs font-bold text-slate-800">Sipariş Faturalanma Durumları</div>
-                    <div className="text-[10px] text-slate-500">Siparişlerin faturalanan miktarları 0'lanır ve tekrar faturalandırılabilir olur.</div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Sipariş Faturalanma Durumları</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Siparişlerin faturalanan miktarları 0'lanır ve tekrar faturalandırılabilir olur.</div>
                   </div>
                 </div>
                 <input
@@ -1906,12 +2346,12 @@ function ResetInvoicesAndStockModal({
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl cursor-pointer transition-colors">
+              <label className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer transition-colors">
                 <div className="flex items-center gap-2.5">
                   <Building2 className="w-4 h-4 text-emerald-600" />
                   <div>
-                    <div className="text-xs font-bold text-slate-800">Cari Fatura Bakiyeleri</div>
-                    <div className="text-[10px] text-slate-500">Faturalardan kaynaklanan cari hesap borç/alacak bakiyeleri sıfırlanır.</div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Cari Fatura Bakiyeleri</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Faturalardan kaynaklanan cari hesap borç/alacak bakiyeleri sıfırlanır.</div>
                   </div>
                 </div>
                 <input
@@ -1926,12 +2366,12 @@ function ResetInvoicesAndStockModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={isProcessing}
-            className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            className="px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
           >
             Vazgeç
           </button>

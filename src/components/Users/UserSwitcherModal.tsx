@@ -25,7 +25,7 @@ export default function UserSwitcherModal({ isOpen, onClose }: UserSwitcherModal
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -67,8 +67,8 @@ export default function UserSwitcherModal({ isOpen, onClose }: UserSwitcherModal
                   isCurrent
                     ? 'bg-indigo-50/80 border-indigo-300 shadow-xs ring-1 ring-indigo-500/30'
                     : isActive
-                    ? 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                    : 'bg-slate-50/60 border-slate-200 opacity-60 cursor-not-allowed'
+                    ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:bg-slate-800/50'
+                    : 'bg-slate-50 dark:bg-slate-800/50/60 border-slate-200 dark:border-slate-700 opacity-60 cursor-not-allowed'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -81,7 +81,7 @@ export default function UserSwitcherModal({ isOpen, onClose }: UserSwitcherModal
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900 truncate">
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
                         {u.fullName}
                       </span>
                       {isCurrent && (
@@ -96,8 +96,8 @@ export default function UserSwitcherModal({ isOpen, onClose }: UserSwitcherModal
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500 mt-0.5">
-                      <span className="font-semibold text-slate-700">{u.title || u.department}</span>
+                    <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">{u.title || u.department}</span>
                       <span>•</span>
                       <span className="text-indigo-600 font-medium">{u.roleName || u.roleCode}</span>
                     </div>
@@ -113,7 +113,7 @@ export default function UserSwitcherModal({ isOpen, onClose }: UserSwitcherModal
                     <button
                       type="button"
                       disabled={!isActive}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 text-xs font-semibold transition-all flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all flex items-center gap-1"
                     >
                       <span>Geçiş Yap</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -126,7 +126,7 @@ export default function UserSwitcherModal({ isOpen, onClose }: UserSwitcherModal
         </div>
 
         {/* Footer info */}
-        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-amber-500" />
             <span>Kullanıcı değiştiğinde sol menü ve işlem butonları anında yetkiye göre güncellenir.</span>

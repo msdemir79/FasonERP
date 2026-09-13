@@ -94,7 +94,7 @@ export default function EditAccountModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-700">
         {/* Header */}
         <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -116,14 +116,14 @@ export default function EditAccountModal({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Account Meta Badges */}
-          <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs">
+          <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
             <span className="font-semibold text-slate-600">Hesap Kodu:</span>
             <span className="font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded text-sm">
               {account.code}
             </span>
             <span className="text-slate-300">|</span>
             <span className="font-semibold text-slate-600">Seviye:</span>
-            <span className="bg-slate-200 text-slate-800 font-medium px-2 py-0.5 rounded">
+            <span className="bg-slate-200 text-slate-800 dark:text-slate-200 font-medium px-2 py-0.5 rounded">
               {levelLabel}
             </span>
             {account.isSystem ? (
@@ -146,7 +146,7 @@ export default function EditAccountModal({
           {/* Account Name */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-800">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
                 Hesap Adı <span className="text-rose-500">*</span>
               </label>
               {/* Quick Format Tools */}
@@ -154,7 +154,7 @@ export default function EditAccountModal({
                 <button
                   type="button"
                   onClick={handleToTitleCase}
-                  className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 transition-colors"
+                  className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded border border-slate-300 transition-colors"
                   title="İlk harfleri büyük yap (Örn: Aslanlar Ayakkabı)"
                 >
                   Aa Baş Harfler
@@ -162,7 +162,7 @@ export default function EditAccountModal({
                 <button
                   type="button"
                   onClick={handleToUpperCase}
-                  className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 transition-colors"
+                  className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded border border-slate-300 transition-colors"
                   title="Tümünü büyük harf yap (Örn: ASLANLAR AYAKKABI)"
                 >
                   AA BÜYÜK
@@ -170,7 +170,7 @@ export default function EditAccountModal({
                 <button
                   type="button"
                   onClick={handleCleanWhitespace}
-                  className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 transition-colors"
+                  className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded border border-slate-300 transition-colors"
                   title="Fazla boşlukları temizle"
                 >
                   Boşlukları Düzelt
@@ -184,32 +184,32 @@ export default function EditAccountModal({
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="Örn: Aslanlar Ayakkabı Sanayi Ltd. Şti."
-              className="w-full text-sm font-medium border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              className="w-full text-sm font-medium border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-900"
             />
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Bu hesap adı mizan, muavin, defter-i kebir ve mali tablolarda görüntülenecektir.
             </p>
           </div>
 
           {/* Description */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700">Açıklama / Not (İsteğe Bağlı)</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Açıklama / Not (İsteğe Bağlı)</label>
             <input
               type="text"
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Örn: Müşteri Cari Kartı Hesabı"
-              className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-900"
             />
           </div>
 
           {/* Currency */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700">Para Birimi</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Para Birimi</label>
             <select
               value={currency}
               onChange={e => setCurrency(e.target.value)}
-              className="w-full text-xs font-mono font-semibold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              className="w-full text-xs font-mono font-semibold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-900"
             >
               <option value="TRY">TRY - Türk Lirası</option>
               <option value="USD">USD - Amerikan Doları</option>
@@ -219,7 +219,7 @@ export default function EditAccountModal({
           </div>
 
           {/* Sync Journal Entries Checkbox */}
-          <div className="pt-2 border-t border-slate-100">
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
             <label className="flex items-start gap-2.5 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -227,9 +227,9 @@ export default function EditAccountModal({
                 onChange={e => setSyncJournalEntries(e.target.checked)}
                 className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
               />
-              <div className="text-xs text-slate-700">
-                <span className="font-semibold text-slate-800">Geçmiş yevmiye fişlerindeki hesap adını da güncelle</span>
-                <p className="text-[11px] text-slate-500">
+              <div className="text-xs text-slate-700 dark:text-slate-200">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">Geçmiş yevmiye fişlerindeki hesap adını da güncelle</span>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Daha önce işlenmiş yevmiye fişlerindeki ve kebir raporlarındaki eski hesap adını otomatik olarak bu yeni adla günceller.
                 </p>
               </div>
@@ -237,11 +237,11 @@ export default function EditAccountModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2.5">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg transition-colors"
             >
               Vazgeç
             </button>

@@ -227,7 +227,7 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
       )}
 
       {/* SECTION 1: ASORTİ ŞABLONLARI YÖNETİMİ */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -245,16 +245,16 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
 
         <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left: Template Creator / Editor Form */}
-          <div className="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <span className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+          <div className="lg:col-span-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+              <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
                 {editingTemplateId ? <Edit3 className="w-4 h-4 text-amber-600" /> : <Plus className="w-4 h-4 text-indigo-600" />}
                 {editingTemplateId ? 'Şablonu Güncelle' : 'Yeni Asorti Şablonu Oluştur'}
               </span>
               {editingTemplateId && (
                 <button 
                   onClick={cancelEditTemplate}
-                  className="text-[10px] text-slate-500 hover:text-slate-800 font-bold uppercase underline"
+                  className="text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 font-bold uppercase underline"
                 >
                   İptal
                 </button>
@@ -263,19 +263,19 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
 
             <form onSubmit={handleSaveTemplate} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Şablon Adı</label>
+                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Şablon Adı</label>
                 <input
                   type="text"
                   required
                   placeholder="Örn: 10'LU ERKEK SPOR (40-44)"
                   value={templateName}
                   onChange={e => setTemplateName(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
 
               {/* Add Size/Qty row */}
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-3">
+              <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Numara & Miktar Ekle</span>
                   {totalPairsInForm > 0 && (
@@ -294,7 +294,7 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
                       value={newItemSize}
                       onChange={e => setNewItemSize(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTemplateItem(); } }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-bold text-center outline-none focus:border-indigo-500"
                     />
                   </div>
                   <div className="w-24">
@@ -305,7 +305,7 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
                       value={newItemQty}
                       onChange={e => setNewItemQty(Number(e.target.value))}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTemplateItem(); } }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-bold text-center outline-none focus:border-indigo-500"
                     />
                   </div>
                   <button
@@ -319,7 +319,7 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
 
                 {/* Badges list */}
                 {templateItems.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100 max-h-36 overflow-y-auto">
+                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 max-h-36 overflow-y-auto">
                     {templateItems.map((item) => (
                       <span 
                         key={item.size} 
@@ -367,7 +367,7 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
                   <button
                     key={idx}
                     onClick={() => handleApplyPreset(preset)}
-                    className="text-[10px] font-bold bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    className="text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                   >
                     <Plus className="w-3 h-3 text-amber-600" />
                     {preset.name}
@@ -379,7 +379,7 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
             {/* List */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">Kayıtlı Asorti Şablonları</h4>
+                <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">Kayıtlı Asorti Şablonları</h4>
                 <span className="text-[10px] text-slate-400 font-bold uppercase">{templates?.length || 0} Şablon</span>
               </div>
 
@@ -390,18 +390,18 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
                     return (
                       <div 
                         key={t.id} 
-                        className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 transition-colors shadow-2xs"
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 transition-colors shadow-2xs"
                       >
                         <div className="space-y-1.5 flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-slate-900 uppercase tracking-tight truncate">{t.name}</span>
+                            <span className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight truncate">{t.name}</span>
                             <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black rounded-md shrink-0">
                               {totalPairs} Çift / Koli
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {t.items.map((it, idx) => (
-                              <span key={idx} className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                              <span key={idx} className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-700">
                                 {it.size}: {it.quantity}ç
                               </span>
                             ))}
@@ -428,9 +428,9 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
                     );
                   })
                 ) : (
-                  <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+                  <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
                     <Boxes className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-xs font-bold text-slate-500 uppercase">Henüz kayıtlı asorti şablonu bulunmuyor.</p>
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Henüz kayıtlı asorti şablonu bulunmuyor.</p>
                     <p className="text-[11px] text-slate-400 mt-1">Sol taraftaki formdan oluşturabilir veya yukarıdaki hazır şablon butonlarına tıklayabilirsiniz.</p>
                   </div>
                 )}
@@ -441,7 +441,7 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
       </div>
 
       {/* SECTION 2: BARKOD PARAMETRELERİ & STANDARDI */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -458,11 +458,11 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Standard */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Barkod Standardı</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Barkod Standardı</label>
               <select
                 value={barcodeType}
                 onChange={e => setBarcodeType(e.target.value as any)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               >
                 <option value="CODE-128">CODE-128 (Önerilen - Esnek Alfamerik & Kompakt)</option>
                 <option value="EAN-13">EAN-13 (Uluslararası GS1 Perakende Standart)</option>
@@ -473,38 +473,38 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
 
             {/* Prefix */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Barkod Ön Eki (GS1 / Firma Prefix)</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Barkod Ön Eki (GS1 / Firma Prefix)</label>
               <input
                 type="text"
                 value={barcodePrefix}
                 onChange={e => setBarcodePrefix(e.target.value)}
                 placeholder="Örn: 869 veya AYK"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
               <p className="text-[10px] text-slate-400">Üretilen barkodların başına otomatik eklenecek sabit önek.</p>
             </div>
 
             {/* Sequence Counter */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sıradaki Sayaç (Sequence Counter)</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Sıradaki Sayaç (Sequence Counter)</label>
               <input
                 type="number"
                 value={nextSeq}
                 onChange={e => setNextSeq(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
               <p className="text-[10px] text-slate-400">Her yeni barkod üretildiğinde bu sayaç otomatik 1 artırılır.</p>
             </div>
           </div>
 
           {/* Barcode Simulation Preview */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="space-y-1 text-center sm:text-left">
-              <div className="text-xs font-black text-slate-800 uppercase tracking-widest">Canlı Barkod Önizleme</div>
-              <div className="text-[11px] text-slate-500 font-mono">Standart: {barcodeType} | Kod: <b className="text-slate-900">{sampleBarcodePreview}</b></div>
+              <div className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">Canlı Barkod Önizleme</div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">Standart: {barcodeType} | Kod: <b className="text-slate-900 dark:text-slate-100">{sampleBarcodePreview}</b></div>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-              <BarcodeSvg value={sampleBarcodePreview} format={barcodeType} width={1.8} height={50} />
+            <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+              <BarcodeSvg value={sampleBarcodePreview} height={50} />
             </div>
           </div>
 
@@ -522,7 +522,7 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
       </div>
 
       {/* SECTION 3: AYAKKABI NUMARA SERİLERİ & STOK EŞİKLERİ */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -538,25 +538,25 @@ export default function StockSettings({ settings, onSave }: StockSettingsProps) 
         <form onSubmit={handleSaveParameters} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Varsayılan Numara Serisi (Virgülle Ayrılmış)</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Varsayılan Numara Serisi (Virgülle Ayrılmış)</label>
               <input
                 type="text"
                 value={shoeSizesStr}
                 onChange={e => setShoeSizesStr(e.target.value)}
                 placeholder="36, 37, 38, 39, 40, 41, 42, 43, 44, 45"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
               <p className="text-[10px] text-slate-400">Yeni mamul oluşturulurken hızlı numara seçiminde listelenecek numaralar.</p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Varsayılan Kritik Stok Uyarı Limiti (Adet / Çift)</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Varsayılan Kritik Stok Uyarı Limiti (Adet / Çift)</label>
               <input
                 type="number"
                 min="0"
                 value={criticalThreshold}
                 onChange={e => setCriticalThreshold(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
               <p className="text-[10px] text-slate-400">Stok miktarı bu sayının altına indiğinde panelde kritik stok uyarısı verilir.</p>
             </div>

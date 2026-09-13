@@ -169,29 +169,29 @@ export default function UsersManagement() {
 
       {/* KPI Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Toplam Kullanıcı</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Toplam Kullanıcı</span>
             <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">{users.length}</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-slate-100">{users.length}</span>
             <span className="text-xs font-semibold text-emerald-600">({activeUsersCount} Aktif)</span>
           </div>
           <span className="text-[11px] text-slate-400 mt-0.5 block">{passiveUsersCount} pasif/askıda hesap</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Tanımlı Roller</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Tanımlı Roller</span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">{roles.length}</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-slate-100">{roles.length}</span>
             <span className="text-xs font-semibold text-indigo-600">
               ({roles.filter(r => !r.isSystem).length} Özel Rol)
             </span>
@@ -199,29 +199,29 @@ export default function UsersManagement() {
           <span className="text-[11px] text-slate-400 mt-0.5 block">6 kademeli yetki matrisi</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Sistem Yöneticileri</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Sistem Yöneticileri</span>
             <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
               <Shield className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">{superAdminCount}</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-slate-100">{superAdminCount}</span>
             <span className="text-xs font-semibold text-purple-600">Süper Admin</span>
           </div>
           <span className="text-[11px] text-slate-400 mt-0.5 block">Tam yetkili kök hesap</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">İşlem Denetim İzi</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">İşlem Denetim İzi</span>
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
               <FileText className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">{auditLogsCount}</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-slate-100">{auditLogsCount}</span>
             <span className="text-xs font-semibold text-slate-600">Kayıt</span>
           </div>
           <span className="text-[11px] text-slate-400 mt-0.5 block">Gerçek zamanlı audit günlüğü</span>
@@ -229,13 +229,13 @@ export default function UsersManagement() {
       </div>
 
       {/* Main Tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700">
         <button
           onClick={() => handleTabChange('users')}
           className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
             activeTab === 'users'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -247,7 +247,7 @@ export default function UsersManagement() {
           className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
             activeTab === 'roles'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
           }`}
         >
           <ShieldCheck className="w-4 h-4" />
@@ -259,7 +259,7 @@ export default function UsersManagement() {
           className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
             activeTab === 'audit'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
           }`}
         >
           <FileText className="w-4 h-4" />
@@ -272,7 +272,7 @@ export default function UsersManagement() {
         <div className="space-y-4">
           
           {/* Action & Filter Bar */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Search */}
               <div className="relative flex-1 max-w-sm">
@@ -281,7 +281,7 @@ export default function UsersManagement() {
                   placeholder="Ad soyad, kullanıcı adı veya e-posta..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 />
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               </div>
@@ -291,7 +291,7 @@ export default function UsersManagement() {
                 <select
                   value={departmentFilter}
                   onChange={(e) => setDepartmentFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
                 >
                   <option value="all">Tüm Departmanlar</option>
                   {departments.map((d) => (
@@ -305,7 +305,7 @@ export default function UsersManagement() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
                 >
                   <option value="all">Tüm Durumlar</option>
                   <option value="active">Aktif</option>
@@ -319,7 +319,7 @@ export default function UsersManagement() {
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
                 >
                   <option value="all">Tüm Roller</option>
                   {roles.map((r) => (
@@ -343,11 +343,11 @@ export default function UsersManagement() {
           </div>
 
           {/* Users Table */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80 shadow-xs overflow-hidden">
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+                  <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold">
                     <th className="py-3 px-4 min-w-[220px]">Kullanıcı Bilgisi</th>
                     <th className="py-3 px-3 min-w-[150px]">Departman & Görev</th>
                     <th className="py-3 px-3 min-w-[150px]">Yetki Rolü</th>
@@ -371,7 +371,7 @@ export default function UsersManagement() {
                       const isActive = u.status === 'active';
 
                       return (
-                        <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
+                        <tr key={u.id} className="hover:bg-slate-50 dark:bg-slate-800/50/70 transition-colors">
                           {/* User Avatar & Name */}
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ export default function UsersManagement() {
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-slate-900 truncate">{u.fullName}</span>
+                                  <span className="font-bold text-slate-900 dark:text-slate-100 truncate">{u.fullName}</span>
                                   {isCurrent && (
                                     <span className="px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 text-[9px] font-bold">
                                       Siz
@@ -397,8 +397,8 @@ export default function UsersManagement() {
 
                           {/* Dept & Title */}
                           <td className="py-3 px-3">
-                            <span className="font-semibold text-slate-800 block truncate">{u.department || '-'}</span>
-                            <span className="text-[11px] text-slate-500 block truncate">{u.title || '-'}</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">{u.department || '-'}</span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">{u.title || '-'}</span>
                           </td>
 
                           {/* Role */}
@@ -416,7 +416,7 @@ export default function UsersManagement() {
                               <span className="truncate">{u.email}</span>
                             </div>
                             {u.phone && (
-                              <div className="flex items-center gap-1 mt-0.5 text-slate-500 truncate">
+                              <div className="flex items-center gap-1 mt-0.5 text-slate-500 dark:text-slate-400 truncate">
                                 <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                                 <span>{u.phone}</span>
                               </div>
@@ -432,7 +432,7 @@ export default function UsersManagement() {
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                                   : u.status === 'suspended'
                                   ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
                               }`}
                               title="Tıklandığında durumu değiştir"
                             >
@@ -444,7 +444,7 @@ export default function UsersManagement() {
                           </td>
 
                           {/* Last Login */}
-                          <td className="py-3 px-3 text-slate-500 text-[11px] font-mono">
+                          <td className="py-3 px-3 text-slate-500 dark:text-slate-400 text-[11px] font-mono">
                             {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('tr-TR') : 'Giriş Yapılmadı'}
                           </td>
 
@@ -456,7 +456,7 @@ export default function UsersManagement() {
                                 <button
                                   type="button"
                                   onClick={() => switchUser(u.id!)}
-                                  className="px-2 py-1 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1"
+                                  className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1"
                                   title="Bu kullanıcıya geçiş yap ve arayüzü test et"
                                 >
                                   <span>Giriş Yap</span>
@@ -469,7 +469,7 @@ export default function UsersManagement() {
                                   setEditingUser(u);
                                   setIsUserModalOpen(true);
                                 }}
-                                className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                 title="Düzenle"
                               >
                                 <Edit className="w-4 h-4" />

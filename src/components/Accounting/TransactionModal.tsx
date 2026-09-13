@@ -191,7 +191,7 @@ export default function TransactionModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className={cn(
@@ -206,7 +206,7 @@ export default function TransactionModal({
               {type === 'income' ? <ArrowDownLeft className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />}
             </div>
             <div>
-              <h3 className="text-base font-black text-slate-900 tracking-tight">
+              <h3 className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight">
                 {isEditMode 
                   ? (type === 'income' ? 'Tahsilat / Gelir Düzenle' : 'Ödeme / Gider Düzenle') 
                   : (type === 'income' ? 'Yeni Tahsilat / Gelir Girişi' : 'Yeni Ödeme / Gider Çıkışı')}
@@ -225,7 +225,7 @@ export default function TransactionModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="w-9 h-9 bg-white/80 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors"
+            className="w-9 h-9 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-slate-200 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -241,15 +241,15 @@ export default function TransactionModal({
           )}
 
           {/* Type Toggle */}
-          <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-2xl">
+          <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
             <button
               type="button"
               onClick={() => handleTypeChange('income')}
               className={cn(
                 "py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all",
                 type === 'income'
-                  ? "bg-white text-emerald-700 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-white dark:bg-slate-900 text-emerald-700 shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
               )}
             >
               <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
@@ -261,8 +261,8 @@ export default function TransactionModal({
               className={cn(
                 "py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all",
                 type === 'expense'
-                  ? "bg-white text-rose-700 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-white dark:bg-slate-900 text-rose-700 shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
               )}
             >
               <ArrowUpRight className="w-4 h-4 text-rose-600" />
@@ -273,7 +273,7 @@ export default function TransactionModal({
           {/* Amount & Date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+              <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 İşlem Tutarı (₺) *
               </label>
               <div className="relative">
@@ -297,7 +297,7 @@ export default function TransactionModal({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+              <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 İşlem Tarihi *
               </label>
               <input
@@ -305,7 +305,7 @@ export default function TransactionModal({
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white dark:bg-slate-900"
               />
             </div>
           </div>
@@ -313,7 +313,7 @@ export default function TransactionModal({
           {/* Contact Select */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
+              <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 İlgili Cari Firma / Müşteri / Tedarikçi
               </label>
               {selectedContact && (
@@ -325,7 +325,7 @@ export default function TransactionModal({
             <select
               value={contactId}
               onChange={(e) => handleContactChange(e.target.value)}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+              className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white dark:bg-slate-900"
             >
               <option value="">-- Cari Seçilmedi (Genel Kasa Hareketi) --</option>
               {contacts?.map((c) => (
@@ -339,13 +339,13 @@ export default function TransactionModal({
           {/* Payment Method & Document No */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+              <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 Ödeme Yöntemi
               </label>
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as any)}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white dark:bg-slate-900"
               >
                 <option value="cash">Nakit (Kasa)</option>
                 <option value="bank_transfer">Banka Havalesi / EFT</option>
@@ -356,7 +356,7 @@ export default function TransactionModal({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+              <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 Makbuz / Dekont No
               </label>
               <input
@@ -364,14 +364,14 @@ export default function TransactionModal({
                 value={documentNo}
                 onChange={(e) => setDocumentNo(e.target.value)}
                 placeholder="Örn: MAK-10293"
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white dark:bg-slate-900"
               />
             </div>
           </div>
 
           {/* Category */}
           <div className="space-y-1">
-            <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+            <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
               Kategori
             </label>
             <div className="space-y-2">
@@ -380,7 +380,7 @@ export default function TransactionModal({
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="Kategori seçin veya yazın..."
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white dark:bg-slate-900"
               />
               <div className="flex flex-wrap gap-1.5">
                 {(type === 'income' ? incomeCategories : expenseCategories).map((cat) => (
@@ -392,7 +392,7 @@ export default function TransactionModal({
                       "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all",
                       category === cat
                         ? "bg-indigo-50 border-indigo-300 text-indigo-700"
-                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                        : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-100 dark:bg-slate-800"
                     )}
                   >
                     {cat}
@@ -404,7 +404,7 @@ export default function TransactionModal({
 
           {/* Description */}
           <div className="space-y-1">
-            <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+            <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
               Açıklama & Not
             </label>
             <textarea
@@ -412,17 +412,17 @@ export default function TransactionModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="İşlem ile ilgili detaylı açıklama..."
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 resize-none bg-white"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 resize-none bg-white dark:bg-slate-900"
             />
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
             >
               Vazgeç
             </button>

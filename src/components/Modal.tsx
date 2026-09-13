@@ -68,14 +68,14 @@ export default function Modal({
             exit={{ opacity: 0, scale: 0.96, y: 15 }}
             transition={{ type: "spring", duration: 0.35, bounce: 0.1 }}
             className={cn(
-              "relative z-10 bg-white w-full rounded-2xl md:rounded-3xl shadow-2xl flex flex-col max-h-[94vh] overflow-hidden border border-slate-200/80",
+              "relative z-10 bg-white dark:bg-slate-900 w-full rounded-2xl md:rounded-3xl shadow-2xl flex flex-col max-h-[94vh] overflow-hidden border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80",
               sizeClasses[size] || sizeClasses.xl,
               className
             )}
           >
             {/* Modal Header */}
-            <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 sticky top-0 z-20">
-              <h3 className="text-base font-black text-slate-800 uppercase tracking-wider flex items-center gap-2.5">
+            <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0 sticky top-0 z-20">
+              <h3 className="text-base font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 shadow-sm shadow-indigo-600/30"></span>
                 {title}
               </h3>
@@ -85,7 +85,7 @@ export default function Modal({
                   onClick={onClose} 
                   type="button"
                   title="Kapat (ESC)"
-                  className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all active:scale-95 cursor-pointer"
+                  className="p-2 text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 rounded-xl transition-all active:scale-95 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
