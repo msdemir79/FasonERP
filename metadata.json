@@ -1,7 +1,9 @@
 {
   "name": "ProERP - Muhasebe ve Üretim",
-  "description": "Kapsamlı muhasebe, stok takibi, barkod etiketleme, üretim yönetimi, İK, puantaj ve SGK'lı/SGK'sız bordro takip sistemi.",
-  "requestFramePermissions": [],
+  "description": "Ayakkabı ve imalat fabrikalarına özel canlı kamera barkod/karekod okuyucu, üretim refakat kartı (rota fişi), reçeteli BOM hammadde sarfiyat düşümü, muhasebe, stok ve iş emri ERP yönetim sistemi.",
+  "requestFramePermissions": [
+    "camera"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

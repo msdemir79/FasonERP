@@ -45,6 +45,52 @@ export interface AssortmentTemplate {
   }[];
 }
 
+export type LabelPresetSize = '100x150' | '100x80' | '80x60' | '60x40' | '50x30' | '40x25' | 'custom';
+export type LabelUsageType = 'box' | 'shoe_box' | 'assortment' | 'shelf' | 'shipping' | 'custom';
+
+export interface BarcodeTemplateElementConfig {
+  showCompanyHeader: boolean;
+  companyHeaderText?: string;
+  showProductCode: boolean;
+  showProductName: boolean;
+  showColor: boolean;
+  showMaterial?: boolean;
+  showAssortmentTable: boolean;
+  showBarcode: boolean;
+  barcodeType: 'CODE-128' | 'EAN-13' | 'QR';
+  barcodeHeight: number;
+  showBarcodeText: boolean;
+  showPrice: boolean;
+  priceCurrency?: string;
+  showBoxSerial: boolean;
+  showOrderInfo: boolean;
+  showLogisticsIcons: boolean; // Kırılabilir, Şemsiye, Yukarı Ok
+  showProductImage: boolean;
+  imageSizeMm?: number; // 15, 20, 25, 30, 40 mm
+  imagePosition?: 'top' | 'left' | 'right';
+  imageFit?: 'contain' | 'cover';
+  showWeightDesi: boolean;
+  showCustomNote: boolean;
+  customNoteText?: string;
+  fontSizeScale?: 'sm' | 'md' | 'lg';
+  borderStyle?: 'solid' | 'dashed' | 'none';
+}
+
+export interface BarcodeTemplate {
+  id?: number;
+  name: string;
+  description?: string;
+  type: LabelUsageType;
+  presetSize: LabelPresetSize;
+  widthMm: number;
+  heightMm: number;
+  orientation: 'portrait' | 'landscape';
+  isDefault?: boolean;
+  config: BarcodeTemplateElementConfig;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export interface BarcodeVariant {
   size: string;
   color: string;
@@ -157,6 +203,7 @@ export interface Product {
   buyingPrice: number;
   sellingPrice: number;
   isRawMaterial: boolean;           // Compatibility flag (true for raw materials & accessories)
+  barcode?: string;                 // Ana ürün / tekil barkod
   // Barcode support
   colorBoxBarcodes?: { color: string, barcode: string }[];
   variantBarcodes?: BarcodeVariant[];
@@ -425,9 +472,11 @@ export interface Waybill {
   type: WaybillType;             // 'sales' = Sevk / Satış İrsaliyesi | 'purchase' = Alış / Gelen İrsaliye
   scenario: WaybillScenario;     // 'sevk' (Sevk İrsaliyesi) | 'matbu' | 'konsinye' | 'fason' | 'ihracat'
   contactId: number;             // Müşteri veya Tedarikçi
+  contactName?: string;          // Cari Adı / Ünvanı (Display cache)
   orderId?: number;              // Bağlı Sipariş (opsiyonel)
   orderNumber?: string;
   date: Date;                    // İrsaliye Düzenleme Tarihi
+  shippingDate?: Date;           // Sevk Tarihi (alias)
   dispatchDate?: Date;           // Fiili Sevk Tarihi
   dispatchTime?: string;         // Fiili Sevk Saati (örn: "14:30")
   carrierTitle?: string;         // Taşıyıcı Firma / Kargo (örn: Yurtiçi Kargo, MNG, Özlem Lojistik)

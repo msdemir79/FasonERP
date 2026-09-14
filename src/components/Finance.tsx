@@ -44,6 +44,8 @@ import CashStatementModal from './Finance/CashStatementModal';
 import BankStatementModal from './Finance/BankStatementModal';
 import CheckHistoryModal from './Finance/CheckHistoryModal';
 import FinanceReport from './Reports/FinanceReport';
+import { AgingAnalysisTab } from './Finance/AgingAnalysisTab';
+import ContactStatementModal from './Contacts/ContactStatementModal';
 import type { 
   CollectionReceipt, 
   CashBox, 
@@ -56,7 +58,7 @@ import type {
 } from '../types';
 
 export default function Finance() {
-  const [activeTab, setActiveTab] = useState<'receipts' | 'cash' | 'bank' | 'checks' | 'reports'>('receipts');
+  const [activeTab, setActiveTab] = useState<'receipts' | 'cash' | 'bank' | 'checks' | 'aging' | 'reports'>('receipts');
   
   // Queries
   const systemSettings = useLiveQuery(() => db.settings.get('global_settings'));
@@ -81,6 +83,8 @@ export default function Finance() {
   const [selectedCashBoxForStatement, setSelectedCashBoxForStatement] = useState<CashBox | null>(null);
   const [selectedBankAccountForStatement, setSelectedBankAccountForStatement] = useState<BankAccount | null>(null);
   const [selectedCheckForHistory, setSelectedCheckForHistory] = useState<CheckNote | null>(null);
+  const [selectedContactForStatement, setSelectedContactForStatement] = useState<Contact | null>(null);
+  const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
 
   // Düzenleme ve Silme Modal Durumları (Kasa & Banka)
   const [editingCashBox, setEditingCashBox] = useState<CashBox | null>(null);
@@ -572,6 +576,21 @@ export default function Finance() {
         </button>
 
         <button
+          onClick={() => setActiveTab('aging')}
+          className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+            activeTab === 'aging'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4 text-indigo-600" />
+          <span>Vade & Yaşlandırma Analizi</span>
+          <span className="ml-1 py-0.5 px-2 rounded-full text-[10px] bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
+            Nakit Akışı
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('reports')}
           className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
             activeTab === 'reports'
@@ -1023,6 +1042,24 @@ export default function Finance() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB CONTENT: Vade & Yaşlandırma Analizi */}
+      {activeTab === 'aging' && (
+        <AgingAnalysisTab
+          onOpenReceiptModal={(contactId, type) => {
+            setReceiptContactId(contactId);
+            setReceiptType(type);
+            setIsReceiptModalOpen(true);
+          }}
+          onOpenStatementModal={(contactId) => {
+            const foundContact = contacts.find(c => c.id === contactId) || null;
+            if (foundContact) {
+              setSelectedContactForStatement(foundContact);
+              setIsStatementModalOpen(true);
+            }
+          }}
+        />
       )}
 
       {/* TAB CONTENT: Reports */}
@@ -1842,6 +1879,18 @@ export default function Finance() {
             setSelectedCheckForAction(check);
             setCheckActionType(action);
           }}
+        />
+      )}
+
+      {/* MODAL: Cari Hesap Ekstresi */}
+      {isStatementModalOpen && selectedContactForStatement && (
+        <ContactStatementModal
+          isOpen={isStatementModalOpen}
+          onClose={() => {
+            setIsStatementModalOpen(false);
+            setSelectedContactForStatement(null);
+          }}
+          contact={selectedContactForStatement}
         />
       )}
     </div>

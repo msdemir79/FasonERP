@@ -38,7 +38,8 @@ import {
   Loader2,
   Download,
   ExternalLink,
-  BarChart3
+  BarChart3,
+  Camera
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -49,6 +50,9 @@ import { erpService, PRODUCTION_STAGES_CONFIG } from '../services/erpService';
 import Modal from './Modal';
 import { BarcodeSvg } from './BarcodeSvg';
 import DetailedWorkOrderCardModal from './Production/DetailedWorkOrderCardModal';
+import ProductionRefakatKartiModal from './Production/ProductionRefakatKartiModal';
+import BomConsumptionModal from './Production/BomConsumptionModal';
+import CameraBarcodeScannerModal, { type ScannerMode } from './Common/CameraBarcodeScannerModal';
 import ProductionReport from './Reports/ProductionReport';
 import { printElement, openPrintWindow } from '../lib/printService';
 import jsPDF from 'jspdf';
@@ -126,6 +130,35 @@ export default function Production() {
   const [transitionOperator, setTransitionOperator] = React.useState('');
   const [transitionScrap, setTransitionScrap] = React.useState(0);
   const [transitionNotes, setTransitionNotes] = React.useState('');
+
+  // 1. Üretim Refakat Kartı (İş Emri Fişi) Modal State
+  const [isRefakatKartiModalOpen, setIsRefakatKartiModalOpen] = React.useState(false);
+  const [refakatWorkOrder, setRefakatWorkOrder] = React.useState<WorkOrder | null>(null);
+
+  // 2. Kamera ile Canlı Barkod / Karekod Okuyucu State
+  const [isCameraScannerOpen, setIsCameraScannerOpen] = React.useState(false);
+  const [cameraScannerInitialMode, setCameraScannerInitialMode] = React.useState<ScannerMode>('production_wo');
+  const [cameraScannerInitialCode, setCameraScannerInitialCode] = React.useState('');
+
+  // 3. BOM (Ürün Reçetesi) & Otomatik Sarfiyat Düşümü State
+  const [isBomConsumptionModalOpen, setIsBomConsumptionModalOpen] = React.useState(false);
+  const [bomSelectedProductId, setBomSelectedProductId] = React.useState<number | undefined>(undefined);
+
+  const openRefakatKarti = (wo: WorkOrder) => {
+    setRefakatWorkOrder(wo);
+    setIsRefakatKartiModalOpen(true);
+  };
+
+  const handleOpenScanner = (mode: ScannerMode = 'production_wo', initialCode: string = '') => {
+    setCameraScannerInitialMode(mode);
+    setCameraScannerInitialCode(initialCode);
+    setIsCameraScannerOpen(true);
+  };
+
+  const handleOpenBomModal = (productId?: number) => {
+    setBomSelectedProductId(productId);
+    setIsBomConsumptionModalOpen(true);
+  };
 
   // Recipe Modal State
   const [selectedProductId, setSelectedProductId] = React.useState<number>(0);
@@ -717,6 +750,26 @@ export default function Production() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <button
+              type="button"
+              onClick={() => handleOpenScanner('production_wo')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-bold transition-colors shadow-xs cursor-pointer"
+              title="Kamera ile Canlı Barkod/Karekod Okut (Stok Sayımı, Mal Kabul, İrsaliye, İş Emri)"
+            >
+              <Camera className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span>Kamera ile Canlı Oku</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOpenBomModal()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold transition-colors shadow-xs cursor-pointer"
+              title="Bir çift ayakkabı için deri, taban, astar ve bağcık otomatik sarfiyat düşümü"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Otomatik BOM Sarfiyatı</span>
+            </button>
+
+            <button
               onClick={() => handleCalculateMRP()}
               disabled={isMrpCalculating}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:bg-slate-800/50 transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
@@ -1090,6 +1143,24 @@ export default function Production() {
                     <div className="pt-2 flex items-center gap-1.5">
                       <button
                         type="button"
+                        onClick={() => openRefakatKarti(wo)}
+                        className="p-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-black transition-all flex items-center justify-center shrink-0 shadow-xs cursor-pointer"
+                        title="Üretim Refakat Kartı (Kesim ➔ Dikim ➔ Montaj ➔ Finisaj Takip ve Onay Kutucuklu Fiş)"
+                      >
+                        <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBomModal(wo.productId)}
+                        className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-black transition-all flex items-center justify-center shrink-0 shadow-xs cursor-pointer"
+                        title="BOM Reçete Sarfiyatını İncele ve Otomatik Düş"
+                      >
+                        <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => openDetailedWorkOrderSheet(wo)}
                         className="p-2 rounded-xl bg-amber-100 hover:bg-amber-400 text-amber-950 text-xs font-black transition-all flex items-center justify-center shrink-0 shadow-xs"
                         title="Detaylı A4 Üretim & Kesim Kartelasını Görüntüle / Yazdır"
@@ -1418,14 +1489,26 @@ export default function Production() {
                 <h3 className="text-xl font-black tracking-tight mt-1">İmalat Operatör Terminali</h3>
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Operatör / Hat:</label>
-                <input
-                  type="text"
-                  value={scannerOperator}
-                  onChange={e => setScannerOperator(e.target.value)}
-                  className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleOpenScanner('production_wo')}
+                  className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-900/30 cursor-pointer"
+                  title="Cihaz kamerasını açarak refakat kartı üzerindeki barkodu doğrudan tara"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Kamera ile Tara</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Operatör / Hat:</label>
+                  <input
+                    type="text"
+                    value={scannerOperator}
+                    onChange={e => setScannerOperator(e.target.value)}
+                    className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-black text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
               </div>
             </div>
 
@@ -2529,6 +2612,44 @@ export default function Production() {
           </button>
         </div>
       </Modal>
+
+      {/* MODAL 6: ÜRETİM REFAKAT KARTI (İŞ EMRİ TAKİP FİŞİ) MODAL */}
+      <ProductionRefakatKartiModal
+        isOpen={isRefakatKartiModalOpen}
+        onClose={() => {
+          setIsRefakatKartiModalOpen(false);
+          setRefakatWorkOrder(null);
+        }}
+        workOrder={refakatWorkOrder}
+        product={refakatWorkOrder ? productMap.get(refakatWorkOrder.productId) : undefined}
+        recipe={refakatWorkOrder?.productId ? (recipes?.find(r => r.productId === refakatWorkOrder.productId && (!r.targetColor || r.targetColor === 'all' || r.targetColor === refakatWorkOrder.color)) || recipes?.find(r => r.productId === refakatWorkOrder.productId)) : undefined}
+        customer={contacts?.find(c => c.name === refakatWorkOrder?.customerName || c.code === refakatWorkOrder?.customerCode)}
+        onStageUpdated={() => {
+          // Live query will refresh data automatically
+        }}
+      />
+
+      {/* MODAL 7: BOM (ÜRÜN REÇETESİ) & OTOMATİK SARFİYAT DÜŞÜMÜ MODAL */}
+      <BomConsumptionModal
+        isOpen={isBomConsumptionModalOpen}
+        onClose={() => {
+          setIsBomConsumptionModalOpen(false);
+          setBomSelectedProductId(undefined);
+        }}
+        initialProductId={bomSelectedProductId}
+      />
+
+      {/* MODAL 8: KAMERA İLE CANLI BARKOD / KAREKOD OKUYUCU MODAL */}
+      <CameraBarcodeScannerModal
+        isOpen={isCameraScannerOpen}
+        onClose={() => setIsCameraScannerOpen(false)}
+        initialMode={cameraScannerInitialMode}
+        initialScannedCode={cameraScannerInitialCode}
+        onWorkOrderFound={(wo) => {
+          setRefakatWorkOrder(wo);
+          setIsRefakatKartiModalOpen(true);
+        }}
+      />
     </div>
   );
 }

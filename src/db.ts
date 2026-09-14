@@ -28,11 +28,13 @@ import type {
   AttendancePeriodLock,
   AppUser,
   Role,
-  AuditLog
+  AuditLog,
+  BarcodeTemplate
 } from './types';
 import { INITIAL_TDHP_ACCOUNTS, INITIAL_CASH_BOXES, INITIAL_BANK_ACCOUNTS } from './data/tdhpAccounts';
 import { INITIAL_ROLES } from './data/initialRoles';
 import { INITIAL_USERS } from './data/initialUsers';
+import { INITIAL_BARCODE_TEMPLATES } from './data/initialBarcodeTemplates';
 
 export class ProERPDatabase extends Dexie {
   contacts!: Table<Contact>;
@@ -64,6 +66,7 @@ export class ProERPDatabase extends Dexie {
   users!: Table<AppUser>;
   roles!: Table<Role>;
   auditLogs!: Table<AuditLog>;
+  barcodeTemplates!: Table<BarcodeTemplate>;
 
   constructor() {
     super('ProERPDatabase');
@@ -107,6 +110,10 @@ export class ProERPDatabase extends Dexie {
 
     this.version(16).stores({
       collectionReceipts: '++id, receiptNumber, type, date, contactId, instrument, isAccounted, cashBoxId, bankAccountId'
+    });
+
+    this.version(17).stores({
+      barcodeTemplates: '++id, name, type, presetSize, isDefault'
     });
   }
 }
@@ -291,6 +298,28 @@ export async function seedDatabase() {
             ]
           }
         ]);
+      }
+
+      // 5.1 Barcode & Label Templates: Deduplicate & Seed
+      const allBarcodeTemplates = await db.barcodeTemplates.toArray();
+      const seenBarcodeTemplateNames = new Set<string>();
+      const duplicateBarcodeTemplateIds: number[] = [];
+
+      for (const bt of allBarcodeTemplates) {
+        const key = bt.name?.trim().toLowerCase() || '';
+        if (seenBarcodeTemplateNames.has(key)) {
+          if (bt.id) duplicateBarcodeTemplateIds.push(bt.id);
+        } else {
+          seenBarcodeTemplateNames.add(key);
+        }
+      }
+
+      if (duplicateBarcodeTemplateIds.length > 0) {
+        await db.barcodeTemplates.bulkDelete(duplicateBarcodeTemplateIds);
+      }
+
+      if (allBarcodeTemplates.length === 0) {
+        await db.barcodeTemplates.bulkAdd(INITIAL_BARCODE_TEMPLATES as any);
       }
 
       // 6. Seed HR Employees if none exist
@@ -654,6 +683,178 @@ export async function seedDatabase() {
         }
       } catch (repairErr) {
         console.error('Türkçe karakter onarım hatası:', repairErr);
+      }
+
+      // 11. Initial Footwear Products, Raw Materials (BOM) and Work Orders for Factory Operations
+      if ((await db.products.count()) === 0) {
+        // Raw Materials: Leather (dm²), Soles (pairs), Lining (dm²), Laces (pairs), Boxes (pcs)
+        const deriId = await db.products.add({
+          code: 'HAM-DERI-01',
+          name: 'Siyah Hakiki Dana Derisi (Vidala)',
+          categoryType: 'raw_material',
+          subType: 'Deri',
+          unit: 'dm²',
+          stock: 15000,
+          minStock: 2500,
+          buyingPrice: 4.80,
+          sellingPrice: 0,
+          isRawMaterial: true,
+          barcode: '869000100101',
+          shelf: 'D-01',
+          location: 'Hammadde Deri Deposu',
+          accountingCode: '150.01'
+        });
+
+        const tabanId = await db.products.add({
+          code: 'YAR-TAB-01',
+          name: 'TermoPatik Klasik Taban (Siyah)',
+          categoryType: 'semi_finished',
+          subType: 'Taban',
+          unit: 'Çift',
+          stock: 1200,
+          minStock: 200,
+          buyingPrice: 95.00,
+          sellingPrice: 0,
+          isRawMaterial: false,
+          isFootwear: true,
+          hasSizeVariants: true,
+          moldCode: '018',
+          moldGroup: 'ERKEK KLASİK (40-45)',
+          shelf: 'T-03',
+          location: 'Taban Deposu A-Blok',
+          accountingCode: '152.01',
+          variantBarcodes: [
+            { size: '40', color: 'Siyah', barcode: '869100104001', stock: 150 },
+            { size: '41', color: 'Siyah', barcode: '869100104101', stock: 250 },
+            { size: '42', color: 'Siyah', barcode: '869100104201', stock: 350 },
+            { size: '43', color: 'Siyah', barcode: '869100104301', stock: 250 },
+            { size: '44', color: 'Siyah', barcode: '869100104401', stock: 150 },
+            { size: '45', color: 'Siyah', barcode: '869100104501', stock: 50 }
+          ]
+        });
+
+        const astarId = await db.products.add({
+          code: 'HAM-AST-01',
+          name: 'Meşin Dana Astarı',
+          categoryType: 'raw_material',
+          subType: 'Astar',
+          unit: 'dm²',
+          stock: 6500,
+          minStock: 1000,
+          buyingPrice: 2.80,
+          sellingPrice: 0,
+          isRawMaterial: true,
+          barcode: '869000200101',
+          shelf: 'A-02',
+          location: 'Astar Deposu',
+          accountingCode: '150.01'
+        });
+
+        const bagcikId = await db.products.add({
+          code: 'AKS-BAG-01',
+          name: 'Mumsu Yuvarlak Bağcık 90 cm (Siyah)',
+          categoryType: 'accessory',
+          subType: 'Bağcık',
+          unit: 'Çift',
+          stock: 2400,
+          minStock: 500,
+          buyingPrice: 4.50,
+          sellingPrice: 0,
+          isRawMaterial: true,
+          barcode: '869000300101',
+          shelf: 'B-04',
+          location: 'Aksesuar Deposu',
+          accountingCode: '150.02'
+        });
+
+        const kutuId = await db.products.add({
+          code: 'AKS-KUT-01',
+          name: 'Kapaklı Karton Ayakkabı Kutusu (Standart)',
+          categoryType: 'accessory',
+          subType: 'Kutu',
+          unit: 'Adet',
+          stock: 3000,
+          minStock: 600,
+          buyingPrice: 12.00,
+          sellingPrice: 0,
+          isRawMaterial: true,
+          barcode: '869000400101',
+          shelf: 'K-01',
+          location: 'Ambalaj Deposu',
+          accountingCode: '150.02'
+        });
+
+        // Finished Shoes
+        const shoe1Id = await db.products.add({
+          code: 'MAM-AYK-01',
+          name: 'Oxford Klasik Hakiki Deri Erkek Ayakkabı',
+          categoryType: 'finished',
+          unit: 'Çift',
+          stock: 180,
+          minStock: 50,
+          buyingPrice: 480.00,
+          sellingPrice: 1250.00,
+          isRawMaterial: false,
+          isFootwear: true,
+          hasSizeVariants: true,
+          moldCode: '018',
+          moldGroup: 'ERKEK KLASİK (40-45)',
+          colors: ['Siyah'],
+          shelf: 'M-12',
+          location: 'Mamul Sevkiyat Deposu',
+          accountingCode: '157.01',
+          variantBarcodes: [
+            { size: '40', color: 'Siyah', barcode: '869200104001', stock: 20 },
+            { size: '41', color: 'Siyah', barcode: '869200104101', stock: 35 },
+            { size: '42', color: 'Siyah', barcode: '869200104201', stock: 50 },
+            { size: '43', color: 'Siyah', barcode: '869200104301', stock: 40 },
+            { size: '44', color: 'Siyah', barcode: '869200104401', stock: 25 },
+            { size: '45', color: 'Siyah', barcode: '869200104501', stock: 10 }
+          ]
+        });
+
+        // Add Recipe (BOM) for Oxford Shoe: 1 pair consumes 22 dm2 leather, 1 pair sole, 14 dm2 lining, 1 pair lace, 1 box
+        await db.recipes.add({
+          productId: shoe1Id,
+          targetColor: 'Siyah',
+          name: 'Oxford Klasik Deri Ayakkabı Standart BOM Reçetesi',
+          laborCost: 140,
+          estimatedTimeMinutes: 45,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ingredients: [
+            { productId: deriId, department: 'KESİM', partName: 'SAYA DERİSİ', quantity: 22, unit: 'dm²', color: 'Siyah' },
+            { productId: tabanId, department: 'MONTA', partName: 'TERMO TABAN', quantity: 1, unit: 'Çift', color: 'Siyah', isMatrixMatched: true },
+            { productId: astarId, department: 'KESİM', partName: 'İÇ ASTAR', quantity: 14, unit: 'dm²', color: 'Naturel' },
+            { productId: bagcikId, department: 'TEMİZLEME', partName: 'MUMSU BAĞCIK', quantity: 1, unit: 'Çift', color: 'Siyah' },
+            { productId: kutuId, department: 'TEMİZLEME', partName: 'KARTON KUTU', quantity: 1, unit: 'Adet' }
+          ]
+        });
+
+        // Initial Work Order for testing Refakat Kartı & Camera scanning
+        const now = new Date();
+        await db.workOrders.add({
+          productId: shoe1Id,
+          quantity: 120,
+          status: 'in_progress',
+          currentStage: 'cutting',
+          stages: [
+            { stage: 'planning', stageName: 'Planlama', status: 'completed', startedAt: new Date(now.getTime() - 86400000), completedAt: new Date(now.getTime() - 72000000), operator: 'Ahmet Planlama' },
+            { stage: 'cutting', stageName: 'Kesimhane', status: 'in_progress', startedAt: new Date(now.getTime() - 72000000), operator: 'Mehmet Kesimci' },
+            { stage: 'sewing', stageName: 'Saya Dikim', status: 'pending' },
+            { stage: 'assembly', stageName: 'Montaj & Kalıplama', status: 'pending' },
+            { stage: 'finishing', stageName: 'Finisaj & Temizlik', status: 'pending' },
+            { stage: 'completed', stageName: 'Tamamlandı (Mamul Depo)', status: 'pending' }
+          ],
+          barcode: 'WO-001024',
+          orderNumber: 'SIP-2026-0042',
+          customerName: 'Ziylan Mağazacılık A.Ş.',
+          color: 'Siyah',
+          size: '40-45 Asorti',
+          materialStatus: 'materials_consumed',
+          notes: 'Vitrin siparişi, saya derisi özenle seçilsin, kenar dikişleri çift sıra çekilsin.',
+          createdAt: new Date(now.getTime() - 86400000)
+        });
       }
     } finally {
       // Keep promise resolved so subsequent callers immediately return

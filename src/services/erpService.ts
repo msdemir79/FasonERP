@@ -1108,6 +1108,24 @@ export const erpService = {
     });
   },
 
+  async adjustInventoryQuantity(
+    productId: number,
+    quantityDiff: number,
+    description: string,
+    variant?: { color?: string; size?: string }
+  ) {
+    const type = quantityDiff >= 0 ? 'in' : 'out';
+    return await this.adjustStock(productId, Math.abs(quantityDiff), type, description, variant);
+  },
+
+  async transitionWorkOrderStage(
+    id: number,
+    targetStage?: ProductionStage,
+    options?: { operator?: string; scrapQuantity?: number; notes?: string }
+  ) {
+    return await this.advanceWorkOrderStage(id, targetStage, options);
+  },
+
   async addProduct(product: any) {
     const id = await db.products.add({
       ...product,
@@ -1197,6 +1215,221 @@ export const erpService = {
 
   async deleteRecipe(id: number) {
     return await db.recipes.delete(id);
+  },
+
+  // --- BOM (Product Recipe) & Automatic Material Deduction ---
+  async previewRecipeConsumption(params: {
+    productId: number;
+    quantity: number;
+    color?: string;
+    size?: string;
+  }) {
+    const { productId, quantity, color, size } = params;
+    const allProductRecipes = await db.recipes.where('productId').equals(productId).toArray();
+    const recipe = allProductRecipes.find(r => color && r.targetColor === color) ||
+                   allProductRecipes.find(r => !r.targetColor || r.targetColor === 'all' || r.targetColor === 'Genel') ||
+                   allProductRecipes[0];
+
+    if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
+      return {
+        hasRecipe: false,
+        recipeName: '',
+        ingredients: [],
+        allSufficient: true
+      };
+    }
+
+    const finishedProduct = await db.products.get(productId);
+    const ingredientPreviews = [];
+    let allSufficient = true;
+
+    for (const ing of recipe.ingredients) {
+      const raw = await db.products.get(ing.productId);
+      if (!raw) continue;
+
+      const totalNeeded = Number((ing.quantity * quantity).toFixed(3));
+      const currentStock = raw.stock || 0;
+      const isSufficient = currentStock >= totalNeeded;
+      if (!isSufficient) allSufficient = false;
+
+      ingredientPreviews.push({
+        productId: raw.id!,
+        name: raw.name,
+        code: raw.code,
+        categoryType: raw.categoryType,
+        subType: raw.subType || ing.partName,
+        department: ing.department,
+        partName: ing.partName,
+        unit: raw.unit || ing.unit || 'Adet',
+        quantityPerPair: ing.quantity,
+        totalNeeded,
+        currentStock,
+        remainingStockAfter: currentStock - totalNeeded,
+        isSufficient,
+        isMatrixMatched: !!ing.isMatrixMatched
+      });
+    }
+
+    return {
+      hasRecipe: true,
+      recipeId: recipe.id,
+      recipeName: recipe.name || `${finishedProduct?.name} BOM Reçetesi`,
+      targetColor: recipe.targetColor,
+      finishedProduct,
+      quantity,
+      ingredients: ingredientPreviews,
+      allSufficient
+    };
+  },
+
+  async consumeRecipeMaterialsDirectly(params: {
+    productId: number;
+    quantity: number;
+    color?: string;
+    size?: string;
+    operator?: string;
+    notes?: string;
+    orderBarcode?: string;
+  }) {
+    const { productId, quantity, color, size, operator, notes, orderBarcode } = params;
+    
+    return await db.transaction('rw', [db.products, db.inventoryLogs, db.recipes, db.assortmentTemplates], async () => {
+      const allProductRecipes = await db.recipes.where('productId').equals(productId).toArray();
+      const recipe = allProductRecipes.find(r => color && r.targetColor === color) ||
+                     allProductRecipes.find(r => !r.targetColor || r.targetColor === 'all' || r.targetColor === 'Genel') ||
+                     allProductRecipes[0];
+
+      if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
+        throw new Error('Bu model için tanımlı bir BOM (ürün reçetesi) bulunamadı.');
+      }
+
+      const finishedProduct = await db.products.get(productId);
+      if (!finishedProduct) throw new Error('Mamul ayakkabı ürünü bulunamadı.');
+
+      const now = new Date();
+      const consumedList: any[] = [];
+
+      for (const ing of recipe.ingredients) {
+        const raw = await db.products.get(ing.productId);
+        if (!raw) continue;
+
+        const totalNeeded = Number((ing.quantity * quantity).toFixed(3));
+        let logDetail = '';
+
+        // Check if semi-finished or footwear matrix item (like soles)
+        const isMatrixItem = ing.isMatrixMatched || 
+                             raw.categoryType === 'semi_finished' || 
+                             raw.isFootwear || 
+                             (raw.variantBarcodes && raw.variantBarcodes.length > 0 && raw.variantBarcodes.some(v => v.size && v.size !== 'Standart'));
+
+        if (isMatrixItem && raw.variantBarcodes && raw.variantBarcodes.length > 0) {
+          let variants = [...raw.variantBarcodes];
+          const targetIngColor = ing.color || color || (raw.colors && raw.colors.length > 0 ? raw.colors[0] : (variants[0]?.color || 'Genel'));
+
+          if (size && size.trim() !== '' && !['Asorti', 'Tüm Bedenler', 'Standart'].includes(size.trim())) {
+            const targetSize = size.trim();
+            let targetVar = variants.find(v => v.size === targetSize && (v.color === targetIngColor || !targetIngColor || v.color === 'Genel'));
+            if (!targetVar) targetVar = variants.find(v => v.size === targetSize);
+            if (targetVar) {
+              targetVar.stock = Math.max(0, (targetVar.stock || 0) - totalNeeded);
+            }
+            logDetail = ` [${targetIngColor ? targetIngColor + ' ' : ''}Beden ${targetSize}: -${totalNeeded} ${raw.unit || 'Çift'}]`;
+          } else {
+            // General or assortment deduction
+            const count = variants.length || 1;
+            let allocated = 0;
+            variants.forEach((v, idx) => {
+              const isLast = idx === count - 1;
+              const sizeQty = isLast ? Math.max(0, totalNeeded - allocated) : Math.round(totalNeeded / count);
+              allocated += sizeQty;
+              v.stock = Math.max(0, (v.stock || 0) - sizeQty);
+            });
+            logDetail = ` [${targetIngColor ? targetIngColor + ' ' : ''}-${totalNeeded} ${raw.unit || 'Çift'}]`;
+          }
+
+          const calculatedTotalStock = variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+          await db.products.update(ing.productId, {
+            variantBarcodes: variants,
+            stock: calculatedTotalStock
+          });
+        } else {
+          // Standard raw material (leather dm2, lining dm2, laces, box, glue)
+          const newStock = Math.max(0, Number(((raw.stock || 0) - totalNeeded).toFixed(3)));
+          await db.products.update(ing.productId, { stock: newStock });
+          logDetail = ` [${ing.partName || raw.subType || ''}: -${totalNeeded} ${raw.unit || 'Birim'}]`;
+        }
+
+        await db.inventoryLogs.add({
+          productId: ing.productId,
+          type: 'production_out',
+          quantity: totalNeeded,
+          date: now,
+          description: `Otomatik BOM Sarfiyatı: ${finishedProduct.name} (${quantity} ${finishedProduct.unit || 'Çift'}) ${orderBarcode ? '#' + orderBarcode : ''}${logDetail}${operator ? ' | Operatör: ' + operator : ''}`
+        });
+
+        const refreshedRaw = await db.products.get(ing.productId);
+        consumedList.push({
+          productId: ing.productId,
+          name: raw.name,
+          code: raw.code,
+          unit: raw.unit || 'Adet',
+          quantityPerPair: ing.quantity,
+          totalConsumed: totalNeeded,
+          remainingStock: refreshedRaw?.stock || 0,
+          details: logDetail
+        });
+      }
+
+      // Add finished product to stock (production_in)
+      const finishedCurrentStock = finishedProduct.stock || 0;
+      const newFinishedStock = finishedCurrentStock + quantity;
+      
+      // Update variant stock if applicable
+      let updatedVariants = finishedProduct.variantBarcodes ? [...finishedProduct.variantBarcodes] : undefined;
+      if (updatedVariants && updatedVariants.length > 0) {
+        if (size && size.trim() !== '' && !['Asorti', 'Tüm Bedenler', 'Standart'].includes(size.trim())) {
+          let vMatch = updatedVariants.find(v => v.size === size.trim());
+          if (vMatch) {
+            vMatch.stock = (vMatch.stock || 0) + quantity;
+          }
+        } else {
+          const count = updatedVariants.length;
+          let alloc = 0;
+          updatedVariants.forEach((v, idx) => {
+            const isLast = idx === count - 1;
+            const q = isLast ? Math.max(0, quantity - alloc) : Math.round(quantity / count);
+            alloc += q;
+            v.stock = (v.stock || 0) + q;
+          });
+        }
+      }
+
+      await db.products.update(productId, {
+        stock: newFinishedStock,
+        ...(updatedVariants ? { variantBarcodes: updatedVariants } : {})
+      });
+
+      await db.inventoryLogs.add({
+        productId,
+        type: 'production_in',
+        quantity,
+        date: now,
+        description: `Üretim Tamamlandı & Mamul Stoğa Giriş: ${finishedProduct.name} (+${quantity} ${finishedProduct.unit || 'Çift'})${orderBarcode ? ' | Takip No: ' + orderBarcode : ''}${operator ? ' | Usta: ' + operator : ''}`
+      });
+
+      return {
+        success: true,
+        finishedProduct: {
+          productId,
+          name: finishedProduct.name,
+          code: finishedProduct.code,
+          quantityAdded: quantity,
+          newStock: newFinishedStock
+        },
+        consumedIngredients: consumedList,
+        timestamp: now
+      };
+    });
   },
 
   // --- Management & Setup ---

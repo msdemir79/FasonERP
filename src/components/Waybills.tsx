@@ -47,11 +47,13 @@ import {
   ShieldAlert,
   MapPin,
   Car,
-  Receipt
+  Receipt,
+  Camera
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WaybillPrintModal } from './Waybills/WaybillPrintModal';
 import PageHeader from './PageHeader';
+import CameraBarcodeScannerModal from './Common/CameraBarcodeScannerModal';
 
 export default function Waybills() {
   const navigate = useNavigate();
@@ -62,6 +64,7 @@ export default function Waybills() {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modals
+  const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createWaybillType, setCreateWaybillType] = useState<WaybillType>('sales');
   const [preselectedContactId, setPreselectedContactId] = useState<number | undefined>(undefined);
@@ -228,6 +231,16 @@ export default function Waybills() {
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Sıfırla</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsCameraScannerOpen(true)}
+              className="bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+              title="Kamera ile barkod okutarak sevkiyat veya mal kabul irsaliyesi hazırla"
+            >
+              <Camera className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span>Kamera ile İrsaliye Oku</span>
             </button>
 
             <button
@@ -719,6 +732,13 @@ export default function Waybills() {
           }}
         />
       )}
+
+      {/* KAMERA İLE CANLI BARKOD / İRSALİYE OKUYUCU */}
+      <CameraBarcodeScannerModal
+        isOpen={isCameraScannerOpen}
+        onClose={() => setIsCameraScannerOpen(false)}
+        initialMode="waybill_dispatch"
+      />
     </div>
   );
 }

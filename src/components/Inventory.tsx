@@ -51,6 +51,7 @@ import { erpService } from '../services/erpService';
 import BarcodePrintModal from './BarcodePrintModal';
 import { resizeAndOptimizeImage } from '../utils/imageUtils';
 import PageHeader from './PageHeader';
+import CameraBarcodeScannerModal, { type ScannerMode } from './Common/CameraBarcodeScannerModal';
 import { StockCategoryType, Product, AssortmentTemplate, BarcodeVariant } from '../types';
 import { printTabularReport } from '../lib/printService';
 import { exportToCsv } from '../lib/exportService';
@@ -379,6 +380,10 @@ export default function Inventory() {
       });
     }
   }, [isSettingsModalOpen]);
+
+  // Live Camera Barcode / QR Scanner State
+  const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
+  const [cameraScannerMode, setCameraScannerMode] = useState<ScannerMode>('stock_count');
 
   // Helper to determine active category of a product
   const getProductCategoryType = (p: Product): StockCategoryType => {
@@ -921,12 +926,34 @@ export default function Inventory() {
         iconColor="indigo"
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCameraScannerMode('stock_count');
+                setIsCameraScannerOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800 rounded-lg text-xs font-bold text-purple-700 dark:text-purple-300 transition-colors cursor-pointer shadow-xs"
+              title="Cihaz veya tablet kamerasıyla barkod okutarak hızlı stok sayımı ve mal kabulü yap"
+            >
+              <Camera className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span>Kamera ile Canlı Sayım / Mal Kabul</span>
+            </button>
+
             <Link
               to="/reports?tab=stock"
               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg text-xs font-semibold text-indigo-700 transition-colors"
             >
               <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
               <span>Stok Raporu</span>
+            </Link>
+
+            <Link
+              to="/inventory/templates"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg text-xs font-bold text-indigo-700 transition-colors shadow-xs"
+              title="100x150, 60x40 ve diğer termal barkod etiket şablonlarını yönet ve tasarla"
+            >
+              <Barcode className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Barkod & Etiket Şablonları</span>
             </Link>
 
             <button
@@ -3224,6 +3251,13 @@ export default function Inventory() {
           </div>
         )}
       </Modal>
+
+      {/* Kamera ile Canlı Barkod/Karekod Okuyucu Modalı */}
+      <CameraBarcodeScannerModal
+        isOpen={isCameraScannerOpen}
+        onClose={() => setIsCameraScannerOpen(false)}
+        initialMode={cameraScannerMode}
+      />
     </div>
   );
 }

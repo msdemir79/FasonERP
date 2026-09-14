@@ -27,12 +27,14 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Sun,
-  Moon
+  Moon,
+  Camera
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 import UserSwitcherModal from './Users/UserSwitcherModal';
 import AccessDenied from './Common/AccessDenied';
+import CameraBarcodeScannerModal from './Common/CameraBarcodeScannerModal';
 import type { AppModule } from '../types';
 import { useTheme } from '../context/ThemeContext';
 
@@ -67,6 +69,7 @@ export default function Layout() {
   const { theme, setTheme, actualTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
+  const [isGlobalScannerOpen, setIsGlobalScannerOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar_collapsed');
     return saved ? JSON.parse(saved) : false;
@@ -355,6 +358,16 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            {/* Quick Live Barcode Scanner Button */}
+            <button
+              onClick={() => setIsGlobalScannerOpen(true)}
+              title="Kamera ile Canlı Barkod/Karekod Okut (Stok Sayımı, Mal Kabul, İrsaliye, İş Emri)"
+              className="p-2 rounded-xl border border-purple-200 dark:border-purple-800/80 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            >
+              <Camera className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs font-bold hidden xl:inline">Barkod Oku</span>
+            </button>
+
             {/* Theme Toggle Button */}
             <button
               onClick={() => setTheme(actualTheme === 'dark' ? 'light' : 'dark')}
@@ -417,6 +430,12 @@ export default function Layout() {
       <UserSwitcherModal
         isOpen={isSwitcherOpen}
         onClose={() => setIsSwitcherOpen(false)}
+      />
+
+      {/* Global Live Camera Barcode Scanner Modal */}
+      <CameraBarcodeScannerModal
+        isOpen={isGlobalScannerOpen}
+        onClose={() => setIsGlobalScannerOpen(false)}
       />
     </div>
   );

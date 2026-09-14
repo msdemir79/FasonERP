@@ -14,10 +14,16 @@ import {
   CheckCircle2, 
   Layers, 
   Sparkles,
-  Info
+  Info,
+  Download,
+  FileCode2,
+  Code
 } from 'lucide-react';
 import { erpService } from '../../services/erpService';
 import { printHtml, openPrintWindow } from '../../lib/printService';
+import { downloadElementAsPdf } from '../../lib/pdfService';
+import { generateUblTrInvoiceXml, downloadXmlFile } from '../../lib/ublTrGenerator';
+import { UblXmlViewerModal } from '../Common/UblXmlViewerModal';
 import { cn } from '../../lib/utils';
 import type { Invoice } from '../../types';
 
@@ -117,6 +123,9 @@ export function InvoicePrintModal({
   const [companySettings, setCompanySettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [template, setTemplate] = useState<InvoiceTemplateType>('official_gib');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [xmlModalOpen, setXmlModalOpen] = useState(false);
+  const [currentXmlContent, setCurrentXmlContent] = useState('');
   const printContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -221,6 +230,39 @@ export function InvoicePrintModal({
     }
   };
 
+  const handleDownloadDirectPdf = async () => {
+    if (!printContainerRef.current || !invoiceDetail) return;
+    setDownloadingPdf(true);
+    try {
+      const invNo = invoiceDetail.invoiceNumber || 'FATURA';
+      await downloadElementAsPdf(printContainerRef.current, {
+        filename: `${invNo}.pdf`,
+        format: 'a4',
+        orientation: 'portrait',
+        marginMm: 6
+      });
+    } catch (err) {
+      console.error('PDF indirme hatası:', err);
+      alert('PDF oluşturulamadı.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadUblXml = () => {
+    if (!invoiceDetail) return;
+    const xml = generateUblTrInvoiceXml(invoiceDetail, companySettings);
+    const invNo = invoiceDetail.invoiceNumber || 'FATURA';
+    downloadXmlFile(xml, `${invNo}_UBL_TR12.xml`);
+  };
+
+  const handleOpenXmlPreview = () => {
+    if (!invoiceDetail) return;
+    const xml = generateUblTrInvoiceXml(invoiceDetail, companySettings);
+    setCurrentXmlContent(xml);
+    setXmlModalOpen(true);
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[96vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-150">
@@ -295,32 +337,62 @@ export function InvoicePrintModal({
           </div>
 
           {/* Eylem Butonları */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {onOpenActionModal && invoiceDetail && (
               <button
                 onClick={() => onOpenActionModal(invoiceDetail)}
-                className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
+                className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
               >
                 <Ban className="w-3.5 h-3.5" />
                 {invoiceDetail.status === 'issued' ? 'İptal Et' : 'Sil'}
               </button>
             )}
 
+            {/* GİB UBL-TR XML Butonları */}
+            <button
+              onClick={handleOpenXmlPreview}
+              className="bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
+              title="GİB UBL-TR 1.2 e-Fatura XML Kodunu Önizle / Doğrula"
+            >
+              <Code className="w-3.5 h-3.5 text-emerald-400" />
+              <span>XML Önizle</span>
+            </button>
+
+            <button
+              onClick={handleDownloadUblXml}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+              title="GİB UBL-TR 1.2 formatında e-Fatura XML dosyasını indir"
+            >
+              <FileCode2 className="w-3.5 h-3.5" />
+              <span>GİB XML İndir</span>
+            </button>
+
+            {/* Tek Tıkla Doğrudan PDF İndir */}
+            <button
+              onClick={handleDownloadDirectPdf}
+              disabled={downloadingPdf}
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+              title="Tek tıkla kurumsal A4 formatında PDF olarak indir"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>{downloadingPdf ? 'Hazırlanıyor...' : 'PDF İndir'}</span>
+            </button>
+
             <button
               onClick={() => handlePrint(true)}
-              className="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs"
+              className="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs"
               title="Tam ekran A4 sekmesinde açarak tarayıcıdan yazdırma"
             >
               <ExternalLink className="w-3.5 h-3.5 text-slate-300" />
-              Yeni Sekmede Aç / PDF
+              <span className="hidden sm:inline">Yeni Sekme</span>
             </button>
 
             <button
               onClick={() => handlePrint(false)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-md shadow-indigo-600/30 active:scale-95"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/30 active:scale-95"
             >
-              <Printer className="w-4 h-4" />
-              Yazdır / PDF Kaydet
+              <Printer className="w-3.5 h-3.5" />
+              <span>Yazdır</span>
             </button>
 
             <button
@@ -406,6 +478,16 @@ export function InvoicePrintModal({
         </div>
 
       </div>
+
+      {/* GİB UBL-TR XML Görüntüleyici ve İndirici Modalı */}
+      <UblXmlViewerModal
+        isOpen={xmlModalOpen}
+        onClose={() => setXmlModalOpen(false)}
+        xmlContent={currentXmlContent}
+        filename={`${invoiceDetail?.invoiceNumber || 'FATURA'}_UBL_TR12.xml`}
+        documentType="invoice"
+        documentNumber={invoiceDetail?.invoiceNumber || ''}
+      />
     </div>
   );
 }

@@ -17,11 +17,19 @@ import {
   MapPin,
   ShieldCheck,
   Package,
-  Receipt
+  Receipt,
+  Download,
+  FileCode2,
+  Code,
+  Tag
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { erpService } from '../../services/erpService';
 import { printHtml, openPrintWindow } from '../../lib/printService';
+import { downloadElementAsPdf } from '../../lib/pdfService';
+import { generateUblTrDespatchXml, downloadXmlFile } from '../../lib/ublTrGenerator';
+import { UblXmlViewerModal } from '../Common/UblXmlViewerModal';
+import { ThermalShippingLabelModal } from '../Common/ThermalShippingLabelModal';
 import { cn } from '../../lib/utils';
 import type { Waybill } from '../../types';
 import { numberToTurkishWords } from '../Invoices/InvoicePrintModal';
@@ -41,6 +49,10 @@ export function WaybillPrintModal({ isOpen, onClose, waybillId }: WaybillPrintMo
   const [companySettings, setCompanySettings] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<WaybillTemplateType>('gib_standard');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [xmlModalOpen, setXmlModalOpen] = useState(false);
+  const [currentXmlContent, setCurrentXmlContent] = useState('');
+  const [thermalLabelModalOpen, setThermalLabelModalOpen] = useState(false);
   const printContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,6 +96,39 @@ export function WaybillPrintModal({ isOpen, onClose, waybillId }: WaybillPrintMo
       printContentRef.current.innerHTML,
       `${waybillData.waybillNumber || 'Irsaliye'}_Sevk_Irsaliyesi`
     );
+  };
+
+  const handleDownloadDirectPdf = async () => {
+    if (!printContentRef.current || !waybillData) return;
+    setDownloadingPdf(true);
+    try {
+      const wbNo = waybillData.waybillNumber || 'IRSALIYE';
+      await downloadElementAsPdf(printContentRef.current, {
+        filename: `${wbNo}.pdf`,
+        format: 'a4',
+        orientation: 'portrait',
+        marginMm: 6
+      });
+    } catch (err) {
+      console.error('PDF indirme hatası:', err);
+      alert('PDF oluşturulamadı.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadUblXml = () => {
+    if (!waybillData) return;
+    const xml = generateUblTrDespatchXml(waybillData, companySettings);
+    const wbNo = waybillData.waybillNumber || 'IRSALIYE';
+    downloadXmlFile(xml, `${wbNo}_UBL_TR12_IRSALIYE.xml`);
+  };
+
+  const handleOpenXmlPreview = () => {
+    if (!waybillData) return;
+    const xml = generateUblTrDespatchXml(waybillData, companySettings);
+    setCurrentXmlContent(xml);
+    setXmlModalOpen(true);
   };
 
   const isCancelled = waybillData?.status === 'cancelled';
@@ -175,7 +220,7 @@ export function WaybillPrintModal({ isOpen, onClose, waybillId }: WaybillPrintMo
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {waybillData && waybillData.status === 'issued' && (
               waybillData.invoicedStatus === 'invoiced' ? (
                 <div className="hidden sm:flex items-center gap-1.5 bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 px-3 py-1.5 rounded-xl text-xs font-bold">
@@ -188,22 +233,65 @@ export function WaybillPrintModal({ isOpen, onClose, waybillId }: WaybillPrintMo
                     navigate(`/invoices?waybillId=${waybillData.id}&contactId=${waybillData.contactId}&type=${waybillData.type}`);
                     onClose();
                   }}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
                   title="Bu irsaliyeyi faturaya dönüştür"
                 >
-                  <Receipt className="w-4 h-4" />
+                  <Receipt className="w-3.5 h-3.5" />
                   <span>Faturalandır</span>
                 </button>
               )
             )}
 
+            {/* 100x150 mm Termal Barkod / Koli Etiketi Butonu */}
+            <button
+              onClick={() => setThermalLabelModalOpen(true)}
+              disabled={loading || !waybillData}
+              className="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+              title="100x150 mm Lojistik Koli ve Barkod Etiketi Yazdır"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>100x150 Etiket</span>
+            </button>
+
+            {/* GİB UBL-TR XML Butonları */}
+            <button
+              onClick={handleOpenXmlPreview}
+              disabled={loading || !waybillData}
+              className="bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
+              title="GİB UBL-TR 1.2 e-İrsaliye XML Kodunu Önizle / Doğrula"
+            >
+              <Code className="w-3.5 h-3.5 text-emerald-400" />
+              <span>XML Önizle</span>
+            </button>
+
+            <button
+              onClick={handleDownloadUblXml}
+              disabled={loading || !waybillData}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+              title="GİB UBL-TR 1.2 formatında e-İrsaliye XML dosyasını indir"
+            >
+              <FileCode2 className="w-3.5 h-3.5" />
+              <span>GİB XML İndir</span>
+            </button>
+
+            {/* Tek Tıkla Doğrudan PDF İndir */}
+            <button
+              onClick={handleDownloadDirectPdf}
+              disabled={downloadingPdf || loading || !waybillData}
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+              title="Tek tıkla kurumsal A4 formatında PDF olarak indir"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>{downloadingPdf ? 'Hazırlanıyor...' : 'PDF İndir'}</span>
+            </button>
+
             <button
               onClick={handlePrint}
               disabled={loading || !waybillData}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
             >
-              <Printer className="w-4 h-4" />
-              <span>Yazdır / PDF Kaydet</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>Yazdır</span>
             </button>
 
             <button
@@ -275,6 +363,26 @@ export function WaybillPrintModal({ isOpen, onClose, waybillId }: WaybillPrintMo
           )}
         </div>
       </div>
+
+      {/* GİB UBL-TR XML Görüntüleyici ve İndirici Modalı */}
+      <UblXmlViewerModal
+        isOpen={xmlModalOpen}
+        onClose={() => setXmlModalOpen(false)}
+        xmlContent={currentXmlContent}
+        filename={`${waybillData?.waybillNumber || 'IRSALIYE'}_UBL_TR12.xml`}
+        documentType="waybill"
+        documentNumber={waybillData?.waybillNumber || ''}
+      />
+
+      {/* 100x150 mm Termal Sevk / Koli Barkod Etiketi Modalı */}
+      {waybillData && (
+        <ThermalShippingLabelModal
+          isOpen={thermalLabelModalOpen}
+          onClose={() => setThermalLabelModalOpen(false)}
+          waybill={waybillData}
+          companySettings={companySettings}
+        />
+      )}
     </div>
   );
 }

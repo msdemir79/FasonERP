@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { erpService } from '../../services/erpService';
 import { 
   X, 
   Printer, 
+  Download,
   Building2, 
   User, 
   Shield, 
@@ -25,6 +26,7 @@ import {
   PlusCircle
 } from 'lucide-react';
 import type { PayrollRecord, Employee } from '../../types';
+import { downloadElementAsPdf } from '../../lib/pdfService';
 
 interface PayrollSlipModalProps {
   isOpen: boolean;
@@ -106,6 +108,8 @@ function numberToWordsTR(val: number): string {
 
 export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }: PayrollSlipModalProps) {
   const [companySettings, setCompanySettings] = useState<any>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const slipContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadSettings() {
@@ -184,6 +188,25 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
   // Toplam kesintiler
   const totalDeductions = (payroll.totalLegalDeductions || 0) + (payroll.advanceDeduction || 0) + (payroll.otherDeductions || 0);
 
+  const handleDownloadPdf = async () => {
+    if (!slipContainerRef.current || !payroll) return;
+    setDownloadingPdf(true);
+    try {
+      const filename = `Bordro_${payroll.employeeCode}_${payroll.year}_${String(payroll.month).padStart(2, '0')}.pdf`;
+      await downloadElementAsPdf(slipContainerRef.current, {
+        filename,
+        format: 'a4',
+        orientation: 'portrait',
+        marginMm: 8
+      });
+    } catch (err) {
+      console.error('PDF indirme hatası:', err);
+      alert('PDF oluşturulamadı.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -210,12 +233,21 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
           
           <div className="flex items-center gap-2">
             <button
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-colors border border-slate-300 dark:border-slate-600 cursor-pointer"
+              title="Tek Tıkla PDF İndir"
+            >
+              <Download className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span>{downloadingPdf ? 'Hazırlanıyor...' : 'PDF İndir'}</span>
+            </button>
+            <button
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs cursor-pointer"
               title="Yazdır / PDF Olarak Kaydet"
             >
               <Printer className="w-4 h-4" />
-              <span>Yazdır / PDF</span>
+              <span>Yazdır</span>
             </button>
             <button
               onClick={onClose}
@@ -229,7 +261,7 @@ export default function PayrollSlipModal({ isOpen, onClose, payroll, employee }:
         </div>
 
         {/* Printable Slip Content with internal scrolling */}
-        <div className="p-5 sm:p-8 space-y-5 text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 overflow-y-auto flex-1 print:overflow-visible print:p-2 print:space-y-4" id="printable-payroll-slip">
+        <div ref={slipContainerRef} className="p-5 sm:p-8 space-y-5 text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 overflow-y-auto flex-1 print:overflow-visible print:p-2 print:space-y-4" id="printable-payroll-slip">
           
           {/* 1. Kurumsal ve Belge Başlığı */}
           <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-4 gap-4">

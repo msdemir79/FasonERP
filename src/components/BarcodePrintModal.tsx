@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { 
   Barcode, 
   Printer, 
@@ -16,14 +17,16 @@ import {
   Trash2,
   ExternalLink,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Sliders
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import Modal from './Modal';
 import { BarcodeSvg } from './BarcodeSvg';
-import { Product, AssortmentTemplate } from '../types';
+import { Product, AssortmentTemplate, BarcodeTemplate } from '../types';
 import { printHtml, openPrintWindow } from '../lib/printService';
 import { resizeAndOptimizeImage } from '../utils/imageUtils';
+import { db } from '../db';
 
 export interface BarcodePrintModalProps {
   isOpen: boolean;
@@ -51,6 +54,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   // Active print category: 'box' (Koli Barkodu) vs 'variant' (Asorti / Beden Barkodu)
   const [activeTab, setActiveTab] = useState<'box' | 'variant'>(initialMode);
 
+  // Database Barcode Templates
+  const dbBarcodeTemplates = useLiveQuery(() => db.barcodeTemplates.toArray()) || [];
+  const [selectedDbTemplateId, setSelectedDbTemplateId] = useState<number | ''>('');
+
   // Label formatting options & custom dimensions
   const [labelSize, setLabelSize] = useState<'100x80' | '100x150' | '80x60' | '60x40' | '50x30' | '40x25' | 'custom'>('100x80');
   const [customWidthMm, setCustomWidthMm] = useState<number>(100);
@@ -60,6 +67,27 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   const [showOrderInfo, setShowOrderInfo] = useState<boolean>(Boolean(orderContext?.orderNumber));
   const [showBoxSerial, setShowBoxSerial] = useState<boolean>(true);
   const [companyHeader, setCompanyHeader] = useState<string>('ProERP SHOES');
+
+  // Apply a selected DB Template
+  const handleApplyDbTemplate = (templateId: number | '') => {
+    setSelectedDbTemplateId(templateId);
+    if (!templateId) return;
+
+    const tmpl = dbBarcodeTemplates.find(t => t.id === templateId);
+    if (tmpl) {
+      setLabelSize(tmpl.presetSize as any);
+      setCustomWidthMm(tmpl.widthMm);
+      setCustomHeightMm(tmpl.heightMm);
+      if (tmpl.config) {
+        if (tmpl.config.companyHeaderText) setCompanyHeader(tmpl.config.companyHeaderText);
+        if (tmpl.config.showPrice !== undefined) setShowPrice(tmpl.config.showPrice);
+        if (tmpl.config.showOrderInfo !== undefined) setShowOrderInfo(tmpl.config.showOrderInfo);
+        if (tmpl.config.showBoxSerial !== undefined) setShowBoxSerial(tmpl.config.showBoxSerial);
+        if (tmpl.config.showProductImage !== undefined) setShowImage(tmpl.config.showProductImage);
+        if (tmpl.config.imageFit) setImageFit(tmpl.config.imageFit);
+      }
+    }
+  };
 
   // --- Image support on labels ---
   const [showImage, setShowImage] = useState<boolean>(Boolean(product?.image || (product?.colorImages && product.colorImages.length > 0)));
@@ -1019,38 +1047,62 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
               <div className="flex items-center justify-between">
                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                   <Settings2 className="w-3.5 h-3.5" />
-                  Etiket Ölçüleri & Seçenekler
+                  Etiket Ölçüleri & Şablon
                 </div>
                 <span className="text-[10px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-lg">
                   {getEffectiveDimensions().width} × {getEffectiveDimensions().height} mm
                 </span>
               </div>
 
+              {/* DB Registered Template Selector */}
+              {dbBarcodeTemplates.length > 0 && (
+                <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/60 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-200 flex items-center gap-1">
+                      <Sliders className="w-3 h-3 text-indigo-600" />
+                      Kayıtlı Termal Şablonu Yükle:
+                    </label>
+                  </div>
+                  <select
+                    value={selectedDbTemplateId}
+                    onChange={e => handleApplyDbTemplate(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">-- Özel / Manuel Seçim --</option>
+                    {dbBarcodeTemplates.map(tmpl => (
+                      <option key={tmpl.id} value={tmpl.id}>
+                        {tmpl.name} ({tmpl.widthMm}x{tmpl.heightMm} mm - {tmpl.type === 'shipping' ? 'Lojistik Koli' : tmpl.type === 'shoe_box' ? 'Tekil Kutu' : 'Koli'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Preset buttons */}
               <div className="space-y-1.5">
                 <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">Hazır Ölçü Şablonları</div>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { id: '100x80', label: '100×80 mm', desc: 'Standart Koli' },
-                    { id: '100x150', label: '100×150 mm', desc: 'Kargo / Büyük' },
-                    { id: '80x60', label: '80×60 mm', desc: 'Kompakt Koli' },
-                    { id: '60x40', label: '60×40 mm', desc: 'Koli / Asorti' },
-                    { id: '50x30', label: '50×30 mm', desc: 'Beden / Tekil' },
-                    { id: '40x25', label: '40×25 mm', desc: 'Küçük Tekil' },
+                    { id: '100x150', label: '100×150 mm', desc: '📦 Lojistik Koli' },
+                    { id: '100x80', label: '100×80 mm', desc: '🏷️ Standart Koli' },
+                    { id: '80x60', label: '80×60 mm', desc: '🗄️ Kompakt Koli' },
+                    { id: '60x40', label: '60×40 mm', desc: '👟 Tekil Kutu' },
+                    { id: '50x30', label: '50×30 mm', desc: '🔖 Fiyat / Tekil' },
+                    { id: '40x25', label: '40×25 mm', desc: '🔍 Mini Etiket' },
                   ].map(size => (
                     <button
                       key={size.id}
                       type="button"
                       onClick={() => handleSelectPresetSize(size.id as any)}
                       className={cn(
-                        "p-2 rounded-xl text-center border transition-all",
+                        "p-2 rounded-xl text-center border transition-all cursor-pointer",
                         labelSize === size.id
-                          ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
                           : "bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800"
                       )}
                     >
                       <div className="text-[10px] font-black">{size.label}</div>
-                      <div className="text-[8px] opacity-70 truncate">{size.desc}</div>
+                      <div className="text-[8px] opacity-80 truncate">{size.desc}</div>
                     </button>
                   ))}
                 </div>
