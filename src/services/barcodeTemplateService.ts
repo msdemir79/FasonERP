@@ -26,6 +26,8 @@ export interface SampleLabelData {
   customNote?: string;
 }
 
+export const DEFAULT_SAMPLE_SHOE_IMAGE = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" fill="none"><rect width="100" height="100" rx="8" fill="%23f8fafc"/><path d="M15 65 C25 65, 35 60, 45 50 C55 40, 65 40, 75 45 C85 50, 90 60, 92 65 L92 80 L15 80 Z" fill="%234f46e5" fill-opacity="0.2" stroke="%234338ca" stroke-width="3"/><path d="M15 80 L92 80 M15 74 L92 74" stroke="%231e1b4b" stroke-width="4"/><circle cx="55" cy="52" r="2.5" fill="%231e1b4b"/><circle cx="67" cy="54" r="2.5" fill="%231e1b4b"/><path d="M45 50 L53 62 M57 48 L65 62" stroke="%234338ca" stroke-width="2.5"/></svg>`;
+
 export const barcodeTemplateService = {
   async getAll(): Promise<BarcodeTemplate[]> {
     return await db.barcodeTemplates.toArray();
@@ -283,17 +285,54 @@ export const barcodeTemplateService = {
           ` : ''}
 
           <!-- 2. Product Info & Image -->
-          <div style="display: flex; gap: 2mm; justify-content: space-between; align-items: flex-start;">
-            <div style="flex: 1;">
-              ${config.showProductCode ? `<div class="product-code">KOD: ${data.productCode || 'AYK-2026-01'}</div>` : ''}
-              ${config.showProductName ? `<div class="product-title">${data.productName || 'HAKİKİ DERİ ERKEK KLASİK'}</div>` : ''}
-            </div>
-            ${config.showProductImage && data.productImage ? `
-              <div style="width: ${config.imageSizeMm || 22}mm; height: ${config.imageSizeMm || 22}mm; border: 1px solid #000; border-radius: 1mm; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; ${config.imagePosition === 'top' ? 'margin: 0 auto 1mm auto;' : ''}">
-                <img src="${data.productImage}" style="width: 100%; height: 100%; object-fit: ${config.imageFit || 'contain'};" />
+          ${(() => {
+            const imgSize = config.imageSizeMm || 22;
+            const imgPos = config.imagePosition || 'right';
+            const imgFit = config.imageFit || 'contain';
+            const imgSrc = data.productImage || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" fill="none"><rect width="100" height="100" rx="8" fill="%23f8fafc"/><path d="M15 65 C25 65, 35 60, 45 50 C55 40, 65 40, 75 45 C85 50, 90 60, 92 65 L92 80 L15 80 Z" fill="%234f46e5" fill-opacity="0.2" stroke="%234338ca" stroke-width="3"/><path d="M15 80 L92 80 M15 74 L92 74" stroke="%231e1b4b" stroke-width="4"/><circle cx="55" cy="52" r="2.5" fill="%231e1b4b"/><circle cx="67" cy="54" r="2.5" fill="%231e1b4b"/><path d="M45 50 L53 62 M57 48 L65 62" stroke="%234338ca" stroke-width="2.5"/></svg>`;
+
+            const imgBlock = config.showProductImage ? `
+              <div style="width: ${imgSize}mm; height: ${imgSize}mm; border: 1px solid #000; border-radius: 1mm; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: #fff;">
+                <img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: ${imgFit}; display: block;" />
               </div>
-            ` : ''}
-          </div>
+            ` : '';
+
+            const textBlock = `
+              <div>
+                ${config.showProductCode ? `<div class="product-code">KOD: ${data.productCode || 'AYK-2026-01'}</div>` : ''}
+                ${config.showProductName ? `<div class="product-title">${data.productName || 'HAKİKİ DERİ ERKEK KLASİK'}</div>` : ''}
+              </div>
+            `;
+
+            if (!config.showProductImage) {
+              return `<div style="margin-bottom: 1mm;">${textBlock}</div>`;
+            }
+
+            if (imgPos === 'top') {
+              return `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 1mm; margin-bottom: 1mm;">
+                  ${imgBlock}
+                  ${textBlock}
+                </div>
+              `;
+            }
+
+            if (imgPos === 'left') {
+              return `
+                <div style="display: flex; gap: 2mm; justify-content: flex-start; align-items: flex-start; margin-bottom: 1mm;">
+                  ${imgBlock}
+                  <div style="flex: 1;">${textBlock}</div>
+                </div>
+              `;
+            }
+
+            return `
+              <div style="display: flex; gap: 2mm; justify-content: space-between; align-items: flex-start; margin-bottom: 1mm;">
+                <div style="flex: 1;">${textBlock}</div>
+                ${imgBlock}
+              </div>
+            `;
+          })()}
 
           <!-- 3. Details: Color, Material, Size, Price -->
           <div class="meta-grid">

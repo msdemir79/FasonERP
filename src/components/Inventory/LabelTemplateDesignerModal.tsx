@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { db } from '../../db';
 import { BarcodeTemplate, LabelPresetSize, LabelUsageType, Product } from '../../types';
-import { barcodeTemplateService, SampleLabelData } from '../../services/barcodeTemplateService';
+import { barcodeTemplateService, SampleLabelData, DEFAULT_SAMPLE_SHOE_IMAGE } from '../../services/barcodeTemplateService';
 import { BarcodeSvg } from '../BarcodeSvg';
 import { cn } from '../../lib/utils';
 import { INITIAL_BARCODE_TEMPLATES } from '../../data/initialBarcodeTemplates';
@@ -54,8 +54,9 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
   templateToEdit,
   onSaved
 }) => {
-  // Query existing products for sample preview
+  // Query existing products and assortment templates for sample preview
   const products = useLiveQuery(() => db.products.toArray()) || [];
+  const assortmentTemplates = useLiveQuery(() => db.assortmentTemplates.toArray()) || [];
   const systemSettings = useLiveQuery(() => db.settings.get('global_settings'));
   const companyName = systemSettings?.company?.companyTitle || systemSettings?.company?.companyName || 'PROERP AYAKKABI SAN. TİC. LTD. ŞTİ.';
 
@@ -97,6 +98,7 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
 
   // Preview State
   const [selectedProductId, setSelectedProductId] = useState<number | ''>('');
+  const [selectedAssortmentTemplateId, setSelectedAssortmentTemplateId] = useState<number | ''>('');
   const [isPrinting, setIsPrinting] = useState<boolean>(false);
   const [previewScale, setPreviewScale] = useState<number>(1);
 
@@ -231,16 +233,67 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
   }, [selectedProductId, products]);
 
   const sampleData: SampleLabelData = useMemo(() => {
+    let assortmentMatrix: Record<string, number> = {};
+    let totalPairs = 0;
+
+    let itemsToUse: { size: string; quantity: number }[] | null = null;
+
+    if (selectedProduct) {
+      if (selectedProduct.assortment && selectedProduct.assortment.length > 0) {
+        itemsToUse = selectedProduct.assortment;
+      } else if (selectedAssortmentTemplateId && assortmentTemplates.length > 0) {
+        const tmpl = assortmentTemplates.find(t => t.id === selectedAssortmentTemplateId);
+        if (tmpl && tmpl.items && tmpl.items.length > 0) {
+          itemsToUse = tmpl.items;
+        }
+      } else if (selectedProduct.assortmentTemplateId && assortmentTemplates.length > 0) {
+        const tmpl = assortmentTemplates.find(t => t.id === selectedProduct.assortmentTemplateId);
+        if (tmpl && tmpl.items && tmpl.items.length > 0) {
+          itemsToUse = tmpl.items;
+        }
+      } else if (selectedProduct.variantBarcodes && selectedProduct.variantBarcodes.length > 0) {
+        const matrix: Record<string, number> = {};
+        selectedProduct.variantBarcodes.forEach(v => {
+          if (v.size) {
+            matrix[v.size] = (matrix[v.size] || 0) + 1;
+          }
+        });
+        const entries = Object.entries(matrix);
+        if (entries.length > 0) {
+          itemsToUse = entries.map(([size, quantity]) => ({ size, quantity }));
+        }
+      }
+    } else if (selectedAssortmentTemplateId && assortmentTemplates.length > 0) {
+      const tmpl = assortmentTemplates.find(t => t.id === selectedAssortmentTemplateId);
+      if (tmpl && tmpl.items && tmpl.items.length > 0) {
+        itemsToUse = tmpl.items;
+      }
+    }
+
+    if (itemsToUse && itemsToUse.length > 0) {
+      itemsToUse.forEach(it => {
+        if (it.size) {
+          const qty = Number(it.quantity) || 0;
+          assortmentMatrix[it.size] = qty;
+          totalPairs += qty;
+        }
+      });
+    } else {
+      // Default 12-pair standard matrix
+      assortmentMatrix = { '40': 1, '41': 2, '42': 3, '43': 3, '44': 2, '45': 1 };
+      totalPairs = 12;
+    }
+
     if (selectedProduct) {
       return {
         companyName: companyHeaderText || companyName,
         productCode: selectedProduct.code,
         productName: selectedProduct.name,
         color: selectedProduct.colors?.[0] || 'Siyah',
-        material: selectedProduct.categoryType || 'Hakiki Deri',
-        size: '42',
-        assortmentMatrix: { '40': 1, '41': 2, '42': 3, '43': 3, '44': 2, '45': 1 },
-        totalPairs: 12,
+        material: selectedProduct.categoryType === 'finished' ? 'Hakiki Deri' : selectedProduct.subType || 'Hakiki Deri',
+        size: Object.keys(assortmentMatrix)[0] || '42',
+        assortmentMatrix,
+        totalPairs,
         barcode: selectedProduct.barcode || '8690020260101',
         price: selectedProduct.sellingPrice || 1450,
         currency: priceCurrency,
@@ -250,7 +303,7 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
         totalBoxes: 10,
         weightKg: 14.5,
         desi: 18,
-        productImage: selectedProduct.image || undefined,
+        productImage: selectedProduct.image || DEFAULT_SAMPLE_SHOE_IMAGE,
         customNote: customNoteText
       };
     }
@@ -261,9 +314,9 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
       productName: 'Hakiki Deri Erkek Klasik Oxford',
       color: 'SİYAH / BLACK',
       material: 'Dana Derisi / Kauçuk Taban',
-      size: '42',
-      assortmentMatrix: { '40': 1, '41': 2, '42': 3, '43': 3, '44': 2, '45': 1 },
-      totalPairs: 12,
+      size: Object.keys(assortmentMatrix)[0] || '42',
+      assortmentMatrix,
+      totalPairs,
       barcode: '8690123456789',
       price: 1850,
       currency: priceCurrency,
@@ -273,10 +326,10 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
       totalBoxes: 10,
       weightKg: 14.5,
       desi: 18,
-      productImage: undefined,
+      productImage: DEFAULT_SAMPLE_SHOE_IMAGE,
       customNote: customNoteText
     };
-  }, [selectedProduct, companyHeaderText, companyName, priceCurrency, customNoteText]);
+  }, [selectedProduct, selectedAssortmentTemplateId, assortmentTemplates, companyHeaderText, companyName, priceCurrency, customNoteText]);
 
   // Construct active template object for preview & save
   const currentTemplate: BarcodeTemplate = useMemo(() => ({
@@ -692,7 +745,7 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
                 </label>
 
                 {/* Ürün Görseli */}
-                <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-xl sm:col-span-2">
+                <div className="space-y-3 p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-xl sm:col-span-2">
                   <label className="flex items-center justify-between cursor-pointer">
                     <span className="font-bold text-slate-800 dark:text-slate-200">Ürün Minyatür Görseli</span>
                     <input
@@ -704,23 +757,54 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
                   </label>
 
                   {showProductImage && (
-                    <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                          Görsel Boyutu: <span className="font-mono text-indigo-600 font-black">{imageSizeMm} mm</span>
-                        </label>
-                        <input
-                          type="range"
-                          min={12}
-                          max={45}
-                          value={imageSizeMm}
-                          onChange={e => setImageSizeMm(Number(e.target.value))}
-                          className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                        />
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                            Görsel Boyutu: <span className="font-mono text-indigo-600 font-black">{imageSizeMm} mm</span>
+                          </label>
+                          <input
+                            type="range"
+                            min={12}
+                            max={45}
+                            value={imageSizeMm}
+                            onChange={e => setImageSizeMm(Number(e.target.value))}
+                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                            Çerçeve Uyum Modu
+                          </label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setImageFit('contain')}
+                              className={cn(
+                                "flex-1 py-1 rounded-lg text-xs font-bold border transition-all",
+                                imageFit === 'contain' ? "bg-indigo-600 text-white border-indigo-600 shadow-xs" : "bg-white dark:bg-slate-900 border-slate-200 text-slate-700"
+                              )}
+                            >
+                              Sığdır
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setImageFit('cover')}
+                              className={cn(
+                                "flex-1 py-1 rounded-lg text-xs font-bold border transition-all",
+                                imageFit === 'cover' ? "bg-indigo-600 text-white border-indigo-600 shadow-xs" : "bg-white dark:bg-slate-900 border-slate-200 text-slate-700"
+                              )}
+                            >
+                              Doldur
+                            </button>
+                          </div>
+                        </div>
                       </div>
+
                       <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                          Hizalama / Konum
+                          Görsel Konumu / Hizalama
                         </label>
                         <div className="flex gap-2">
                           <button
@@ -728,17 +812,27 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
                             onClick={() => setImagePosition('right')}
                             className={cn(
                               "flex-1 py-1 rounded-lg text-xs font-bold border transition-all",
-                              imagePosition === 'right' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-900 border-slate-200 text-slate-700"
+                              imagePosition === 'right' ? "bg-indigo-600 text-white border-indigo-600 shadow-xs" : "bg-white dark:bg-slate-900 border-slate-200 text-slate-700"
                             )}
                           >
                             Sağ Üstte
                           </button>
                           <button
                             type="button"
+                            onClick={() => setImagePosition('left')}
+                            className={cn(
+                              "flex-1 py-1 rounded-lg text-xs font-bold border transition-all",
+                              imagePosition === 'left' ? "bg-indigo-600 text-white border-indigo-600 shadow-xs" : "bg-white dark:bg-slate-900 border-slate-200 text-slate-700"
+                            )}
+                          >
+                            Solda
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => setImagePosition('top')}
                             className={cn(
                               "flex-1 py-1 rounded-lg text-xs font-bold border transition-all",
-                              imagePosition === 'top' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-900 border-slate-200 text-slate-700"
+                              imagePosition === 'top' ? "bg-indigo-600 text-white border-indigo-600 shadow-xs" : "bg-white dark:bg-slate-900 border-slate-200 text-slate-700"
                             )}
                           >
                             Üstte Ortada
@@ -837,21 +931,48 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
                 </div>
               </div>
 
-              {/* Gerçek Ürün Seçici */}
-              <div className="mb-4">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                  Önizleme İçin Örnek Ürün Seç:
-                </label>
-                <select
-                  value={selectedProductId}
-                  onChange={e => setSelectedProductId(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200"
-                >
-                  <option value="">-- Varsayılan Örnek Ayakkabı Verisi --</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
-                  ))}
-                </select>
+              {/* Gerçek Ürün ve Asorti Şablonu Seçici */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                    Önizleme İçin Ürün Seç:
+                  </label>
+                  <select
+                    value={selectedProductId}
+                    onChange={e => {
+                      const val = e.target.value ? Number(e.target.value) : '';
+                      setSelectedProductId(val);
+                      if (val) {
+                        const prod = products.find(p => p.id === val);
+                        if (prod?.assortmentTemplateId) {
+                          setSelectedAssortmentTemplateId(prod.assortmentTemplateId);
+                        }
+                      }
+                    }}
+                    className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200"
+                  >
+                    <option value="">-- Varsayılan Örnek Ürün --</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                    Asorti Şablonu Test Et:
+                  </label>
+                  <select
+                    value={selectedAssortmentTemplateId}
+                    onChange={e => setSelectedAssortmentTemplateId(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200"
+                  >
+                    <option value="">-- Ürünün Kendisi / Otomatik --</option>
+                    {assortmentTemplates.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -883,8 +1004,94 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
                 )}
 
                 {/* 2. Product Title & Image */}
-                <div className={cn("flex gap-2 justify-between items-start", imagePosition === 'top' ? "flex-col items-center" : "")}>
-                  <div className="flex-1">
+                {showProductImage ? (
+                  imagePosition === 'top' ? (
+                    <div className="flex flex-col items-center justify-center text-center gap-1.5 my-1.5">
+                      <div 
+                        style={{
+                          width: `${imageSizeMm * 2.8}px`,
+                          height: `${imageSizeMm * 2.8}px`,
+                        }}
+                        className="border border-black rounded flex items-center justify-center bg-white overflow-hidden shrink-0 shadow-xs"
+                      >
+                        <img 
+                          src={sampleData.productImage || DEFAULT_SAMPLE_SHOE_IMAGE} 
+                          style={{ width: '100%', height: '100%', objectFit: imageFit || 'contain' }} 
+                          alt="Ürün Görseli" 
+                        />
+                      </div>
+                      <div>
+                        {showProductCode && (
+                          <div className="font-mono font-black text-[10px] text-slate-800">
+                            KOD: {sampleData.productCode}
+                          </div>
+                        )}
+                        {showProductName && (
+                          <div className="font-black text-[12px] uppercase leading-tight line-clamp-2">
+                            {sampleData.productName}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : imagePosition === 'left' ? (
+                    <div className="flex gap-2 justify-start items-start my-1.5">
+                      <div 
+                        style={{
+                          width: `${imageSizeMm * 2.8}px`,
+                          height: `${imageSizeMm * 2.8}px`,
+                        }}
+                        className="border border-black rounded flex items-center justify-center bg-white overflow-hidden shrink-0 shadow-xs"
+                      >
+                        <img 
+                          src={sampleData.productImage || DEFAULT_SAMPLE_SHOE_IMAGE} 
+                          style={{ width: '100%', height: '100%', objectFit: imageFit || 'contain' }} 
+                          alt="Ürün Görseli" 
+                        />
+                      </div>
+                      <div className="flex-1">
+                        {showProductCode && (
+                          <div className="font-mono font-black text-[10px] text-slate-800">
+                            KOD: {sampleData.productCode}
+                          </div>
+                        )}
+                        {showProductName && (
+                          <div className="font-black text-[12px] uppercase leading-tight line-clamp-2">
+                            {sampleData.productName}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 justify-between items-start my-1.5">
+                      <div className="flex-1">
+                        {showProductCode && (
+                          <div className="font-mono font-black text-[10px] text-slate-800">
+                            KOD: {sampleData.productCode}
+                          </div>
+                        )}
+                        {showProductName && (
+                          <div className="font-black text-[12px] uppercase leading-tight line-clamp-2">
+                            {sampleData.productName}
+                          </div>
+                        )}
+                      </div>
+                      <div 
+                        style={{
+                          width: `${imageSizeMm * 2.8}px`,
+                          height: `${imageSizeMm * 2.8}px`,
+                        }}
+                        className="border border-black rounded flex items-center justify-center bg-white overflow-hidden shrink-0 shadow-xs"
+                      >
+                        <img 
+                          src={sampleData.productImage || DEFAULT_SAMPLE_SHOE_IMAGE} 
+                          style={{ width: '100%', height: '100%', objectFit: imageFit || 'contain' }} 
+                          alt="Ürün Görseli" 
+                        />
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div className="my-1.5">
                     {showProductCode && (
                       <div className="font-mono font-black text-[10px] text-slate-800">
                         KOD: {sampleData.productCode}
@@ -896,25 +1103,7 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
                       </div>
                     )}
                   </div>
-                  {showProductImage && (
-                    <div 
-                      style={{
-                        width: `${Math.max(30, imageSizeMm * 2.2)}px`,
-                        height: `${Math.max(30, imageSizeMm * 2.2)}px`,
-                      }}
-                      className={cn(
-                        "border border-black rounded flex items-center justify-center bg-slate-50 overflow-hidden shrink-0",
-                        imagePosition === 'top' ? "my-1" : ""
-                      )}
-                    >
-                      {sampleData.productImage ? (
-                        <img src={sampleData.productImage} style={{ width: '100%', height: '100%', objectFit: imageFit || 'contain' }} alt="" />
-                      ) : (
-                        <span className="text-[18px]">👞</span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                )}
 
                 {/* 3. Color, Material & Size */}
                 <div className="grid grid-cols-2 gap-1 my-1 text-[9px]">
@@ -943,25 +1132,29 @@ export const LabelTemplateDesignerModal: React.FC<LabelTemplateDesignerModalProp
                   <div className="my-1">
                     <div className="flex justify-between text-[7px] font-black uppercase mb-0.5">
                       <span>ASORTİ DAĞILIMI</span>
-                      <span>TOPLAM: 12 ÇİFT</span>
+                      <span>TOPLAM: {sampleData.totalPairs || 0} ÇİFT</span>
                     </div>
-                    <div className="grid grid-cols-7 border border-black text-center text-[8px] font-bold">
-                      <div className="bg-black text-white p-0.5">40</div>
-                      <div className="bg-black text-white p-0.5">41</div>
-                      <div className="bg-black text-white p-0.5">42</div>
-                      <div className="bg-black text-white p-0.5">43</div>
-                      <div className="bg-black text-white p-0.5">44</div>
-                      <div className="bg-black text-white p-0.5">45</div>
-                      <div className="bg-neutral-800 text-white p-0.5 font-black">TOP</div>
+                    {(() => {
+                      const entries = Object.entries(sampleData.assortmentMatrix || {});
+                      if (entries.length === 0) return null;
 
-                      <div className="p-0.5 border-t border-black">1</div>
-                      <div className="p-0.5 border-t border-black">2</div>
-                      <div className="p-0.5 border-t border-black">3</div>
-                      <div className="p-0.5 border-t border-black">3</div>
-                      <div className="p-0.5 border-t border-black">2</div>
-                      <div className="p-0.5 border-t border-black">1</div>
-                      <div className="p-0.5 border-t border-black font-black bg-slate-100">12</div>
-                    </div>
+                      return (
+                        <div 
+                          className="border border-black text-center text-[8px] font-bold grid overflow-hidden"
+                          style={{ gridTemplateColumns: `repeat(${entries.length + 1}, minmax(0, 1fr))` }}
+                        >
+                          {entries.map(([sz]) => (
+                            <div key={`th-${sz}`} className="bg-black text-white p-0.5 truncate">{sz}</div>
+                          ))}
+                          <div className="bg-neutral-800 text-white p-0.5 font-black">TOP</div>
+
+                          {entries.map(([sz, qty]) => (
+                            <div key={`td-${sz}`} className="p-0.5 border-t border-black">{qty}</div>
+                          ))}
+                          <div className="p-0.5 border-t border-black font-black bg-slate-100">{sampleData.totalPairs || 0}</div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
