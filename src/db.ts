@@ -528,10 +528,12 @@ export async function seedDatabase() {
         ]);
       }
 
-      // 9. Seed Initial TDHP Balanced Journal Entries if empty
-      const entriesCount = await db.journalEntries.count();
-      if (entriesCount === 0) {
-        await db.journalEntries.bulkAdd([
+      // 9. Seed Initial TDHP Balanced Journal Entries if empty and not reset
+      const globalSetting = await db.settings.get('global_barcode');
+      if (!globalSetting?.movementsReset) {
+        const entriesCount = await db.journalEntries.count();
+        if (entriesCount === 0) {
+          await db.journalEntries.bulkAdd([
           {
             entryNumber: 'YEV-2026-000001',
             entryType: 'acilis',
@@ -595,6 +597,7 @@ export async function seedDatabase() {
             ]
           }
         ]);
+      }
       }
       // 10. Self-Healing: Repair any corrupted Turkish character sequences (e.g. zİylan -> ZİYLAN or Ziylan)
       try {

@@ -22,7 +22,8 @@ import {
   Eye,
   Scale,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import type { Account, JournalEntry } from '../../types';
 import { exportToCsv } from '../../lib/exportService';
@@ -34,6 +35,7 @@ interface ChartOfAccountsProps {
   onEditAccount: (account: Account) => void;
   onAddAccount: (parentCode?: string) => void;
   onOpenKebir: (accountCode: string) => void;
+  onDeleteAccount?: (account: Account) => void;
 }
 
 // Map class digit to Account Group name (matching standard TDHP)
@@ -122,7 +124,7 @@ const ALL_COLUMN_DEFINITIONS: ColumnDef[] = [
   { id: 'mainGroup', label: 'ANA GRUP', defaultWidth: 120, minWidth: 70, align: 'left' },
   { id: 'level', label: 'SEVİYE', defaultWidth: 70, minWidth: 50, align: 'center' },
   { id: 'currency', label: 'PB', defaultWidth: 55, minWidth: 45, align: 'center' },
-  { id: 'actions', label: 'İŞLEMLER', defaultWidth: 110, minWidth: 75, align: 'right' },
+  { id: 'actions', label: 'İŞLEMLER', defaultWidth: 155, minWidth: 95, align: 'right' },
 ];
 
 const PRESET_MIZAN_COLS = ['code', 'name', 'debit', 'credit', 'debitBalance', 'creditBalance', 'actions'];
@@ -136,7 +138,8 @@ export default function ChartOfAccounts({
   journalEntries = [],
   onEditAccount,
   onAddAccount,
-  onOpenKebir
+  onOpenKebir,
+  onDeleteAccount
 }: ChartOfAccountsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -836,11 +839,24 @@ export default function ChartOfAccounts({
             <button
               type="button"
               onClick={() => onEditAccount(selectedAccount)}
-              className="px-2 py-1 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-800/50 border border-slate-300 text-slate-700 dark:text-slate-200 rounded text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors"
+              className="px-2 py-1 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-800/50 border border-slate-300 text-slate-700 dark:text-slate-200 rounded text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
               title="Seçili hesabı düzenle"
             >
               <Edit3 className="w-3 h-3 text-indigo-600" />
               <span>Düzenle</span>
+            </button>
+          )}
+
+          {/* Delete Selected */}
+          {selectedAccount && onDeleteAccount && (
+            <button
+              type="button"
+              onClick={() => onDeleteAccount(selectedAccount)}
+              className="px-2 py-1 bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+              title="Seçili hesabı plandan sil"
+            >
+              <Trash2 className="w-3 h-3 text-rose-600" />
+              <span>Hesabı Sil</span>
             </button>
           )}
 
@@ -1178,17 +1194,32 @@ export default function ChartOfAccounts({
                                   {acc.name}
                                 </span>
 
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditAccount(acc);
-                                  }}
-                                  className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded transition-all shrink-0 cursor-pointer"
-                                  title="Hesap adını düzenle"
-                                >
-                                  <Edit3 className="w-3 h-3" />
-                                </button>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onEditAccount(acc);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded transition-all shrink-0 cursor-pointer"
+                                    title="Hesap adını düzenle"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                  </button>
+                                  {onDeleteAccount && !acc.isSystem && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDeleteAccount(acc);
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded transition-all shrink-0 cursor-pointer"
+                                      title="Hesabı sil"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </td>
                           );
@@ -1343,11 +1374,26 @@ export default function ChartOfAccounts({
                                     e.stopPropagation();
                                     onEditAccount(acc);
                                   }}
-                                  className="px-1 py-0.2 text-[10px] font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-700 hover:bg-blue-50 rounded-xs border border-slate-300 transition-colors"
+                                  className="px-1 py-0.2 text-[10px] font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-700 hover:bg-blue-50 rounded-xs border border-slate-300 transition-colors cursor-pointer"
                                   title="Hesap adını ve niteliklerini düzenle"
                                 >
                                   Düzenle
                                 </button>
+
+                                {onDeleteAccount && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDeleteAccount(acc);
+                                    }}
+                                    className="px-1 py-0.2 text-[10px] font-semibold text-rose-700 dark:text-rose-400 hover:text-rose-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xs border border-rose-200 dark:border-rose-800 transition-colors inline-flex items-center gap-0.5 cursor-pointer"
+                                    title="Bu hesabı sil"
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                    <span>Sil</span>
+                                  </button>
+                                )}
 
                                 <button
                                   type="button"

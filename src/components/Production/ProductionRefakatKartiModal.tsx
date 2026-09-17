@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { 
   Printer, 
   Download, 
@@ -25,8 +25,11 @@ import Modal from '../Modal';
 import { BarcodeSvg } from '../BarcodeSvg';
 import type { WorkOrder, Product, ProductionStage, Recipe, Contact } from '../../types';
 import { erpService } from '../../services/erpService';
-import html2canvas from 'html2canvas';
+import { db } from '../../db';
+import { useLiveQuery } from 'dexie-react-hooks';
+import html2canvas from 'html2canvas-pro';
 import jsPDF from 'jspdf';
+import { sanitizeClonedDocumentColors } from '../../lib/pdfService';
 
 interface ProductionRefakatKartiModalProps {
   isOpen: boolean;
@@ -57,7 +60,117 @@ export default function ProductionRefakatKartiModal({
   const [updatingStage, setUpdatingStage] = useState<string | null>(null);
   const [printNotice, setPrintNotice] = useState<{ message: string; blobUrl?: string } | null>(null);
 
-  if (!workOrder) return null;
+  const assortmentTemplate = useLiveQuery(async () => {
+    if (!product?.assortmentTemplateId) return null;
+    return await db.assortmentTemplates.get(product.assortmentTemplateId);
+  }, [product?.assortmentTemplateId]);
+
+  // Size distribution breakdown - Calculated accurately for production quantity
+  const sizeEntries = useMemo<{ size: string; quantity: number }[]>(() => {
+    if (!workOrder) return [];
+
+    // 1. Explicit assortmentBreakdown on the work order
+    if (workOrder.assortmentBreakdown && workOrder.assortmentBreakdown.length > 0) {
+      const valid = workOrder.assortmentBreakdown.filter(item => item && item.size);
+      if (valid.length > 0) {
+        return valid;
+      }
+    }
+
+    // 2. Specific single size (e.g. workOrder.size = "42")
+    if (workOrder.size && workOrder.size.trim() !== '') {
+      return [{ size: workOrder.size.trim(), quantity: workOrder.quantity }];
+    }
+
+    // 3. Product direct assortment ratio
+    if (product?.assortment && product.assortment.length > 0) {
+      const totalAssort = product.assortment.reduce((s, a) => s + (Number(a.quantity) || 0), 0);
+      if (totalAssort > 0) {
+        const ratio = workOrder.quantity / totalAssort;
+        let sum = 0;
+        const mapped = product.assortment.map(a => {
+          const q = Math.round((Number(a.quantity) || 0) * ratio);
+          sum += q;
+          return { size: String(a.size), quantity: q };
+        });
+        const diff = workOrder.quantity - sum;
+        if (diff !== 0 && mapped.length > 0) {
+          mapped[mapped.length - 1].quantity += diff;
+        }
+        return mapped;
+      }
+    }
+
+    // 4. Assortment template
+    if (assortmentTemplate && assortmentTemplate.items && assortmentTemplate.items.length > 0) {
+      const totalAssort = assortmentTemplate.items.reduce((s, a) => s + (Number(a.quantity) || 0), 0);
+      if (totalAssort > 0) {
+        const ratio = workOrder.quantity / totalAssort;
+        let sum = 0;
+        const mapped = assortmentTemplate.items.map(a => {
+          const q = Math.round((Number(a.quantity) || 0) * ratio);
+          sum += q;
+          return { size: String(a.size), quantity: q };
+        });
+        const diff = workOrder.quantity - sum;
+        if (diff !== 0 && mapped.length > 0) {
+          mapped[mapped.length - 1].quantity += diff;
+        }
+        return mapped;
+      }
+    }
+
+    // 5. Unique sizes from product variant barcodes (without using variant warehouse stock!)
+    if (product?.variantBarcodes && product.variantBarcodes.length > 0) {
+      const uniqueSizes = Array.from(new Set(product.variantBarcodes.map(v => String(v.size)).filter(Boolean)));
+      if (uniqueSizes.length > 0) {
+        uniqueSizes.sort((a, b) => {
+          const na = parseFloat(a);
+          const nb = parseFloat(b);
+          if (!isNaN(na) && !isNaN(nb)) return na - nb;
+          return a.localeCompare(b);
+        });
+
+        const count = uniqueSizes.length;
+        let weights: number[] = [];
+        if (count === 5) weights = [1, 2, 2, 2, 1];
+        else if (count === 6) weights = [1, 2, 2, 2, 2, 1];
+        else if (count === 4) weights = [1, 2, 2, 1];
+        else weights = new Array(count).fill(1);
+
+        const totalWeight = weights.reduce((s, w) => s + w, 0);
+        let allocated = 0;
+        const items = uniqueSizes.map((size, idx) => {
+          const q = Math.round(workOrder.quantity * (weights[idx] / totalWeight));
+          allocated += q;
+          return { size, quantity: q };
+        });
+        const diff = workOrder.quantity - allocated;
+        if (diff !== 0 && items.length > 0) {
+          items[Math.floor(items.length / 2)].quantity += diff;
+        }
+        return items;
+      }
+    }
+
+    // 6. Default standard 40-44 classic shoe distribution (Standard ratio: 1/8, 2/8, 2/8, 2/8, 1/8)
+    const defaultSizes = ['40', '41', '42', '43', '44'];
+    const weights = [1, 2, 2, 2, 1];
+    const totalWeight = 8;
+    let allocated = 0;
+    const items = defaultSizes.map((size, idx) => {
+      const q = Math.round(workOrder.quantity * (weights[idx] / totalWeight));
+      allocated += q;
+      return { size, quantity: q };
+    });
+    const diff = workOrder.quantity - allocated;
+    if (diff !== 0 && items.length > 2) {
+      items[2].quantity += diff;
+    }
+    return items;
+  }, [workOrder, product, assortmentTemplate]);
+
+  if (!isOpen || !workOrder) return null;
 
   // Stages definition matching factory flow: Kesim ➔ Dikim ➔ Montaj ➔ Finisaj
   const STAGES_FLOW: {
@@ -167,7 +280,10 @@ export default function ProductionRefakatKartiModal({
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          sanitizeClonedDocumentColors(clonedDoc);
+        }
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -223,7 +339,10 @@ export default function ProductionRefakatKartiModal({
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          sanitizeClonedDocumentColors(clonedDoc);
+        }
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -246,17 +365,6 @@ export default function ProductionRefakatKartiModal({
       setIsGeneratingPdf(false);
     }
   };
-
-  // Size distribution breakdown
-  const sizeEntries = product?.variantBarcodes && product.variantBarcodes.length > 0
-    ? product.variantBarcodes
-    : [
-        { size: '40', stock: Math.round(workOrder.quantity * 0.15) },
-        { size: '41', stock: Math.round(workOrder.quantity * 0.25) },
-        { size: '42', stock: Math.round(workOrder.quantity * 0.30) },
-        { size: '43', stock: Math.round(workOrder.quantity * 0.20) },
-        { size: '44', stock: Math.round(workOrder.quantity * 0.10) }
-      ];
 
   return (
     <Modal
@@ -464,16 +572,16 @@ export default function ProductionRefakatKartiModal({
                   Planlanan Toplam: {workOrder.quantity} Çift
                 </span>
               </div>
-              <div className="grid grid-cols-7 divide-x divide-slate-300 text-center text-xs">
-                {sizeEntries.slice(0, 6).map((item, idx) => (
-                  <div key={idx} className="p-2 bg-white">
+              <div className="flex divide-x divide-slate-300 text-center text-xs overflow-x-auto">
+                {sizeEntries.map((item, idx) => (
+                  <div key={`matrix-size-${item.size}-${idx}`} className="p-2 bg-white flex-1 min-w-[70px]">
                     <span className="text-[10px] font-bold text-slate-500 block uppercase">No {item.size}</span>
                     <span className="text-sm font-black text-slate-900 block mt-0.5">
-                      {item.stock || Math.round(workOrder.quantity / 6)} Çift
+                      {item.quantity} Çift
                     </span>
                   </div>
                 ))}
-                <div className="p-2 bg-slate-100 font-black flex flex-col justify-center items-center">
+                <div className="p-2 bg-slate-100 font-black flex flex-col justify-center items-center min-w-[85px] shrink-0">
                   <span className="text-[9px] text-slate-600 uppercase">Toplam</span>
                   <span className="text-sm text-indigo-900">{workOrder.quantity} Çift</span>
                 </div>

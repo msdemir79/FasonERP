@@ -102,16 +102,150 @@ export const accountingService = {
   async deleteAccount(id: number) {
     const acc = await db.accounts.get(id);
     if (!acc) return;
-    if (acc.isSystem) {
-      throw new Error('Standart Tek Düzen Hesap Planı sistem hesapları silinemez.');
+    
+    // Standart sistem hesapları (Sınıf, grup veya 3 haneli ana hesaplar) koruma altında
+    if (acc.isSystem && acc.level <= 3) {
+      throw new Error(`Standart Tek Düzen Hesap Planı sistem hesabı (${acc.code} - ${acc.name}) silinemez.`);
     }
-    // Check if account is used in any journal entry
+
+    // Alt hesap kontrolü
+    const allAccounts = await db.accounts.toArray();
+    const childAccounts = allAccounts.filter(
+      a => a.id !== acc.id && (a.parentCode === acc.code || (a.code.startsWith(acc.code + '.') && a.code !== acc.code))
+    );
+    if (childAccounts.length > 0) {
+      const childCodes = childAccounts.slice(0, 3).map(c => c.code).join(', ');
+      const suffix = childAccounts.length > 3 ? ` ve ${childAccounts.length - 3} diğer alt hesap` : '';
+      throw new Error(`Bu hesabın altında tanımlı alt hesaplar bulunmaktadır (${childCodes}${suffix}). Önce alt hesapları silmelisiniz.`);
+    }
+
+    // Yevmiye fişlerinde kullanım kontrolü
     const entries = await db.journalEntries.toArray();
-    const isUsed = entries.some(e => e.lines.some(l => l.accountCode === acc.code));
-    if (isUsed) {
-      throw new Error(`Bu hesap (${acc.code} - ${acc.name}) yevmiye fişlerinde kullanılmıştır, silinemez.`);
+    const usedInEntries = entries.filter(e => e.lines.some(l => l.accountCode === acc.code));
+    if (usedInEntries.length > 0) {
+      throw new Error(`Bu hesap (${acc.code} - ${acc.name}) ${usedInEntries.length} adet yevmiye fişinde muhasebe hareketi görmüştür, silinemez.`);
     }
+
+    // Bağlantılı modüllerdeki referansları temizle (Cari kart, Kasa, Banka, Ürün/Stok)
+    try {
+      const contacts = await db.contacts.where('accountCode').equals(acc.code).toArray();
+      for (const c of contacts) {
+        if (c.id) {
+          await db.contacts.update(c.id, { accountCode: undefined });
+        }
+      }
+
+      const cashBoxes = await db.cashBoxes.where('accountCode').equals(acc.code).toArray();
+      for (const cb of cashBoxes) {
+        if (cb.id) {
+          await db.cashBoxes.update(cb.id, { accountCode: undefined });
+        }
+      }
+
+      const bankAccounts = await db.bankAccounts.where('accountCode').equals(acc.code).toArray();
+      for (const ba of bankAccounts) {
+        if (ba.id) {
+          await db.bankAccounts.update(ba.id, { accountCode: undefined });
+        }
+      }
+
+      const products = await db.products.toArray();
+      for (const p of products) {
+        if (p.id && (p.accountingCode === acc.code || p.salesAccountCode === acc.code || p.purchaseAccountCode === acc.code)) {
+          const updates: any = {};
+          if (p.accountingCode === acc.code) updates.accountingCode = undefined;
+          if (p.salesAccountCode === acc.code) updates.salesAccountCode = undefined;
+          if (p.purchaseAccountCode === acc.code) updates.purchaseAccountCode = undefined;
+          await db.products.update(p.id, updates);
+        }
+      }
+    } catch (cleanErr) {
+      console.warn('Hesap silinirken ilişkili modüller güncellenirken uyarı:', cleanErr);
+    }
+
     return await db.accounts.delete(id);
+  },
+
+  async checkAccountDeletable(id: number): Promise<{
+    canDelete: boolean;
+    reason?: string;
+    isSystem: boolean;
+    childAccounts: Account[];
+    journalEntriesCount: number;
+    totalDebit: number;
+    totalCredit: number;
+    linkedContactsCount: number;
+    linkedCashOrBankCount: number;
+    linkedProductsCount: number;
+  }> {
+    const acc = await db.accounts.get(id);
+    if (!acc) {
+      return {
+        canDelete: false,
+        reason: 'Hesap bulunamadı.',
+        isSystem: false,
+        childAccounts: [],
+        journalEntriesCount: 0,
+        totalDebit: 0,
+        totalCredit: 0,
+        linkedContactsCount: 0,
+        linkedCashOrBankCount: 0,
+        linkedProductsCount: 0,
+      };
+    }
+
+    const isSystem = !!(acc.isSystem && acc.level <= 3);
+
+    const allAccounts = await db.accounts.toArray();
+    const childAccounts = allAccounts.filter(
+      a => a.id !== acc.id && (a.parentCode === acc.code || (a.code.startsWith(acc.code + '.') && a.code !== acc.code))
+    );
+
+    const entries = await db.journalEntries.toArray();
+    const usedEntries = entries.filter(e => e.lines.some(l => l.accountCode === acc.code));
+    let totalDebit = 0;
+    let totalCredit = 0;
+    for (const e of usedEntries) {
+      for (const l of e.lines) {
+        if (l.accountCode === acc.code) {
+          totalDebit += Number(l.debit) || 0;
+          totalCredit += Number(l.credit) || 0;
+        }
+      }
+    }
+
+    const contacts = await db.contacts.where('accountCode').equals(acc.code).toArray();
+    const cashBoxes = await db.cashBoxes.where('accountCode').equals(acc.code).toArray();
+    const bankAccounts = await db.bankAccounts.where('accountCode').equals(acc.code).toArray();
+    const products = await db.products.toArray();
+    const linkedProducts = products.filter(p => p.accountingCode === acc.code || p.salesAccountCode === acc.code || p.purchaseAccountCode === acc.code);
+
+    let canDelete = true;
+    let reason: string | undefined = undefined;
+
+    if (isSystem) {
+      canDelete = false;
+      reason = `Bu hesap standart Tek Düzen Hesap Planı sistem hesabıdır (${acc.code}) ve silinemez.`;
+    } else if (childAccounts.length > 0) {
+      canDelete = false;
+      reason = `Bu hesabın altında ${childAccounts.length} adet alt hesap tanımlıdır. Önce bu alt hesapları silmelisiniz.`;
+    } else if (usedEntries.length > 0) {
+      canDelete = false;
+      reason = `Bu hesap ile ilgili sistemde ${usedEntries.length} adet yevmiye fişi kaydı (toplam hareket) bulunmaktadır. Fiş kaydı bulunan hesaplar silinemez.`;
+    }
+
+    return {
+      canDelete,
+      reason,
+      isSystem,
+      childAccounts,
+      journalEntriesCount: usedEntries.length,
+      totalDebit,
+      totalCredit,
+      linkedContactsCount: contacts.length,
+      linkedCashOrBankCount: cashBoxes.length + bankAccounts.length,
+      linkedProductsCount: linkedProducts.length
+    };
   },
 
   // --- Journal Entries ---

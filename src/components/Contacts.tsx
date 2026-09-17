@@ -33,7 +33,10 @@ import {
   CheckCircle2,
   ChevronRight,
   Receipt,
-  DollarSign
+  DollarSign,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -46,7 +49,7 @@ import ContactBalanceReportModal from './Contacts/ContactBalanceReportModal';
 
 type FilterType = 'all' | 'customer' | 'supplier' | 'both' | 'receivables' | 'payables' | 'zero' | 'risk_exceeded';
 type ViewMode = 'table' | 'grid';
-type SortOption = 'name_asc' | 'name_desc' | 'balance_desc' | 'balance_asc' | 'code_asc' | 'recent';
+type SortOption = 'code_asc' | 'code_desc' | 'name_asc' | 'name_desc' | 'type_asc' | 'type_desc' | 'balance_desc' | 'balance_asc' | 'recent';
 
 export default function Contacts() {
   const navigate = useNavigate();
@@ -57,7 +60,7 @@ export default function Contacts() {
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [selectedCity, setSelectedCity] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortOption, setSortOption] = useState<SortOption>('name_asc');
+  const [sortOption, setSortOption] = useState<SortOption>('code_asc');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
   // Modals state
@@ -163,13 +166,40 @@ export default function Contacts() {
 
       return true;
     }).sort((a, b) => {
-      if (sortOption === 'name_asc') return a.name.localeCompare(b.name, 'tr');
-      if (sortOption === 'name_desc') return b.name.localeCompare(a.name, 'tr');
+      // 1. Cari Kodu (Varsayılan)
+      if (sortOption === 'code_asc') {
+        const res = (a.code || '').localeCompare(b.code || '', 'tr', { numeric: true, sensitivity: 'base' });
+        return res !== 0 ? res : a.name.localeCompare(b.name, 'tr');
+      }
+      if (sortOption === 'code_desc') {
+        const res = (b.code || '').localeCompare(a.code || '', 'tr', { numeric: true, sensitivity: 'base' });
+        return res !== 0 ? res : b.name.localeCompare(a.name, 'tr');
+      }
+
+      // 2. Cari / Firma Ünvanı
+      if (sortOption === 'name_asc') return a.name.localeCompare(b.name, 'tr', { sensitivity: 'base' });
+      if (sortOption === 'name_desc') return b.name.localeCompare(a.name, 'tr', { sensitivity: 'base' });
+
+      // 3. Cari Türü (Müşteri <-> Tedarikçi)
+      if (sortOption === 'type_asc') {
+        const typePriority: Record<string, number> = { customer: 1, both: 2, supplier: 3 };
+        const diff = (typePriority[a.type] || 99) - (typePriority[b.type] || 99);
+        return diff !== 0 ? diff : (a.code || '').localeCompare(b.code || '', 'tr', { numeric: true });
+      }
+      if (sortOption === 'type_desc') {
+        const typePriority: Record<string, number> = { supplier: 1, both: 2, customer: 3 };
+        const diff = (typePriority[a.type] || 99) - (typePriority[b.type] || 99);
+        return diff !== 0 ? diff : (a.code || '').localeCompare(b.code || '', 'tr', { numeric: true });
+      }
+
+      // 4. Cari Bakiye
       if (sortOption === 'balance_desc') return b.balance - a.balance;
       if (sortOption === 'balance_asc') return a.balance - b.balance;
-      if (sortOption === 'code_asc') return (a.code || '').localeCompare(b.code || '', 'tr');
+
+      // 5. En Son Eklenenler
       if (sortOption === 'recent') return (b.id || 0) - (a.id || 0);
-      return 0;
+
+      return (a.code || '').localeCompare(b.code || '', 'tr', { numeric: true, sensitivity: 'base' });
     });
   }, [contacts, searchTerm, filterType, selectedCity, selectedCategory, sortOption]);
 
@@ -397,14 +427,17 @@ export default function Contacts() {
 
             <select
               value={sortOption}
-              onChange={(e) => setSortOption(e.target.value as any)}
-              className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+              onChange={(e) => setSortOption(e.target.value as SortOption)}
+              className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm cursor-pointer"
             >
-              <option value="name_asc">Ünvan (A - Z)</option>
-              <option value="name_desc">Ünvan (Z - A)</option>
-              <option value="balance_desc">En Yüksek Alacak</option>
-              <option value="balance_asc">En Yüksek Borç</option>
-              <option value="code_asc">Cari Kodu</option>
+              <option value="code_asc">Cari Kodu (A - Z / Artan) [Varsayılan]</option>
+              <option value="code_desc">Cari Kodu (Z - A / Azalan)</option>
+              <option value="name_asc">Cari / Firma Ünvanı (A - Z)</option>
+              <option value="name_desc">Cari / Firma Ünvanı (Z - A)</option>
+              <option value="type_asc">Cari Türü (Müşteri &gt; Tedarikçi)</option>
+              <option value="type_desc">Cari Türü (Tedarikçi &gt; Müşteri)</option>
+              <option value="balance_desc">Bakiye (En Yüksek Alacak)</option>
+              <option value="balance_asc">Bakiye (En Yüksek Borç)</option>
               <option value="recent">En Son Eklenenler</option>
             </select>
 
@@ -489,14 +522,58 @@ export default function Contacts() {
             <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                 <tr>
-                  <th className="px-4 py-3.5 font-bold text-slate-600 uppercase tracking-wider w-24">Kod</th>
-                  <th className="px-4 py-3.5 font-bold text-slate-600 uppercase tracking-wider">Cari / Firma Ünvanı</th>
-                  <th className="px-4 py-3.5 font-bold text-slate-600 uppercase tracking-wider w-28">Tür</th>
-                  <th className="px-4 py-3.5 font-bold text-slate-600 uppercase tracking-wider">Yetkili & İletişim</th>
-                  <th className="px-4 py-3.5 font-bold text-slate-600 uppercase tracking-wider">Şehir / VKN</th>
-                  <th className="px-4 py-3.5 font-bold text-slate-600 uppercase tracking-wider text-right w-24">Vade</th>
-                  <th className="px-4 py-3.5 font-bold text-slate-600 uppercase tracking-wider text-right w-36">Cari Bakiye (₺)</th>
-                  <th className="px-4 py-3.5 font-bold text-slate-600 uppercase tracking-wider text-center w-48">Hızlı İşlemler</th>
+                  <th 
+                    onClick={() => setSortOption(prev => prev === 'code_asc' ? 'code_desc' : 'code_asc')}
+                    className="px-4 py-3.5 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider w-28 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none"
+                    title="Cari koduna göre sırala (Tıklayarak yönünü değiştirin)"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Kod</span>
+                      {sortOption === 'code_asc' && <ArrowUp className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                      {sortOption === 'code_desc' && <ArrowDown className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                      {sortOption !== 'code_asc' && sortOption !== 'code_desc' && <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60 shrink-0" />}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => setSortOption(prev => prev === 'name_asc' ? 'name_desc' : 'name_asc')}
+                    className="px-4 py-3.5 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none"
+                    title="Cari / Firma ünvanına göre sırala"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Cari / Firma Ünvanı</span>
+                      {sortOption === 'name_asc' && <ArrowUp className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                      {sortOption === 'name_desc' && <ArrowDown className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                      {sortOption !== 'name_asc' && sortOption !== 'name_desc' && <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60 shrink-0" />}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => setSortOption(prev => prev === 'type_asc' ? 'type_desc' : 'type_asc')}
+                    className="px-4 py-3.5 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider w-28 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none"
+                    title="Cari türüne göre sırala"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Tür</span>
+                      {sortOption === 'type_asc' && <ArrowUp className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                      {sortOption === 'type_desc' && <ArrowDown className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                      {sortOption !== 'type_asc' && sortOption !== 'type_desc' && <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60 shrink-0" />}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3.5 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Yetkili & İletişim</th>
+                  <th className="px-4 py-3.5 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Şehir / VKN</th>
+                  <th className="px-4 py-3.5 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right w-24">Vade</th>
+                  <th 
+                    onClick={() => setSortOption(prev => prev === 'balance_desc' ? 'balance_asc' : 'balance_desc')}
+                    className="px-4 py-3.5 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right w-36 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none"
+                    title="Cari bakiyeye göre sırala"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      {sortOption === 'balance_desc' && <ArrowDown className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                      {sortOption === 'balance_asc' && <ArrowUp className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                      {sortOption !== 'balance_desc' && sortOption !== 'balance_asc' && <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60 shrink-0" />}
+                      <span>Cari Bakiye (₺)</span>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3.5 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center w-48">Hızlı İşlemler</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -789,6 +866,7 @@ export default function Contacts() {
         onClose={() => setIsFormModalOpen(false)}
         onSave={handleSaveContact}
         initialData={editingContact}
+        defaultType={filterType === 'supplier' ? 'supplier' : filterType === 'both' ? 'both' : 'customer'}
       />
 
       {/* MODAL 3: Quick Payment & Collection */}

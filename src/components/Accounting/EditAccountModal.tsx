@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit3, Type, Check, Sparkles, Building2 } from 'lucide-react';
+import { X, Edit3, Type, Check, Sparkles, Building2, Trash2 } from 'lucide-react';
 import type { Account } from '../../types';
 import { accountingService } from '../../services/accountingService';
 
@@ -8,13 +8,15 @@ interface EditAccountModalProps {
   onClose: () => void;
   account: Account | null;
   onSuccess?: () => void;
+  onDeleteAccount?: (account: Account) => void;
 }
 
 export default function EditAccountModal({
   isOpen,
   onClose,
   account,
-  onSuccess
+  onSuccess,
+  onDeleteAccount
 }: EditAccountModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -237,22 +239,40 @@ export default function EditAccountModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg transition-colors"
-            >
-              Vazgeç
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-colors disabled:opacity-50"
-            >
-              <Check className="w-4 h-4" />
-              {saving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
-            </button>
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2.5">
+            {onDeleteAccount ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (account) {
+                    onDeleteAccount(account);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 border border-rose-200 dark:border-rose-800 rounded-lg transition-colors cursor-pointer"
+                title="Bu hesabı sil"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Hesabı Sil</span>
+              </button>
+            ) : <div />}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                Vazgeç
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                {saving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

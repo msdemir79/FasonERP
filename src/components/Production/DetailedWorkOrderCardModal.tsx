@@ -21,8 +21,9 @@ import type { WorkOrder, Product, Recipe, RecipeIngredient, Contact } from '../.
 import { cn } from '../../lib/utils';
 import { db } from '../../db';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { printHtml, openPrintWindow } from '../../lib/printService';
+import { sanitizeCssColor } from '../../lib/pdfService';
 
 interface DetailedWorkOrderCardModalProps {
   isOpen: boolean;
@@ -88,26 +89,42 @@ export default function DetailedWorkOrderCardModal({
       if (workOrder.assortmentBreakdown && workOrder.assortmentBreakdown.length > 0) {
         setCustomSizes(workOrder.assortmentBreakdown);
       } else if (product?.assortment && product.assortment.length > 0) {
-        const total = product.assortment.reduce((s, a) => s + a.quantity, 0);
+        const total = product.assortment.reduce((s, a) => s + (Number(a.quantity) || 0), 0);
         const ratio = total > 0 ? workOrder.quantity / total : 1;
         setCustomSizes(product.assortment.map(a => ({
           size: a.size,
-          quantity: Math.round(a.quantity * ratio)
+          quantity: Math.round((Number(a.quantity) || 0) * ratio)
         })));
+      } else if (product?.variantBarcodes && product.variantBarcodes.length > 0) {
+        const uniqueSizes = Array.from(new Set(product.variantBarcodes.map(v => String(v.size)).filter(Boolean)));
+        uniqueSizes.sort((a, b) => (parseFloat(a) || 0) - (parseFloat(b) || 0));
+        const totalQty = workOrder.quantity || 800;
+        const count = uniqueSizes.length || 5;
+        let weights = count === 5 ? [1, 2, 2, 2, 1] : new Array(count).fill(1);
+        const totalW = weights.reduce((s, w) => s + w, 0);
+        let alloc = 0;
+        const dist = uniqueSizes.map((sz, i) => {
+          const q = Math.round(totalQty * (weights[i] / totalW));
+          alloc += q;
+          return { size: sz, quantity: q };
+        });
+        const diff = totalQty - alloc;
+        if (diff !== 0 && dist.length > 0) dist[Math.floor(dist.length / 2)].quantity += diff;
+        setCustomSizes(dist);
       } else {
-        // Default 26-30 standard sample sizes if none exists
-        const totalQty = workOrder.quantity || 640;
-        const p26 = Math.round(totalQty * (80 / 640));
-        const p27 = Math.round(totalQty * (160 / 640));
-        const p28 = Math.round(totalQty * (160 / 640));
-        const p29 = Math.round(totalQty * (160 / 640));
-        const p30 = totalQty - (p26 + p27 + p28 + p29);
+        // Standard 40-44 men footwear sample sizes
+        const totalQty = workOrder.quantity || 800;
+        const p40 = Math.round(totalQty * (1 / 8));
+        const p41 = Math.round(totalQty * (2 / 8));
+        const p42 = Math.round(totalQty * (2 / 8));
+        const p43 = Math.round(totalQty * (2 / 8));
+        const p44 = totalQty - (p40 + p41 + p42 + p43);
         setCustomSizes([
-          { size: '26', quantity: p26 },
-          { size: '27', quantity: p27 },
-          { size: '28', quantity: p28 },
-          { size: '29', quantity: p29 },
-          { size: '30', quantity: p30 },
+          { size: '40', quantity: p40 },
+          { size: '41', quantity: p41 },
+          { size: '42', quantity: p42 },
+          { size: '43', quantity: p43 },
+          { size: '44', quantity: p44 },
         ]);
       }
     }
@@ -270,27 +287,6 @@ export default function DetailedWorkOrderCardModal({
 
     setIsGeneratingPdf(true);
     try {
-      // Helper canvas for native browser conversion from oklch/color(...) to standard rgb/hex
-      const helperCanvas = document.createElement('canvas');
-      const helperCtx = helperCanvas.getContext('2d');
-
-      const sanitizeColor = (colorStr: string): string => {
-        if (!colorStr) return '#000000';
-        if (!colorStr.includes('oklch') && !colorStr.includes('color(') && !colorStr.includes('lab(')) {
-          return colorStr;
-        }
-        try {
-          if (helperCtx) {
-            helperCtx.fillStyle = '#000000';
-            helperCtx.fillStyle = colorStr;
-            return helperCtx.fillStyle || '#000000';
-          }
-        } catch {
-          // fallback
-        }
-        return '#000000';
-      };
-
       const canvas = await html2canvas(printArea, {
         scale: 2.5,
         useCORS: true,
@@ -337,14 +333,14 @@ export default function DetailedWorkOrderCardModal({
 
               colorProps.forEach((prop) => {
                 const val = computed.getPropertyValue(prop);
-                if (val && (val.includes('oklch') || val.includes('color(') || val.includes('lab('))) {
-                  const clean = sanitizeColor(val);
+                if (val && (val.includes('oklch') || val.includes('oklab') || val.includes('color(') || val.includes('lab(') || val.includes('lch('))) {
+                  const clean = sanitizeCssColor(val);
                   htmlEl.style.setProperty(prop, clean, 'important');
                 }
               });
 
               const shadow = computed.boxShadow;
-              if (shadow && (shadow.includes('oklch') || shadow.includes('color('))) {
+              if (shadow && (shadow.includes('oklch') || shadow.includes('oklab') || shadow.includes('color('))) {
                 htmlEl.style.boxShadow = 'none';
               }
             } catch {

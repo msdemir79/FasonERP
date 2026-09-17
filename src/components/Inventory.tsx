@@ -41,13 +41,14 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   FileDown,
-  RotateCcw
+  RotateCcw,
+  Building2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import Modal from './Modal';
-import { erpService } from '../services/erpService';
+import { erpService, formatQuantity, roundUpQuantity } from '../services/erpService';
 import BarcodePrintModal from './BarcodePrintModal';
 import { resizeAndOptimizeImage } from '../utils/imageUtils';
 import PageHeader from './PageHeader';
@@ -133,6 +134,7 @@ export default function Inventory() {
   const templates = useLiveQuery(() => db.assortmentTemplates.toArray());
   const tdhpAccounts = useLiveQuery(() => db.accounts.toArray());
   const inventoryLogs = useLiveQuery(() => db.inventoryLogs.toArray());
+  const contacts = useLiveQuery(() => db.contacts.toArray());
 
   // Navigation & Filter States
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<'all' | StockCategoryType>('all');
@@ -257,9 +259,9 @@ export default function Inventory() {
       headers,
       rows,
       [
-        { label: 'Mevcut Stok', value: `${selectedProduct.stock} ${selectedProduct.unit}` },
-        { label: 'Toplam Giriş', value: `+${statementStats.totalIn} ${selectedProduct.unit}` },
-        { label: 'Toplam Çıkış', value: `-${statementStats.totalOut} ${selectedProduct.unit}` },
+        { label: 'Mevcut Stok', value: `${formatQuantity(selectedProduct.stock)} ${selectedProduct.unit}` },
+        { label: 'Toplam Giriş', value: `+${formatQuantity(statementStats.totalIn)} ${selectedProduct.unit}` },
+        { label: 'Toplam Çıkış', value: `-${formatQuantity(statementStats.totalOut)} ${selectedProduct.unit}` },
         { label: 'İşlem Adedi', value: statementStats.totalCount }
       ]
     );
@@ -322,7 +324,8 @@ export default function Inventory() {
     salesAccountCode: '600.01',
     purchaseAccountCode: '620.01',
     vatRate: 20,
-    notes: ''
+    notes: '',
+    preferredSupplierId: undefined as number | undefined
   });
 
   // Variant & Matrix Data
@@ -494,7 +497,8 @@ export default function Inventory() {
       salesAccountCode: '600.01',
       purchaseAccountCode: '620.01',
       vatRate: 20,
-      notes: ''
+      notes: '',
+      preferredSupplierId: undefined
     });
     setColors([]);
     setNewColor('');
@@ -619,7 +623,8 @@ export default function Inventory() {
       salesAccountCode: product.salesAccountCode || '600.01',
       purchaseAccountCode: product.purchaseAccountCode || (cat === 'finished' ? '620.01' : '150.01'),
       vatRate: product.vatRate ?? 20,
-      notes: product.notes || ''
+      notes: product.notes || '',
+      preferredSupplierId: product.preferredSupplierId
     });
 
     setColors(product.colors ? [...product.colors] : []);
@@ -813,6 +818,8 @@ export default function Inventory() {
       salesAccountCode: productForm.salesAccountCode?.trim() || undefined,
       purchaseAccountCode: productForm.purchaseAccountCode?.trim() || undefined,
       vatRate: Number(productForm.vatRate) || 20,
+      preferredSupplierId: productForm.preferredSupplierId || undefined,
+      preferredSupplierName: contacts?.find(c => c.id === productForm.preferredSupplierId)?.name || undefined,
       notes: productForm.notes.trim(),
       colors: colors && colors.length > 0 ? colors : undefined,
       assortmentTemplateId: hasSizeVariants ? selectedTemplateId : undefined,
@@ -1243,7 +1250,7 @@ export default function Inventory() {
                             "text-sm font-black font-mono inline-flex items-center gap-1",
                             isLow ? "text-rose-600" : "text-slate-900 dark:text-slate-100"
                           )}>
-                            <span>{product.stock}</span>
+                            <span>{formatQuantity(product.stock)}</span>
                             <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">{product.unit}</span>
                           </div>
                           {isLow && (
@@ -1253,7 +1260,7 @@ export default function Inventory() {
                           )}
                           {product.multiplier && product.multiplier > 1 && product.secondaryUnit && (
                             <div className="text-[9px] text-indigo-500 font-bold uppercase">
-                              ({product.stock * product.multiplier} {product.secondaryUnit})
+                              ({formatQuantity(product.stock * product.multiplier)} {product.secondaryUnit})
                             </div>
                           )}
                         </div>
@@ -1711,6 +1718,38 @@ export default function Inventory() {
                 >
                   Hesap Planı Detayları &rarr;
                 </button>
+              </div>
+
+              {/* Öncelikli Tedarikçi Firma (MRP Malzeme İhtiyaç Otomasyonu) */}
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-indigo-600 flex items-center justify-center font-black">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                      <span>Öncelikli Tedarikçi Firma (MRP Satın Alma)</span>
+                      {categoryType === 'raw_material' && (
+                        <span className="text-[9px] bg-rose-100 text-rose-700 px-2 py-0.2 rounded font-black uppercase">
+                          Hammadde Önerisi
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">
+                      MRP üretim planında hammadde eksik çıktığında doğrudan atanacak varsayılan satın alma firması.
+                    </p>
+                  </div>
+                </div>
+                <select
+                  value={productForm.preferredSupplierId || ''}
+                  onChange={e => setProductForm(prev => ({ ...prev, preferredSupplierId: Number(e.target.value) || undefined }))}
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 min-w-[220px] focus:outline-none"
+                >
+                  <option value="">-- Öncelikli Tedarikçi Yok --</option>
+                  {contacts?.filter(c => c.type === 'supplier' || c.type === 'both').map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Color Options for ALL Categories (Deri, Kumaş, Bağcık, Mostra, Fuspet, Taban vb.) */}
@@ -2576,7 +2615,7 @@ export default function Inventory() {
                 <div className="text-right flex-shrink-0 space-y-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Mevcut Stok</div>
                   <div className={cn("text-3xl font-black font-mono", isLow ? "text-rose-600" : "text-indigo-600")}>
-                    {selectedProduct.stock} <span className="text-xs uppercase">{selectedProduct.unit}</span>
+                    {formatQuantity(selectedProduct.stock)} <span className="text-xs uppercase">{selectedProduct.unit}</span>
                   </div>
                   {isLow && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
@@ -2799,7 +2838,7 @@ export default function Inventory() {
               <div className="text-[10px] font-bold text-slate-400 uppercase">Seçili Kart</div>
               <div className="text-xs font-black text-slate-900 dark:text-slate-100">{selectedProduct.name} ({selectedProduct.code})</div>
               <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                Güncel Stok: <span className="font-mono font-black text-indigo-600">{selectedProduct.stock} {selectedProduct.unit}</span>
+                Güncel Stok: <span className="font-mono font-black text-indigo-600">{formatQuantity(selectedProduct.stock)} {selectedProduct.unit}</span>
               </div>
             </div>
 
@@ -3072,21 +3111,21 @@ export default function Inventory() {
                 <div className="bg-white dark:bg-slate-900/5 p-2.5 rounded-xl border border-white/10">
                   <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Mevcut Stok</div>
                   <div className="text-base font-black font-mono text-emerald-400 mt-0.5">
-                    {selectedProduct.stock} <span className="text-xs uppercase">{selectedProduct.unit}</span>
+                    {formatQuantity(selectedProduct.stock)} <span className="text-xs uppercase">{selectedProduct.unit}</span>
                   </div>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900/5 p-2.5 rounded-xl border border-white/10">
                   <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam Giriş (+)</div>
                   <div className="text-base font-black font-mono text-indigo-300 mt-0.5">
-                    +{statementStats.totalIn} <span className="text-xs uppercase">{selectedProduct.unit}</span>
+                    +{formatQuantity(statementStats.totalIn)} <span className="text-xs uppercase">{selectedProduct.unit}</span>
                   </div>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900/5 p-2.5 rounded-xl border border-white/10">
                   <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam Çıkış (-)</div>
                   <div className="text-base font-black font-mono text-rose-300 mt-0.5">
-                    -{statementStats.totalOut} <span className="text-xs uppercase">{selectedProduct.unit}</span>
+                    -{formatQuantity(statementStats.totalOut)} <span className="text-xs uppercase">{selectedProduct.unit}</span>
                   </div>
                 </div>
 

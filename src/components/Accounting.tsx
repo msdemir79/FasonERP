@@ -34,6 +34,7 @@ import JournalEntryModal from './Accounting/JournalEntryModal';
 import JournalEntryPrintModal from './Accounting/JournalEntryPrintModal';
 import AddAccountModal from './Accounting/AddAccountModal';
 import EditAccountModal from './Accounting/EditAccountModal';
+import DeleteAccountModal from './Accounting/DeleteAccountModal';
 import ChartOfAccounts from './Accounting/ChartOfAccounts';
 import MizanPrintModal from './Accounting/MizanPrintModal';
 import KebirPrintModal from './Accounting/KebirPrintModal';
@@ -66,6 +67,7 @@ export default function Accounting() {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [selectedParentCodeForAdd, setSelectedParentCodeForAdd] = useState<string | undefined>(undefined);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [selectedEntryForPrint, setSelectedEntryForPrint] = useState<JournalEntry | null>(null);
   const [isMizanPrintModalOpen, setIsMizanPrintModalOpen] = useState(false);
   const [isKebirPrintModalOpen, setIsKebirPrintModalOpen] = useState(false);
@@ -494,6 +496,7 @@ export default function Accounting() {
           accounts={accounts}
           journalEntries={journalEntries}
           onEditAccount={(acc) => setEditingAccount(acc)}
+          onDeleteAccount={(acc) => setAccountToDelete(acc)}
           onAddAccount={(parentCode) => {
             setSelectedParentCodeForAdd(parentCode);
             setIsAccountModalOpen(true);
@@ -944,6 +947,17 @@ export default function Accounting() {
         isOpen={!!editingAccount}
         onClose={() => setEditingAccount(null)}
         account={editingAccount}
+        onDeleteAccount={(acc) => {
+          setEditingAccount(null);
+          setAccountToDelete(acc);
+        }}
+      />
+
+      {/* MODAL: TDHP Hesap Silme */}
+      <DeleteAccountModal
+        isOpen={!!accountToDelete}
+        onClose={() => setAccountToDelete(null)}
+        account={accountToDelete}
       />
     </div>
   );

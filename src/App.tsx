@@ -20,6 +20,7 @@ import StockMovementReport from './components/Reports/StockMovementReport';
 import BrokenSizeReport from './components/Reports/BrokenSizeReport';
 import SettingsHub from './components/Settings';
 import { seedDatabase } from './db';
+import { erpService } from './services/erpService';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -30,7 +31,11 @@ import { ThemeProvider } from './context/ThemeContext';
 
 export default function App() {
   React.useEffect(() => {
-    seedDatabase();
+    seedDatabase().then(() => {
+      erpService.resetExceptTodayOrders().catch(err => {
+        console.error('Sıfırlama çalıştırılamadı:', err);
+      });
+    });
   }, []);
 
   return (

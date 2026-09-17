@@ -17,10 +17,12 @@ import {
   ShieldCheck,
   Globe,
   BookOpen,
-  Sparkles
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { compareAccountCodes } from '../../services/accountingService';
+import { getNextContactCode } from '../../services/erpService';
 import Modal from '../Modal';
 
 interface ContactFormModalProps {
@@ -28,6 +30,7 @@ interface ContactFormModalProps {
   onClose: () => void;
   onSave: (data: Partial<Contact>) => Promise<void>;
   initialData?: Contact | null;
+  defaultType?: EntityType;
 }
 
 const CATEGORY_OPTIONS = [
@@ -55,7 +58,8 @@ export default function ContactFormModal({
   isOpen,
   onClose,
   onSave,
-  initialData
+  initialData,
+  defaultType = 'customer'
 }: ContactFormModalProps) {
   const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'financial' | 'notes'>('general');
   const [loading, setLoading] = useState(false);
@@ -63,6 +67,7 @@ export default function ContactFormModal({
 
   // Form states
   const [code, setCode] = useState('');
+  const [isManualCode, setIsManualCode] = useState(false);
   const [name, setName] = useState('');
   const [companyTitle, setCompanyTitle] = useState('');
   const [contactPerson, setContactPerson] = useState('');
@@ -93,9 +98,16 @@ export default function ContactFormModal({
   const allContacts = useLiveQuery(() => db.contacts.toArray());
   const tdhpAccounts = useLiveQuery(() => db.accounts.toArray());
 
+  // Auto-suggest next Contact Code (CAR-001 / CAR-005, TED-001, etc.)
+  const handleAutoSuggestContactCode = (targetType: EntityType = type) => {
+    const suggestion = getNextContactCode(allContacts || [], targetType);
+    setCode(suggestion.nextCode);
+    setIsManualCode(false);
+  };
+
   // Auto-suggest next TDHP sub-account code (120.01.xxx or 320.01.xxx)
-  const handleAutoSuggestAccountCode = () => {
-    const isSupplier = type === 'supplier';
+  const handleAutoSuggestAccountCode = (targetType: EntityType = type) => {
+    const isSupplier = targetType === 'supplier';
     const prefix = isSupplier ? '320.01.' : '120.01.';
     
     let maxSeq = 0;
@@ -123,6 +135,38 @@ export default function ContactFormModal({
     setAccountCode(`${prefix}${nextSeq}`);
   };
 
+  // Handle Cari Türü switch (Müşteri <-> Tedarikçi)
+  const handleTypeChange = (newType: EntityType) => {
+    setType(newType);
+
+    // If this is a new card and code was not manually typed (or matches standard auto-generated pattern)
+    if (!initialData) {
+      const isAutoPattern = !isManualCode || !code.trim() || /^(CAR|TED|MUS)[-_]?\d+$/i.test(code.trim());
+      if (isAutoPattern) {
+        const suggestion = getNextContactCode(allContacts || [], newType);
+        setCode(suggestion.nextCode);
+      }
+
+      // Also update TDHP account code if empty or matches 120.01 / 320.01 pattern
+      const isTdhpPattern = !accountCode.trim() || /^(120|320)\.01\.\d+$/.test(accountCode.trim());
+      if (isTdhpPattern) {
+        handleAutoSuggestAccountCode(newType);
+      }
+    }
+  };
+
+  // Current code metadata for UI suggestions (highest number, last code)
+  const currentCodeMeta = useMemo(() => {
+    return getNextContactCode(allContacts || [], type);
+  }, [allContacts, type]);
+
+  // Check if entered code already exists in another contact
+  const isDuplicateCode = useMemo(() => {
+    if (!code.trim() || !allContacts) return false;
+    const currentId = initialData?.id;
+    return allContacts.some(c => c.id !== currentId && c.code?.trim().toLowerCase() === code.trim().toLowerCase());
+  }, [code, allContacts, initialData]);
+
   const suggestedAccounts = useMemo(() => {
     if (!tdhpAccounts) return [];
     const filterPrefix = type === 'supplier' ? '320' : '120';
@@ -148,6 +192,7 @@ export default function ContactFormModal({
   useEffect(() => {
     if (initialData) {
       setCode(initialData.code || '');
+      setIsManualCode(true);
       setName(initialData.name || '');
       setCompanyTitle(initialData.companyTitle || '');
       setContactPerson(initialData.contactPerson || '');
@@ -173,13 +218,40 @@ export default function ContactFormModal({
       setBalance(initialData.balance || 0);
       setAccountCode(initialData.accountCode || '');
       setNotes(initialData.notes || '');
-    } else {
-      // Reset form
-      setCode('');
+    } else if (isOpen) {
+      // Reset form & automatically suggest next sequential codes
+      const initialType = defaultType || 'customer';
+      setType(initialType);
+      setIsManualCode(false);
+
+      // Suggest contact code (e.g. CAR-001 or CAR-005)
+      const contactCodeSuggestion = getNextContactCode(allContacts || [], initialType);
+      setCode(contactCodeSuggestion.nextCode);
+
+      // Suggest TDHP account code (e.g. 120.01.xxx or 320.01.xxx)
+      const isSupplier = initialType === 'supplier';
+      const tdhpPrefix = isSupplier ? '320.01.' : '120.01.';
+      let maxSeq = 0;
+      allContacts?.forEach(c => {
+        if (c.accountCode && c.accountCode.startsWith(tdhpPrefix)) {
+          const parts = c.accountCode.split('.');
+          const lastPart = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(lastPart) && lastPart > maxSeq) maxSeq = lastPart;
+        }
+      });
+      tdhpAccounts?.forEach(a => {
+        if (a.code && a.code.startsWith(tdhpPrefix)) {
+          const parts = a.code.split('.');
+          const lastPart = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(lastPart) && lastPart > maxSeq) maxSeq = lastPart;
+        }
+      });
+      const nextTdhpSeq = (maxSeq + 1).toString().padStart(3, '0');
+      setAccountCode(`${tdhpPrefix}${nextTdhpSeq}`);
+
       setName('');
       setCompanyTitle('');
       setContactPerson('');
-      setType('customer');
       setCategory('');
       setPhone('');
       setMobile('');
@@ -199,12 +271,19 @@ export default function ContactFormModal({
       setIban('');
       setBankAccountName('');
       setBalance(0);
-      setAccountCode('');
       setNotes('');
     }
     setActiveTab('general');
     setError(null);
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, defaultType]);
+
+  // Keep auto-generated code synchronized with actual DB data if loaded asynchronously
+  useEffect(() => {
+    if (isOpen && !initialData && !isManualCode && allContacts) {
+      const suggestion = getNextContactCode(allContacts, type);
+      setCode(suggestion.nextCode);
+    }
+  }, [isOpen, initialData, isManualCode, allContacts, type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -329,16 +408,52 @@ export default function ContactFormModal({
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Cari Kodu (ERP)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                    <span>Cari Kodu (ERP)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleAutoSuggestContactCode(type)}
+                    className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-900/60 px-1.5 py-0.5 rounded transition-colors flex items-center gap-0.5 cursor-pointer"
+                    title={`Sıradaki ${type === 'supplier' ? 'tedarikçi' : 'müşteri'} kodunu öner`}
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    <span>Öner ({type === 'supplier' ? 'TED-...' : 'CAR-...'})</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="Örn: CAR-001"
-                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 outline-none uppercase"
+                  onChange={(e) => {
+                    setCode(e.target.value);
+                    setIsManualCode(true);
+                  }}
+                  placeholder={type === 'supplier' ? 'Örn: TED-001' : 'Örn: CAR-001'}
+                  className={cn(
+                    "w-full border rounded-lg p-2.5 text-xs font-mono font-bold outline-none uppercase transition-colors",
+                    isDuplicateCode
+                      ? "border-rose-400 bg-rose-50 text-rose-900 focus:ring-1 focus:ring-rose-500"
+                      : "border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
+                  )}
                 />
+                
+                {/* Visual feedback for the suggested/entered code */}
+                {isDuplicateCode ? (
+                  <div className="flex items-center gap-1 text-[10px] text-rose-600 font-semibold mt-0.5">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>Bu kod sistemde zaten başka bir caride kayıtlı!</span>
+                  </div>
+                ) : currentCodeMeta.lastCode ? (
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center justify-between">
+                    <span>Son kayıt: <strong className="font-mono text-slate-700 dark:text-slate-200">{currentCodeMeta.lastCode}</strong></span>
+                    <span className="text-[9px] text-indigo-600 dark:text-indigo-400 font-medium">Sıradaki: +1</span>
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    <span>İlk {type === 'supplier' ? 'tedarikçi' : 'müşteri'} için önerildi</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -348,7 +463,7 @@ export default function ContactFormModal({
                   </label>
                   <button
                     type="button"
-                    onClick={handleAutoSuggestAccountCode}
+                    onClick={() => handleAutoSuggestAccountCode()}
                     className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded transition-colors"
                     title="Sonraki boş hesap kodunu öner"
                   >
@@ -438,9 +553,9 @@ export default function ContactFormModal({
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
-                    onClick={() => setType('customer')}
+                    onClick={() => handleTypeChange('customer')}
                     className={cn(
-                      "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center",
+                      "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center cursor-pointer",
                       type === 'customer'
                         ? "bg-indigo-50 border-indigo-600 text-indigo-700 shadow-sm"
                         : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:bg-slate-800/50"
@@ -450,9 +565,9 @@ export default function ContactFormModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setType('supplier')}
+                    onClick={() => handleTypeChange('supplier')}
                     className={cn(
-                      "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center",
+                      "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center cursor-pointer",
                       type === 'supplier'
                         ? "bg-amber-50 border-amber-600 text-amber-800 shadow-sm"
                         : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:bg-slate-800/50"
@@ -462,9 +577,9 @@ export default function ContactFormModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setType('both')}
+                    onClick={() => handleTypeChange('both')}
                     className={cn(
-                      "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center",
+                      "py-2.5 px-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center cursor-pointer",
                       type === 'both'
                         ? "bg-emerald-50 border-emerald-600 text-emerald-800 shadow-sm"
                         : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:bg-slate-800/50"
@@ -796,7 +911,7 @@ export default function ContactFormModal({
                 </h4>
                 <button
                   type="button"
-                  onClick={handleAutoSuggestAccountCode}
+                  onClick={() => handleAutoSuggestAccountCode()}
                   className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md transition-colors"
                 >
                   <Sparkles className="w-3 h-3" />

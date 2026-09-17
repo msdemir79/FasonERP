@@ -1,10 +1,10 @@
 /**
  * Universal PDF Generation Service for ProERP
- * Uses html2canvas and jsPDF to produce crisp, vectorized/high-DPI PDF documents
+ * Uses html2canvas-pro and jsPDF to produce crisp, vectorized/high-DPI PDF documents
  * Supports A4 portrait/landscape and 100x150 mm thermal shipping labels.
  */
 
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import jsPDF from 'jspdf';
 
 export interface PdfExportOptions {
@@ -14,6 +14,84 @@ export interface PdfExportOptions {
   marginMm?: number;
   scale?: number;
   backgroundColor?: string;
+  onclone?: (clonedDoc: Document) => void;
+}
+
+let helperCanvas: HTMLCanvasElement | null = null;
+let helperCtx: CanvasRenderingContext2D | null = null;
+
+/**
+ * Converts modern color formats (oklab, oklch, lab, lch, color(...))
+ * to standard RGB/RGBA or hex string.
+ */
+export function sanitizeCssColor(colorStr: string): string {
+  if (!colorStr || typeof colorStr !== 'string') return '#000000';
+  const trimmed = colorStr.trim();
+  if (
+    !trimmed.includes('oklch') &&
+    !trimmed.includes('oklab') &&
+    !trimmed.includes('color(') &&
+    !trimmed.includes('lab(') &&
+    !trimmed.includes('lch(')
+  ) {
+    return trimmed;
+  }
+
+  try {
+    if (typeof document !== 'undefined') {
+      if (!helperCanvas) {
+        helperCanvas = document.createElement('canvas');
+        helperCanvas.width = 1;
+        helperCanvas.height = 1;
+        helperCtx = helperCanvas.getContext('2d', { willReadFrequently: true });
+      }
+      if (helperCtx) {
+        helperCtx.fillStyle = '#000000';
+        helperCtx.fillStyle = trimmed;
+        return helperCtx.fillStyle || '#000000';
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return '#000000';
+}
+
+export function sanitizeClonedDocumentColors(clonedDoc: Document) {
+  try {
+    const allElements = clonedDoc.querySelectorAll('*');
+    allElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      try {
+        const computed = window.getComputedStyle(htmlEl);
+        const colorProps = [
+          'color',
+          'backgroundColor',
+          'borderTopColor',
+          'borderBottomColor',
+          'borderLeftColor',
+          'borderRightColor',
+          'outlineColor',
+          'fill',
+          'stroke'
+        ];
+
+        colorProps.forEach((prop) => {
+          const val = (computed as any)[prop];
+          if (
+            val &&
+            (val.includes('oklch') ||
+              val.includes('oklab') ||
+              val.includes('color(') ||
+              val.includes('lab(') ||
+              val.includes('lch('))
+          ) {
+            (htmlEl.style as any)[prop] = sanitizeCssColor(val);
+          }
+        });
+      } catch {}
+    });
+  } catch {}
 }
 
 /**
@@ -29,7 +107,8 @@ export async function downloadElementAsPdf(
     orientation = 'portrait',
     marginMm = 6,
     scale = 2,
-    backgroundColor = '#ffffff'
+    backgroundColor = '#ffffff',
+    onclone
   } = options;
 
   try {
@@ -37,7 +116,13 @@ export async function downloadElementAsPdf(
       scale,
       useCORS: true,
       logging: false,
-      backgroundColor
+      backgroundColor,
+      onclone: (clonedDoc) => {
+        sanitizeClonedDocumentColors(clonedDoc);
+        if (onclone) {
+          onclone(clonedDoc);
+        }
+      }
     });
 
     const imgData = canvas.toDataURL('image/png');
@@ -112,3 +197,4 @@ export async function downloadThermal100x150Pdf(
     scale: 2
   });
 }
+

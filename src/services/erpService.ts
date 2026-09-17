@@ -2,6 +2,7 @@ import { db } from '../db';
 import { accountingService } from './accountingService';
 import type { 
   Contact,
+  EntityType,
   Transaction, 
   WorkOrder, 
   InventoryLog, 
@@ -48,16 +49,90 @@ export const PRODUCTION_STAGES_CONFIG: {
   { id: 'completed', label: '8. Üretim Tamamlandı (Depo)', shortLabel: 'Tamamlandı', description: 'Mamul depoya giriş yapıldı', order: 8, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
 ];
 
+/**
+ * Quantities in shoe manufacturing (meters, pairs, dm2, kg) should be clean and rounded up/properly formatted.
+ * E.g., removes floating point artifacts like 0.3999999999999986 and cleanly rounds up to 0.40.
+ */
+export function roundUpQuantity(val: number, decimals: number = 2): number {
+  if (val === undefined || val === null || isNaN(val)) return 0;
+  if (val === 0) return 0;
+  const isNegative = val < 0;
+  const absVal = Math.abs(val);
+  // Protect micro-measurements (< 0.01) if any
+  const effDecimals = (absVal > 0 && absVal < 0.01) ? 4 : decimals;
+  // Clean IEEE 754 precision float noise (e.g. 0.3999999999999986 -> 0.40)
+  const clean = Math.round(absVal * 1000000) / 1000000;
+  const factor = Math.pow(10, effDecimals);
+  const rounded = Math.ceil(clean * factor) / factor;
+  return isNegative ? -rounded : rounded;
+}
+
+export function formatQuantity(val: number): string {
+  if (val === undefined || val === null || isNaN(val)) return '0';
+  if (val === 0) return '0';
+  const isNegative = val < 0;
+  const rounded = roundUpQuantity(Math.abs(val), 2);
+  
+  let formatted: string;
+  if (Number.isInteger(rounded)) {
+    formatted = rounded.toLocaleString('tr-TR');
+  } else {
+    formatted = rounded.toLocaleString('tr-TR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+  return isNegative ? `-${formatted}` : formatted;
+}
+
+/**
+ * Calculates the next sequential contact code based on existing contacts and type.
+ * Müşteri (customer): CAR-001, CAR-002, CAR-003, ... (remembers highest number, e.g. CAR-004 -> CAR-005)
+ * Tedarikçi (supplier): TED-001, TED-002, TED-003, ...
+ */
+export function getNextContactCode(
+  contacts: { code?: string }[],
+  type: EntityType = 'customer'
+): { nextCode: string; maxNumber: number; lastCode?: string; prefix: string } {
+  const prefix = type === 'supplier' ? 'TED-' : 'CAR-';
+  const regex = new RegExp(`^${prefix}0*(\\d+)$`, 'i');
+  const altRegex = type === 'supplier' 
+    ? /^TED[-_]?0*(\d+)$/i 
+    : /^(?:CAR|MUS)[-_]?0*(\d+)$/i;
+
+  let maxNum = 0;
+  let lastCode: string | undefined = undefined;
+
+  for (const c of contacts) {
+    if (!c.code) continue;
+    const trimmed = c.code.trim();
+    const match = trimmed.match(regex) || trimmed.match(altRegex);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxNum) {
+        maxNum = num;
+        lastCode = trimmed;
+      }
+    }
+  }
+
+  const nextSeq = (maxNum + 1).toString().padStart(3, '0');
+  return {
+    nextCode: `${prefix}${nextSeq}`,
+    maxNumber: maxNum,
+    lastCode,
+    prefix
+  };
+}
+
 export const erpService = {
   // --- Accounting & Contacts ---
   async addContact(contact: Omit<Contact, 'id'>) {
     return await db.transaction('rw', [db.contacts, db.transactions, db.accounts], async () => {
       let code = contact.code?.trim();
       if (!code) {
-        const prefix = contact.type === 'customer' ? 'MUS-' : contact.type === 'supplier' ? 'TED-' : 'CAR-';
         const allContacts = await db.contacts.toArray();
-        const nextNum = (allContacts.length + 1).toString().padStart(4, '0');
-        code = `${prefix}${nextNum}`;
+        code = getNextContactCode(allContacts, contact.type).nextCode;
       }
 
       const initialBalance = Number(contact.balance) || 0;
@@ -359,6 +434,104 @@ export const erpService = {
   },
 
   // --- Production & Work Orders ---
+  computeAssortmentDistribution(
+    product: any,
+    quantity: number,
+    specificSize?: string,
+    templateItems?: { size: string; quantity: number }[]
+  ): { size: string; quantity: number }[] {
+    if (specificSize && specificSize.trim() !== '') {
+      return [{ size: specificSize.trim(), quantity }];
+    }
+
+    // 1. Direct product assortment
+    if (product?.assortment && product.assortment.length > 0) {
+      const totalAssort = product.assortment.reduce((s: number, a: any) => s + (Number(a.quantity) || 0), 0);
+      if (totalAssort > 0) {
+        const ratio = quantity / totalAssort;
+        let sum = 0;
+        const items = product.assortment.map((a: any) => {
+          const q = Math.round((Number(a.quantity) || 0) * ratio);
+          sum += q;
+          return { size: String(a.size), quantity: q };
+        });
+        const diff = quantity - sum;
+        if (diff !== 0 && items.length > 0) {
+          items[items.length - 1].quantity += diff;
+        }
+        return items;
+      }
+    }
+
+    // 2. Assortment template items
+    if (templateItems && templateItems.length > 0) {
+      const totalAssort = templateItems.reduce((s: number, a: any) => s + (Number(a.quantity) || 0), 0);
+      if (totalAssort > 0) {
+        const ratio = quantity / totalAssort;
+        let sum = 0;
+        const items = templateItems.map((a: any) => {
+          const q = Math.round((Number(a.quantity) || 0) * ratio);
+          sum += q;
+          return { size: String(a.size), quantity: q };
+        });
+        const diff = quantity - sum;
+        if (diff !== 0 && items.length > 0) {
+          items[items.length - 1].quantity += diff;
+        }
+        return items;
+      }
+    }
+
+    // 3. Variant barcodes size set
+    if (product?.variantBarcodes && product.variantBarcodes.length > 0) {
+      const uniqueSizes: string[] = Array.from(new Set<string>(product.variantBarcodes.map((v: any) => String(v.size)).filter(Boolean)));
+      if (uniqueSizes.length > 0) {
+        uniqueSizes.sort((a: string, b: string) => {
+          const na = parseFloat(a);
+          const nb = parseFloat(b);
+          if (!isNaN(na) && !isNaN(nb)) return na - nb;
+          return a.localeCompare(b);
+        });
+
+        const count = uniqueSizes.length;
+        let weights: number[] = [];
+        if (count === 5) weights = [1, 2, 2, 2, 1];
+        else if (count === 6) weights = [1, 2, 2, 2, 2, 1];
+        else if (count === 4) weights = [1, 2, 2, 1];
+        else weights = new Array(count).fill(1);
+
+        const totalWeight = weights.reduce((s, w) => s + w, 0);
+        let allocated = 0;
+        const items: { size: string; quantity: number }[] = uniqueSizes.map((size, idx) => {
+          const q = Math.round(quantity * (weights[idx] / totalWeight));
+          allocated += q;
+          return { size, quantity: q };
+        });
+        const diff = quantity - allocated;
+        if (diff !== 0 && items.length > 0) {
+          items[Math.floor(items.length / 2)].quantity += diff;
+        }
+        return items;
+      }
+    }
+
+    // 4. Default standard 40-44 classic shoe distribution (Standard ratio: 1/8, 2/8, 2/8, 2/8, 1/8)
+    const defaultSizes = ['40', '41', '42', '43', '44'];
+    const weights = [1, 2, 2, 2, 1];
+    const totalWeight = 8;
+    let allocated = 0;
+    const items = defaultSizes.map((size, idx) => {
+      const q = Math.round(quantity * (weights[idx] / totalWeight));
+      allocated += q;
+      return { size, quantity: q };
+    });
+    const diff = quantity - allocated;
+    if (diff !== 0 && items.length > 2) {
+      items[2].quantity += diff;
+    }
+    return items;
+  },
+
   generateDefaultStages(): WorkOrderStageLog[] {
     return PRODUCTION_STAGES_CONFIG.map(st => ({
       stage: st.id,
@@ -387,7 +560,7 @@ export const erpService = {
     notes?: string;
     operator?: string;
   }) {
-    return await db.transaction('rw', [db.workOrders, db.recipes, db.products], async () => {
+    return await db.transaction('rw', [db.workOrders, db.recipes, db.products, db.assortmentTemplates], async () => {
       const recipe = await db.recipes.where('productId').equals(data.productId).first();
       const prod = await db.products.get(data.productId);
       
@@ -398,6 +571,17 @@ export const erpService = {
       }
 
       const defaultStages = this.generateDefaultStages();
+
+      // Compute assortment breakdown if not passed
+      let computedAssortment = data.assortmentBreakdown;
+      if (!computedAssortment || computedAssortment.length === 0) {
+        let templateItems: { size: string; quantity: number }[] | undefined = undefined;
+        if (prod?.assortmentTemplateId) {
+          const tmpl = await db.assortmentTemplates.get(prod.assortmentTemplateId);
+          templateItems = tmpl?.items;
+        }
+        computedAssortment = this.computeAssortmentDistribution(prod, data.quantity, data.size, templateItems);
+      }
 
       // Preliminary add to get ID
       const initialId = await db.workOrders.add({
@@ -419,7 +603,7 @@ export const erpService = {
         moldGroup: data.moldGroup || prod?.moldGroup,
         color: data.color,
         size: data.size,
-        assortmentBreakdown: data.assortmentBreakdown,
+        assortmentBreakdown: computedAssortment,
         notes: data.notes,
         operator: data.operator,
         materialStatus,
@@ -463,26 +647,13 @@ export const erpService = {
 
         const defaultStages = this.generateDefaultStages();
 
-        // Calculate size distribution if product has assortment
-        let assortmentBreakdown: { size: string; quantity: number }[] | undefined = undefined;
-        if (product.assortment && product.assortment.length > 0) {
-          const totalAssort = product.assortment.reduce((s, a) => s + (a.quantity || 0), 0);
-          const ratio = totalAssort > 0 ? (item.quantity / totalAssort) : 1;
-          assortmentBreakdown = product.assortment.map(a => ({
-            size: a.size,
-            quantity: Math.round(a.quantity * ratio)
-          }));
-        } else if (product.assortmentTemplateId) {
+        // Calculate size distribution
+        let templateItems: { size: string; quantity: number }[] | undefined = undefined;
+        if (product.assortmentTemplateId) {
           const tmpl = await db.assortmentTemplates.get(product.assortmentTemplateId);
-          if (tmpl && tmpl.items.length > 0) {
-            const totalAssort = tmpl.items.reduce((s, a) => s + (a.quantity || 0), 0);
-            const ratio = totalAssort > 0 ? (item.quantity / totalAssort) : 1;
-            assortmentBreakdown = tmpl.items.map(a => ({
-              size: a.size,
-              quantity: Math.round(a.quantity * ratio)
-            }));
-          }
+          templateItems = tmpl?.items;
         }
+        const assortmentBreakdown = this.computeAssortmentDistribution(product, item.quantity, item.size, templateItems);
 
         const woId = await db.workOrders.add({
           productId: item.productId,
@@ -680,7 +851,7 @@ export const erpService = {
                 stock: calculatedTotalStock
               });
             } else {
-              const updatedStock = Math.max(0, raw.stock - totalNeeded);
+              const updatedStock = Math.max(0, roundUpQuantity(raw.stock - totalNeeded, 2));
               await db.products.update(ing.productId, { stock: updatedStock });
               logDetail = ` [${ing.color ? ing.color + ' ' : ''}-${totalNeeded} ${raw.unit || 'Adet'}]`;
             }
@@ -858,7 +1029,20 @@ export const erpService = {
 
     const products = await db.products.toArray();
     const recipes = await db.recipes.toArray();
+    const contacts = await db.contacts.toArray();
+    const assortmentTemplates = await db.assortmentTemplates.toArray();
+    const allOrders = await db.orders.toArray();
+    const allOrderItems = await db.orderItems.toArray();
+
     const productMap = new Map(products.map(p => [p.id!, p]));
+    const templateMap = new Map(assortmentTemplates.map(t => [t.id!, t]));
+    const supplierMap = new Map(contacts.filter(c => c.type === 'supplier' || c.type === 'both').map(c => [c.id!, c.name]));
+    const orderMap = new Map(allOrders.map(o => [o.id!, o]));
+
+    // Identify active / open Purchase Orders (not cancelled)
+    const activePurchaseOrders = allOrders.filter(o => o.type === 'purchase' && o.status !== 'cancelled');
+    const activePOIds = new Set(activePurchaseOrders.map(o => o.id!));
+    const activePurchaseOrderItems = allOrderItems.filter(i => activePOIds.has(i.orderId));
 
     // Helper to find best recipe for a work order
     const getRecipeForWO = (productId: number, color?: string) => {
@@ -879,6 +1063,7 @@ export const erpService = {
       color?: string;
       isMatrixMatched?: boolean;
       requiredQuantity: number;
+      sizeNeedsMap: Map<string, number>;
       affectedWorkOrderIds: number[];
     }>();
 
@@ -886,25 +1071,74 @@ export const erpService = {
       const recipe = getRecipeForWO(wo.productId, wo.color);
       if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) continue;
 
+      // Resolve size breakdown of this work order
+      let woSizes: { size: string; quantity: number }[] = [];
+      if (wo.assortmentBreakdown && wo.assortmentBreakdown.length > 0) {
+        woSizes = wo.assortmentBreakdown;
+      } else if (wo.size && wo.size.trim() !== '') {
+        woSizes = [{ size: wo.size.trim(), quantity: wo.quantity }];
+      } else {
+        const finishedProduct = productMap.get(wo.productId);
+        if (finishedProduct?.assortment && finishedProduct.assortment.length > 0) {
+          const totalAssort = finishedProduct.assortment.reduce((s, a) => s + (a.quantity || 0), 0);
+          const ratio = totalAssort > 0 ? (wo.quantity / totalAssort) : 1;
+          woSizes = finishedProduct.assortment.map(a => ({
+            size: a.size,
+            quantity: Math.round(a.quantity * ratio)
+          }));
+        } else if (finishedProduct?.assortmentTemplateId) {
+          const tmpl = templateMap.get(finishedProduct.assortmentTemplateId);
+          if (tmpl && tmpl.items.length > 0) {
+            const totalAssort = tmpl.items.reduce((s, a) => s + (a.quantity || 0), 0);
+            const ratio = totalAssort > 0 ? (wo.quantity / totalAssort) : 1;
+            woSizes = tmpl.items.map(a => ({
+              size: a.size,
+              quantity: Math.round(a.quantity * ratio)
+            }));
+          }
+        }
+      }
+
       for (const ing of recipe.ingredients) {
+        const rawProduct = productMap.get(ing.productId);
+        if (!rawProduct) continue;
+
+        const isSizeMatrix = Boolean(
+          ing.isMatrixMatched ||
+          rawProduct.hasSizeVariants ||
+          rawProduct.isFootwear ||
+          ['Taban', 'Mostra', 'Fuspet', 'Salpa', 'Saya', 'Kalıp'].includes(rawProduct.subType || '')
+        );
+
         const totalIngNeeded = ing.quantity * wo.quantity;
         const ingColor = ing.color || wo.color || '';
-        const key = `${ing.productId}__${ingColor}`;
+        const key = `${ing.productId}__${ingColor || 'ALL'}`;
 
-        const existing = rawMaterialNeeds.get(key);
-        if (existing) {
-          existing.requiredQuantity += totalIngNeeded;
-          if (!existing.affectedWorkOrderIds.includes(wo.id!)) {
-            existing.affectedWorkOrderIds.push(wo.id!);
-          }
-        } else {
-          rawMaterialNeeds.set(key, {
+        let existing = rawMaterialNeeds.get(key);
+        if (!existing) {
+          existing = {
             rawMaterialId: ing.productId,
             color: ingColor || undefined,
-            isMatrixMatched: ing.isMatrixMatched,
-            requiredQuantity: totalIngNeeded,
-            affectedWorkOrderIds: [wo.id!]
-          });
+            isMatrixMatched: isSizeMatrix,
+            requiredQuantity: 0,
+            sizeNeedsMap: new Map<string, number>(),
+            affectedWorkOrderIds: []
+          };
+          rawMaterialNeeds.set(key, existing);
+        }
+
+        existing.requiredQuantity += totalIngNeeded;
+        if (!existing.affectedWorkOrderIds.includes(wo.id!)) {
+          existing.affectedWorkOrderIds.push(wo.id!);
+        }
+
+        if (isSizeMatrix && woSizes.length > 0) {
+          existing.isMatrixMatched = true;
+          for (const s of woSizes) {
+            const sizeKey = s.size.trim();
+            const sizeQtyNeeded = s.quantity * ing.quantity;
+            existing.sizeNeedsMap.set(sizeKey, (existing.sizeNeedsMap.get(sizeKey) || 0) + sizeQtyNeeded);
+          }
         }
       }
     }
@@ -917,23 +1151,157 @@ export const erpService = {
       const rawProduct = productMap.get(data.rawMaterialId);
       if (!rawProduct) continue;
 
-      // Check variant stock if color is specified and tracked
-      let currentStock = rawProduct.stock || 0;
-      if (data.color && rawProduct.variantBarcodes && rawProduct.variantBarcodes.length > 0) {
-        const colorVariants = rawProduct.variantBarcodes.filter(v => v.color && v.color.toLowerCase() === data.color!.toLowerCase());
-        if (colorVariants.length > 0) {
-          currentStock = colorVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+      let currentStock = 0;
+      let onOrderQuantity = 0;
+      let grossShortageQuantity = 0;
+      let shortageQuantity = 0;
+      let sizeBreakdownList: { size: string; required: number; currentStock: number; onOrderQuantity?: number; shortage: number }[] | undefined = undefined;
+
+      const hasMatrix = data.sizeNeedsMap.size > 0;
+
+      // Filter matching active purchase order items for this rawMaterialId and color
+      const matchingPOItems = activePurchaseOrderItems.filter(poi => {
+        if (poi.productId !== data.rawMaterialId) return false;
+        if (data.color && data.color.trim() !== '') {
+          if (poi.color && poi.color.trim() !== '' && poi.color.trim().toLowerCase() !== data.color.trim().toLowerCase()) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      // Aggregate POs info for this item
+      const activePOsForThisItem: {
+        orderId: number;
+        orderNumber: string;
+        supplierName?: string;
+        quantity: number;
+        date: Date | string;
+        status: OrderStatus;
+      }[] = [];
+
+      const poAggMap = new Map<number, number>();
+      for (const poi of matchingPOItems) {
+        const remaining = Math.max(0, (poi.quantity || 0) - (poi.shippedQuantity || 0));
+        if (remaining > 0) {
+          poAggMap.set(poi.orderId, (poAggMap.get(poi.orderId) || 0) + remaining);
+        }
+      }
+      for (const [poId, qty] of poAggMap.entries()) {
+        const po = orderMap.get(poId);
+        if (po) {
+          activePOsForThisItem.push({
+            orderId: po.id!,
+            orderNumber: po.orderNumber,
+            supplierName: supplierMap.get(po.contactId) || 'Tedarikçi',
+            quantity: qty,
+            date: po.date,
+            status: po.status
+          });
         }
       }
 
-      const shortageQuantity = Math.max(0, data.requiredQuantity - currentStock);
-      const buyingPrice = rawProduct.buyingPrice || 0;
-      const estimatedCost = shortageQuantity * buyingPrice;
+      if (hasMatrix) {
+        sizeBreakdownList = [];
+        for (const [size, reqQtyForSize] of data.sizeNeedsMap.entries()) {
+          let sizeStock = 0;
+          if (rawProduct.variantBarcodes && rawProduct.variantBarcodes.length > 0) {
+            const matchingVariants = rawProduct.variantBarcodes.filter(v => 
+              (!data.color || !v.color || v.color.toLowerCase() === (data.color || '').toLowerCase()) &&
+              (v.size && v.size.toString().trim() === size.toString().trim())
+            );
+            sizeStock = matchingVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+          }
+          sizeStock = roundUpQuantity(sizeStock, 2);
 
+          // Find open PO quantity for this specific size
+          const sizeMatchingPOItems = matchingPOItems.filter(poi => 
+            poi.size && poi.size.toString().trim() === size.toString().trim()
+          );
+          const sizeOnOrder = roundUpQuantity(
+            sizeMatchingPOItems.reduce((sum, poi) => sum + Math.max(0, (poi.quantity || 0) - (poi.shippedQuantity || 0)), 0),
+            2
+          );
+
+          const roundedReq = roundUpQuantity(reqQtyForSize, 2);
+          const sizeShortage = Math.max(0, roundUpQuantity(roundedReq - sizeStock - sizeOnOrder, 2));
+
+          sizeBreakdownList.push({
+            size,
+            required: roundedReq,
+            currentStock: sizeStock,
+            onOrderQuantity: sizeOnOrder,
+            shortage: sizeShortage
+          });
+        }
+
+        // Sort size breakdown naturally
+        sizeBreakdownList.sort((a, b) => {
+          const na = parseFloat(a.size);
+          const nb = parseFloat(b.size);
+          if (!isNaN(na) && !isNaN(nb)) return na - nb;
+          return a.size.localeCompare(b.size);
+        });
+
+        // Totals from size breakdown
+        const totalReqFromSizes = sizeBreakdownList.reduce((s, x) => s + x.required, 0);
+        const totalStockFromSizes = sizeBreakdownList.reduce((s, x) => s + x.currentStock, 0);
+        const totalOnOrderFromSizes = sizeBreakdownList.reduce((s, x) => s + (x.onOrderQuantity || 0), 0);
+        const totalShortageFromSizes = sizeBreakdownList.reduce((s, x) => s + x.shortage, 0);
+
+        currentStock = totalStockFromSizes;
+        onOrderQuantity = totalOnOrderFromSizes;
+        grossShortageQuantity = Math.max(0, roundUpQuantity(totalReqFromSizes - currentStock, 2));
+        shortageQuantity = totalShortageFromSizes;
+        
+        // If rawProduct has stock at header level but variantBarcodes didn't have size stock
+        if (currentStock === 0 && (rawProduct.stock || 0) > 0 && (!rawProduct.variantBarcodes || rawProduct.variantBarcodes.length === 0)) {
+          currentStock = rawProduct.stock;
+          grossShortageQuantity = Math.max(0, roundUpQuantity(totalReqFromSizes - currentStock, 2));
+          shortageQuantity = Math.max(0, roundUpQuantity(totalReqFromSizes - currentStock - onOrderQuantity, 2));
+        }
+      } else {
+        // Non-matrix stock and PO check
+        currentStock = rawProduct.stock || 0;
+        if (data.color && rawProduct.variantBarcodes && rawProduct.variantBarcodes.length > 0) {
+          const colorVariants = rawProduct.variantBarcodes.filter(v => v.color && v.color.toLowerCase() === (data.color || '').toLowerCase());
+          if (colorVariants.length > 0) {
+            currentStock = colorVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+          }
+        }
+        currentStock = roundUpQuantity(currentStock, 2);
+
+        onOrderQuantity = roundUpQuantity(
+          matchingPOItems.reduce((sum, poi) => sum + Math.max(0, (poi.quantity || 0) - (poi.shippedQuantity || 0)), 0),
+          2
+        );
+
+        const reqQty = roundUpQuantity(data.requiredQuantity, 2);
+        grossShortageQuantity = Math.max(0, roundUpQuantity(reqQty - currentStock, 2));
+        shortageQuantity = Math.max(0, roundUpQuantity(reqQty - currentStock - onOrderQuantity, 2));
+      }
+
+      const buyingPrice = rawProduct.buyingPrice || 0;
+      const estimatedCost = roundUpQuantity(shortageQuantity * buyingPrice, 2);
+
+      // Automatically heal floating point precision artifact in DB if detected
+      if (rawProduct.id && Math.abs((rawProduct.stock || 0) - currentStock) > 0.00000001 && (!rawProduct.variantBarcodes || rawProduct.variantBarcodes.length === 0)) {
+        db.products.update(rawProduct.id, { stock: currentStock }).catch(() => {});
+      }
+
+      let itemStatus: 'sufficient' | 'shortage' | 'po_created' = 'sufficient';
       if (shortageQuantity > 0) {
+        itemStatus = 'shortage';
         shortageCount++;
         totalShortageCost += estimatedCost;
+      } else if (grossShortageQuantity > 0 && onOrderQuantity > 0) {
+        itemStatus = 'po_created';
+      } else {
+        itemStatus = 'sufficient';
       }
+
+      const preferredSupplierId = rawProduct.preferredSupplierId;
+      const preferredSupplierName = preferredSupplierId ? (rawProduct.preferredSupplierName || supplierMap.get(preferredSupplierId)) : undefined;
 
       mrpItems.push({
         rawMaterialId: data.rawMaterialId,
@@ -941,23 +1309,33 @@ export const erpService = {
         rawMaterialCode: rawProduct.code,
         color: data.color,
         categoryType: rawProduct.categoryType,
+        subType: rawProduct.subType,
         isMatrixMatched: data.isMatrixMatched,
-        unit: rawProduct.unit || 'Adet',
+        hasSizeMatrix: hasMatrix,
+        sizeBreakdown: sizeBreakdownList,
+        unit: rawProduct.unit || 'Çift',
         currentStock,
-        requiredQuantity: data.requiredQuantity,
+        requiredQuantity: roundUpQuantity(data.requiredQuantity, 2),
+        onOrderQuantity,
+        grossShortageQuantity,
         shortageQuantity,
-        status: shortageQuantity > 0 ? 'shortage' : 'sufficient',
+        status: itemStatus,
+        activePurchaseOrders: activePOsForThisItem,
         buyingPrice,
         estimatedCost,
+        preferredSupplierId,
+        preferredSupplierName,
         workOrderCount: data.affectedWorkOrderIds.length,
         affectedWorkOrderIds: data.affectedWorkOrderIds
       });
     }
 
-    // Sort: shortages first
+    // Sort: shortages first, then po_created, then sufficient
     mrpItems.sort((a, b) => {
-      if (a.status === 'shortage' && b.status !== 'shortage') return -1;
-      if (a.status !== 'shortage' && b.status === 'shortage') return 1;
+      const orderMap: Record<string, number> = { shortage: 0, po_created: 1, sufficient: 2 };
+      const scoreA = orderMap[a.status] ?? 3;
+      const scoreB = orderMap[b.status] ?? 3;
+      if (scoreA !== scoreB) return scoreA - scoreB;
       return b.shortageQuantity - a.shortageQuantity;
     });
 
@@ -970,16 +1348,28 @@ export const erpService = {
       }
       
       let hasShortage = false;
+      let hasPoCreated = false;
+
       for (const ing of recipe.ingredients) {
         const ingColor = ing.color || wo.color || '';
         const item = mrpItems.find(m => m.rawMaterialId === ing.productId && (m.color || '') === ingColor);
-        if (item && item.status === 'shortage') {
-          hasShortage = true;
-          break;
+        if (item) {
+          if (item.status === 'shortage') {
+            hasShortage = true;
+          } else if (item.status === 'po_created') {
+            hasPoCreated = true;
+          }
         }
       }
 
-      const newStatus: MaterialReadinessStatus = hasShortage ? 'materials_shortage' : 'materials_ready';
+      let newStatus: MaterialReadinessStatus = 'materials_ready';
+      if (hasShortage) {
+        newStatus = 'materials_shortage';
+      } else if (hasPoCreated) {
+        newStatus = 'po_created';
+      } else {
+        newStatus = 'materials_ready';
+      }
       await db.workOrders.update(wo.id!, { materialStatus: newStatus });
     }
 
@@ -993,8 +1383,230 @@ export const erpService = {
     };
   },
 
+  // Multi-supplier purchase order split from MRP
+  async createPurchaseOrdersBySupplierFromMRP(
+    shortageItems: { 
+      rawMaterialId: number; 
+      quantity: number; 
+      color?: string;
+      sizeBreakdown?: { size: string; quantity: number }[];
+      unitPrice?: number; 
+      supplierId?: number;
+    }[],
+    defaultSupplierContactId?: number,
+    notes?: string
+  ): Promise<{
+    ordersCreated: {
+      orderId: number;
+      orderNumber: string;
+      supplierId: number;
+      supplierName: string;
+      itemCount: number;
+      grandTotal: number;
+    }[];
+    totalOrdersCount: number;
+    totalGrandTotal: number;
+  }> {
+    if (!shortageItems || shortageItems.length === 0) {
+      throw new Error('Satın alma siparişi için en az bir hammadde seçilmelidir.');
+    }
+
+    return await db.transaction('rw', [db.orders, db.orderItems, db.contacts, db.products, db.workOrders], async () => {
+      const allContacts = await db.contacts.toArray();
+      const allProducts = await db.products.toArray();
+      const productMap = new Map(allProducts.map(p => [p.id!, p]));
+      const contactMap = new Map(allContacts.map(c => [c.id!, c]));
+
+      // Fallback supplier if none specified
+      let fallbackSupplier = allContacts.find(c => c.type === 'supplier' || c.type === 'both');
+      if (!fallbackSupplier) {
+        const fallbackId = await db.contacts.add({
+          name: 'Genel Hammadde Tedarikçisi',
+          type: 'supplier',
+          balance: 0
+        });
+        fallbackSupplier = { id: fallbackId, name: 'Genel Hammadde Tedarikçisi', type: 'supplier', balance: 0 };
+        contactMap.set(fallbackId, fallbackSupplier);
+      }
+
+      // Group items by supplier ID
+      const supplierGroups = new Map<number, { 
+        rawMaterialId: number; 
+        quantity: number; 
+        color?: string;
+        sizeBreakdown?: { size: string; quantity: number }[];
+        unitPrice?: number;
+      }[]>();
+
+      // Track supplier assignment per raw material to update products
+      const rawMaterialSupplierMap = new Map<number, number>();
+
+      for (const item of shortageItems) {
+        const raw = productMap.get(item.rawMaterialId);
+        let targetSupplierId = item.supplierId;
+        
+        if (!targetSupplierId && raw?.preferredSupplierId) {
+          targetSupplierId = raw.preferredSupplierId;
+        }
+        if (!targetSupplierId && defaultSupplierContactId) {
+          targetSupplierId = defaultSupplierContactId;
+        }
+        if (!targetSupplierId) {
+          targetSupplierId = fallbackSupplier.id!;
+        }
+
+        rawMaterialSupplierMap.set(item.rawMaterialId, targetSupplierId);
+
+        const group = supplierGroups.get(targetSupplierId) || [];
+        group.push(item);
+        supplierGroups.set(targetSupplierId, group);
+      }
+
+      // Automatically remember preferred suppliers on products
+      for (const [rawId, supId] of rawMaterialSupplierMap.entries()) {
+        const sup = contactMap.get(supId);
+        if (sup) {
+          await db.products.update(rawId, {
+            preferredSupplierId: supId,
+            preferredSupplierName: sup.name
+          });
+        }
+      }
+
+      const ordersCreated: {
+        orderId: number;
+        orderNumber: string;
+        supplierId: number;
+        supplierName: string;
+        itemCount: number;
+        grandTotal: number;
+      }[] = [];
+
+      let overallGrandTotal = 0;
+      let orderIndex = 0;
+      const timestamp = Date.now().toString().slice(-5);
+
+      for (const [supplierId, groupItems] of supplierGroups.entries()) {
+        orderIndex++;
+        const supplier = contactMap.get(supplierId) || fallbackSupplier;
+        let subtotal = 0;
+        const orderItemsData: Omit<OrderItem, 'id' | 'orderId'>[] = [];
+
+        for (const it of groupItems) {
+          const raw = productMap.get(it.rawMaterialId);
+          if (!raw) continue;
+
+          const price = it.unitPrice !== undefined ? it.unitPrice : (raw.buyingPrice || 0);
+
+          const validSizes = it.sizeBreakdown?.filter(s => (s.quantity || 0) > 0);
+          if (validSizes && validSizes.length > 0) {
+            // Create size-specific purchase order line items (e.g. 40-100, 41-200, 42-200, 43-200, 44-100)
+            for (const sb of validSizes) {
+              const lineQty = roundUpQuantity(sb.quantity, 2);
+              const lineNet = price * lineQty;
+              const lineTotal = lineNet * 1.20; // 20% VAT
+              subtotal += lineNet;
+
+              orderItemsData.push({
+                productId: it.rawMaterialId,
+                color: it.color,
+                size: sb.size,
+                quantity: lineQty,
+                shippedQuantity: 0,
+                unitPrice: price,
+                taxRate: 20,
+                discountRate: 0,
+                total: lineTotal
+              });
+            }
+          } else {
+            const lineQty = roundUpQuantity(it.quantity, 2);
+            const lineNet = price * lineQty;
+            const lineTotal = lineNet * 1.20; // 20% VAT
+            subtotal += lineNet;
+
+            orderItemsData.push({
+              productId: it.rawMaterialId,
+              color: it.color,
+              quantity: lineQty,
+              shippedQuantity: 0,
+              unitPrice: price,
+              taxRate: 20,
+              discountRate: 0,
+              total: lineTotal
+            });
+          }
+        }
+
+        if (orderItemsData.length === 0) continue;
+
+        const taxAmount = subtotal * 0.20;
+        const grandTotal = subtotal + taxAmount;
+        overallGrandTotal += grandTotal;
+
+        // Clean short supplier prefix
+        const supplierTag = supplier.name.slice(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, 'TED');
+        const orderNumber = `PO-MRP-${supplierTag}-${timestamp}-${orderIndex}`;
+
+        const matrixSummaries = groupItems
+          .map(it => {
+            const raw = productMap.get(it.rawMaterialId);
+            if (!raw) return '';
+            const colorStr = it.color ? ` (Renk: ${it.color})` : '';
+            const validSizes = it.sizeBreakdown?.filter(s => (s.quantity || 0) > 0);
+            if (validSizes && validSizes.length > 0) {
+              const assortStr = validSizes.map(s => `${s.size}:${s.quantity}`).join(', ');
+              return `${raw.name}${colorStr} - Asorti: [${assortStr} ${raw.unit || 'Çift'}] (Toplam: ${it.quantity} ${raw.unit || 'Çift'})`;
+            }
+            return `${raw.name}${colorStr} - ${it.quantity} ${raw.unit || 'Adet'}`;
+          })
+          .filter(Boolean)
+          .join('\n');
+
+        const orderData: Omit<Order, 'id'> = {
+          type: 'purchase',
+          orderNumber,
+          contactId: supplierId,
+          date: new Date(),
+          status: 'confirmed',
+          totalAmount: subtotal,
+          taxAmount,
+          discountAmount: 0,
+          grandTotal,
+          notes: notes || `MRP Otomatik Sipariş:\n${matrixSummaries}`,
+          currency: 'TRY'
+        };
+
+        const orderId = await db.orders.add(orderData as Order);
+        const itemsWithOrderId = orderItemsData.map(it => ({ ...it, orderId }));
+        await db.orderItems.bulkAdd(itemsWithOrderId as OrderItem[]);
+
+        ordersCreated.push({
+          orderId,
+          orderNumber,
+          supplierId,
+          supplierName: supplier.name,
+          itemCount: orderItemsData.length,
+          grandTotal
+        });
+      }
+
+      return {
+        ordersCreated,
+        totalOrdersCount: ordersCreated.length,
+        totalGrandTotal: overallGrandTotal
+      };
+    });
+  },
+
   async createPurchaseOrderFromMRP(
-    shortageItems: { rawMaterialId: number; quantity: number; unitPrice?: number }[],
+    shortageItems: { 
+      rawMaterialId: number; 
+      quantity: number; 
+      color?: string;
+      sizeBreakdown?: { size: string; quantity: number }[];
+      unitPrice?: number;
+    }[],
     supplierContactId?: number,
     notes?: string
   ) {
@@ -1026,19 +1638,45 @@ export const erpService = {
         const raw = await db.products.get(item.rawMaterialId);
         if (!raw) continue;
 
-        const price = item.unitPrice !== undefined ? item.unitPrice : raw.buyingPrice;
-        const lineTotal = price * item.quantity * 1.20; // 20% VAT
-        subtotal += price * item.quantity;
+        const price = item.unitPrice !== undefined ? item.unitPrice : (raw.buyingPrice || 0);
 
-        orderItemsData.push({
-          productId: item.rawMaterialId,
-          quantity: item.quantity,
-          shippedQuantity: 0,
-          unitPrice: price,
-          taxRate: 20,
-          discountRate: 0,
-          total: lineTotal
-        });
+        const validSizes = item.sizeBreakdown?.filter(s => (s.quantity || 0) > 0);
+        if (validSizes && validSizes.length > 0) {
+          for (const sb of validSizes) {
+            const lineQty = roundUpQuantity(sb.quantity, 2);
+            const lineNet = price * lineQty;
+            const lineTotal = lineNet * 1.20;
+            subtotal += lineNet;
+
+            orderItemsData.push({
+              productId: item.rawMaterialId,
+              color: item.color,
+              size: sb.size,
+              quantity: lineQty,
+              shippedQuantity: 0,
+              unitPrice: price,
+              taxRate: 20,
+              discountRate: 0,
+              total: lineTotal
+            });
+          }
+        } else {
+          const lineQty = roundUpQuantity(item.quantity, 2);
+          const lineNet = price * lineQty;
+          const lineTotal = lineNet * 1.20;
+          subtotal += lineNet;
+
+          orderItemsData.push({
+            productId: item.rawMaterialId,
+            color: item.color,
+            quantity: lineQty,
+            shippedQuantity: 0,
+            unitPrice: price,
+            taxRate: 20,
+            discountRate: 0,
+            total: lineTotal
+          });
+        }
       }
 
       const taxAmount = subtotal * 0.20;
@@ -1354,7 +1992,7 @@ export const erpService = {
           });
         } else {
           // Standard raw material (leather dm2, lining dm2, laces, box, glue)
-          const newStock = Math.max(0, Number(((raw.stock || 0) - totalNeeded).toFixed(3)));
+          const newStock = Math.max(0, roundUpQuantity((raw.stock || 0) - totalNeeded, 2));
           await db.products.update(ing.productId, { stock: newStock });
           logDetail = ` [${ing.partName || raw.subType || ''}: -${totalNeeded} ${raw.unit || 'Birim'}]`;
         }
@@ -2107,7 +2745,7 @@ export const erpService = {
       });
     } else {
       // Standard product without variants
-      const newStock = (product.stock || 0) + (deltaSign * item.quantity);
+      const newStock = Math.max(0, roundUpQuantity((product.stock || 0) + (deltaSign * item.quantity), 2));
       await db.products.update(item.productId, { stock: newStock });
 
       await db.inventoryLogs.add({
@@ -2605,6 +3243,160 @@ export const erpService = {
           }
         }
       }
+    });
+  },
+
+  /**
+   * Resets all movement and transactional data (stock movements, financial transactions,
+   * contact balances, TDHP journal entries, invoices, waybills, work orders, HR logs)
+   * EXCEPT for orders created today (and their order items / linked work orders).
+   * Master cards (products, contacts, TDHP accounts, recipes, employees, templates) are KEPT intact.
+   */
+  async resetExceptTodayOrders(): Promise<{
+    keptOrdersCount: number;
+    deletedOrdersCount: number;
+    keptWorkOrdersCount: number;
+    deletedWorkOrdersCount: number;
+  }> {
+    const today = new Date();
+    const todayYear = today.getFullYear();
+    const todayMonth = today.getMonth();
+    const todayDay = today.getDate();
+
+    const isTodayDate = (d: Date | string | number | undefined): boolean => {
+      if (!d) return false;
+      const dateObj = new Date(d);
+      if (isNaN(dateObj.getTime())) return false;
+      return (
+        dateObj.getFullYear() === todayYear &&
+        dateObj.getMonth() === todayMonth &&
+        dateObj.getDate() === todayDay
+      );
+    };
+
+    return await db.transaction('rw', [
+      db.orders,
+      db.orderItems,
+      db.inventoryLogs,
+      db.transactions,
+      db.journalEntries,
+      db.collectionReceipts,
+      db.checks,
+      db.invoices,
+      db.invoiceItems,
+      db.waybills,
+      db.waybillItems,
+      db.workOrders,
+      db.products,
+      db.contacts,
+      db.accounts,
+      db.cashBoxes,
+      db.bankAccounts,
+      db.attendanceRecords,
+      db.leaveRequests,
+      db.payrollRecords,
+      db.advanceRequests,
+      db.auditLogs,
+      db.settings
+    ], async () => {
+      // 1. Mark movements as reset in settings
+      const currentSettings = await db.settings.get('global_barcode');
+      if (currentSettings) {
+        await db.settings.update('global_barcode', { movementsReset: true } as any);
+      }
+
+      // 2. Identify orders created today
+      const allOrders = await db.orders.toArray();
+      const keptOrders = allOrders.filter(o => isTodayDate(o.date) || isTodayDate(o.createdAt));
+      const keptOrderIds = new Set(keptOrders.map(o => o.id).filter(Boolean) as number[]);
+      const deletedOrders = allOrders.filter(o => !o.id || !keptOrderIds.has(o.id));
+
+      const deletedOrderIds = deletedOrders.map(o => o.id).filter(Boolean) as number[];
+      if (deletedOrderIds.length > 0) {
+        await db.orders.bulkDelete(deletedOrderIds);
+      }
+
+      // 3. Delete order items for deleted orders
+      const allOrderItems = await db.orderItems.toArray();
+      const orderItemsToDelete = allOrderItems.filter(oi => !keptOrderIds.has(oi.orderId));
+      if (orderItemsToDelete.length > 0) {
+        const itemIdsToDelete = orderItemsToDelete.map(oi => oi.id).filter(Boolean) as number[];
+        await db.orderItems.bulkDelete(itemIdsToDelete);
+      }
+
+      // 4. Handle work orders
+      const allWorkOrders = await db.workOrders.toArray();
+      const keptWorkOrders = allWorkOrders.filter(wo => {
+        if (wo.orderId && keptOrderIds.has(wo.orderId)) return true;
+        if (isTodayDate(wo.createdAt) || isTodayDate(wo.orderDate)) return true;
+        return false;
+      });
+      const keptWoIds = new Set(keptWorkOrders.map(wo => wo.id).filter(Boolean) as number[]);
+      const workOrdersToDelete = allWorkOrders.filter(wo => !wo.id || !keptWoIds.has(wo.id));
+
+      if (workOrdersToDelete.length > 0) {
+        const woIdsToDelete = workOrdersToDelete.map(wo => wo.id).filter(Boolean) as number[];
+        await db.workOrders.bulkDelete(woIdsToDelete);
+      }
+
+      // 5. Clear all movement / transaction logs
+      await db.inventoryLogs.clear();
+      await db.transactions.clear();
+      await db.journalEntries.clear();
+      await db.collectionReceipts.clear();
+      await db.checks.clear();
+      await db.invoices.clear();
+      await db.invoiceItems.clear();
+      await db.waybills.clear();
+      await db.waybillItems.clear();
+      await db.attendanceRecords.clear();
+      await db.leaveRequests.clear();
+      await db.payrollRecords.clear();
+      await db.advanceRequests.clear();
+      await db.auditLogs.clear();
+
+      // 6. Reset Product Stocks to 0 (Keep product master cards!)
+      const products = await db.products.toArray();
+      for (const p of products) {
+        if (!p.id) continue;
+        const updatedVariants = p.variantBarcodes?.map(v => ({ ...v, stock: 0 }));
+        await db.products.update(p.id, {
+          stock: 0,
+          variantBarcodes: updatedVariants
+        });
+      }
+
+      // 7. Reset Contact Financial Balances to 0 (Keep contact master cards!)
+      const contacts = await db.contacts.toArray();
+      for (const c of contacts) {
+        if (!c.id) continue;
+        await db.contacts.update(c.id, {
+          balance: 0,
+          updatedAt: new Date()
+        });
+      }
+
+      // 8. Reset CashBox and BankAccount balances to 0 (Keep definitions!)
+      const cashBoxes = await db.cashBoxes.toArray();
+      for (const cb of cashBoxes) {
+        if (cb.id) {
+          await db.cashBoxes.update(cb.id, { balance: 0 });
+        }
+      }
+
+      const bankAccounts = await db.bankAccounts.toArray();
+      for (const ba of bankAccounts) {
+        if (ba.id) {
+          await db.bankAccounts.update(ba.id, { balance: 0 });
+        }
+      }
+
+      return {
+        keptOrdersCount: keptOrders.length,
+        deletedOrdersCount: deletedOrders.length,
+        keptWorkOrdersCount: keptWorkOrders.length,
+        deletedWorkOrdersCount: workOrdersToDelete.length
+      };
     });
   },
 

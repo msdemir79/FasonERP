@@ -174,6 +174,7 @@ export interface AppSettings {
   barcodeType: 'EAN-13' | 'CODE-128' | 'CODE-39';
   barcodePrefix?: string;
   nextBarcodeSequence: number;
+  movementsReset?: boolean;
   company?: CompanySettings;
   stock?: Partial<StockModuleSettings>;
   order?: Partial<OrderModuleSettings>;
@@ -225,6 +226,8 @@ export interface Product {
   salesAccountCode?: string;     // TDHP Satış Gelir Hesabı (örn: 600.01, 600.20)
   purchaseAccountCode?: string;  // TDHP Alış / Gider / Maliyet Hesabı (örn: 150.01, 153.01, 710.01)
   vatRate?: number;              // KDV Oranı (%) (örn: 20, 10, 1)
+  preferredSupplierId?: number;  // Varsayılan / Öncelikli Tedarikçi Firma ID
+  preferredSupplierName?: string;// Tedarikçi Firma Adı
   notes?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -289,6 +292,7 @@ export type MaterialReadinessStatus =
   | 'no_recipe'            // Reçete Tanımlı Değil
   | 'pending_mrp'          // İhtiyaç Hesaplanmadı
   | 'materials_shortage'   // Eksik Hammadde Var
+  | 'po_created'           // Satın Alma Siparişi Açıldı (Tedarikçi Yolda)
   | 'materials_ready'      // Malzemeler Yeterli / Hazır
   | 'materials_consumed';  // Malzemeler Üretimde Harcandı
 
@@ -337,14 +341,35 @@ export interface MrpRequirementItem {
   rawMaterialCode: string;
   color?: string;
   categoryType?: ProductCategoryType;
+  subType?: string;
   isMatrixMatched?: boolean;
+  hasSizeMatrix?: boolean;
+  sizeBreakdown?: {
+    size: string;
+    required: number;
+    currentStock: number;
+    onOrderQuantity?: number;
+    shortage: number;
+  }[];
   unit: string;
   currentStock: number;
   requiredQuantity: number;
-  shortageQuantity: number; // max(0, required - currentStock)
-  status: 'sufficient' | 'shortage';
+  onOrderQuantity?: number;
+  grossShortageQuantity?: number;
+  shortageQuantity: number; // max(0, required - currentStock - onOrderQuantity)
+  status: 'sufficient' | 'shortage' | 'po_created';
+  activePurchaseOrders?: {
+    orderId: number;
+    orderNumber: string;
+    supplierName?: string;
+    quantity: number;
+    date: Date | string;
+    status: OrderStatus;
+  }[];
   buyingPrice: number;
   estimatedCost: number;
+  preferredSupplierId?: number;
+  preferredSupplierName?: string;
   workOrderCount: number;
   affectedWorkOrderIds: number[];
 }
@@ -391,6 +416,8 @@ export interface Order {
   grandTotal: number;
   notes?: string;
   currency: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface OrderItem {

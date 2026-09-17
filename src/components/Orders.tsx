@@ -27,12 +27,14 @@ import {
   Factory,
   BarChart3,
   Edit2,
-  Lock
+  Lock,
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import Modal from './Modal';
 import ProductSelectorModal from './Orders/ProductSelectorModal';
+import { PurchaseOrderPrintModal } from './Orders/PurchaseOrderPrintModal';
 import { erpService } from '../services/erpService';
 import PageHeader from './PageHeader';
 import type { Order, OrderItem, OrderStatus, OrderType } from '../types';
@@ -70,6 +72,10 @@ export default function Orders() {
   
   // Product Selector Modal State
   const [isProductSelectorOpen, setIsProductSelectorOpen] = React.useState(false);
+  
+  // Purchase / Sales Order Print & Email Form Modal State
+  const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false);
+  const [printOrderId, setPrintOrderId] = React.useState<number | null>(null);
   
   // Form State
   const [orderItems, setOrderItems] = React.useState<any[]>([]);
@@ -917,6 +923,16 @@ export default function Orders() {
                             </button>
                           )}
                           <button 
+                            onClick={() => {
+                              setPrintOrderId(order.id!);
+                              setIsPrintModalOpen(true);
+                            }}
+                            title={order.type === 'purchase' ? "Satınalma Siparişi & Tedarikçi Formu (Yazdır / Mail)" : "Sipariş Formu (Yazdır / PDF)"}
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
                             onClick={async () => {
                               const detail = await erpService.getOrder(order.id!);
                               setSelectedOrder(detail);
@@ -1104,6 +1120,11 @@ export default function Orders() {
                                       {item.color}
                                     </span>
                                   )}
+                                  {item.size && (
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded mt-0.5">
+                                      Beden: {item.size}
+                                    </span>
+                                  )}
                                 </td>
                                 <td className="p-3 text-center font-black font-mono text-slate-900 dark:text-slate-100">
                                   {item.quantity}
@@ -1148,6 +1169,17 @@ export default function Orders() {
 
                     return (
                       <>
+                        <button 
+                          onClick={() => {
+                            setPrintOrderId(selectedOrder.id);
+                            setIsPrintModalOpen(true);
+                          }}
+                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-900/50 px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase flex items-center gap-1.5 transition-all cursor-pointer border border-indigo-200 dark:border-indigo-800"
+                        >
+                          <Printer className="w-4 h-4" />
+                          <span>{selectedOrder.type === 'purchase' ? 'Tedarikçi Formu & Yazdır' : 'Sipariş Formu & Yazdır'}</span>
+                        </button>
+
                         <button 
                           onClick={() => {
                             const id = selectedOrder.id;
@@ -1420,6 +1452,11 @@ export default function Orders() {
                                     Renk: {item.color}
                                   </span>
                                 )}
+                                {item.size && (
+                                  <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
+                                    Beden: {item.size}
+                                  </span>
+                                )}
                                 {item.boxCount && item.pairsPerBox ? (
                                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-md">
                                     {item.boxCount} Koli ({item.pairsPerBox} Çift/Koli)
@@ -1612,6 +1649,16 @@ export default function Orders() {
         orderType={formOrderType}
         products={products || []}
         templates={templates || []}
+      />
+
+      {/* Purchase / Sales Order Print, Size Matrix & Email Form Modal */}
+      <PurchaseOrderPrintModal
+        isOpen={isPrintModalOpen}
+        onClose={() => {
+          setIsPrintModalOpen(false);
+          setPrintOrderId(null);
+        }}
+        orderId={printOrderId}
       />
     </div>
   );

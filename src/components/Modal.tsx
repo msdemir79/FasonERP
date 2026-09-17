@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from 'lucide-react';
+import { X, Maximize2, Minimize2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface ModalProps {
@@ -11,6 +11,8 @@ interface ModalProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | 'full';
   headerActions?: React.ReactNode;
+  allowFullscreen?: boolean;
+  defaultFullscreen?: boolean;
 }
 
 export default function Modal({ 
@@ -20,8 +22,18 @@ export default function Modal({
   children, 
   className, 
   size = 'xl', 
-  headerActions 
+  headerActions,
+  allowFullscreen = true,
+  defaultFullscreen = false
 }: ModalProps) {
+  const [isFullscreen, setIsFullscreen] = React.useState(defaultFullscreen);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setIsFullscreen(defaultFullscreen);
+    }
+  }, [isOpen, defaultFullscreen]);
+
   React.useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -44,7 +56,7 @@ export default function Modal({
     '2xl': 'max-w-6xl',
     '3xl': 'max-w-7xl',
     '4xl': 'max-w-[92vw]',
-    full: 'max-w-[96vw]'
+    full: 'max-w-[98vw]'
   };
 
   return (
@@ -55,7 +67,10 @@ export default function Modal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden"
+          className={cn(
+            "fixed inset-0 z-[60] flex items-center justify-center overflow-hidden transition-all",
+            isFullscreen ? "p-0 sm:p-1 md:p-2" : "p-2 sm:p-4 md:p-6"
+          )}
         >
           <div
             onClick={onClose}
@@ -68,8 +83,10 @@ export default function Modal({
             exit={{ opacity: 0, scale: 0.96, y: 15 }}
             transition={{ type: "spring", duration: 0.35, bounce: 0.1 }}
             className={cn(
-              "relative z-10 bg-white dark:bg-slate-900 w-full rounded-2xl md:rounded-3xl shadow-2xl flex flex-col max-h-[94vh] overflow-hidden border border-slate-200 dark:border-slate-700/80 dark:border-slate-800/80",
-              sizeClasses[size] || sizeClasses.xl,
+              "relative z-10 bg-white dark:bg-slate-900 w-full shadow-2xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700/80 transition-all duration-200",
+              isFullscreen 
+                ? "h-[98vh] max-h-[99vh] max-w-[99vw] rounded-xl sm:rounded-2xl" 
+                : cn("max-h-[94vh] rounded-2xl md:rounded-3xl", sizeClasses[size] || sizeClasses.xl),
               className
             )}
           >
@@ -81,6 +98,16 @@ export default function Modal({
               </h3>
               <div className="flex items-center gap-2">
                 {headerActions}
+                {allowFullscreen && (
+                  <button
+                    type="button"
+                    onClick={() => setIsFullscreen(prev => !prev)}
+                    title={isFullscreen ? "Normal Boyuta Dön" : "Ekranı Kapla / Büyüt"}
+                    className="p-2 text-slate-400 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-xl transition-all active:scale-95 cursor-pointer"
+                  >
+                    {isFullscreen ? <Minimize2 className="w-4.5 h-4.5" /> : <Maximize2 className="w-4.5 h-4.5" />}
+                  </button>
+                )}
                 <button 
                   onClick={onClose} 
                   type="button"
@@ -93,7 +120,10 @@ export default function Modal({
             </div>
 
             {/* Modal Scrollable Body */}
-            <div className="p-4 sm:p-6 md:p-7 overflow-y-auto max-h-[calc(94vh-75px)] overscroll-contain">
+            <div className={cn(
+              "p-4 sm:p-6 md:p-7 overflow-y-auto overscroll-contain flex-1",
+              isFullscreen ? "max-h-[calc(98vh-70px)]" : "max-h-[calc(94vh-75px)]"
+            )}>
               {children}
             </div>
           </motion.div>

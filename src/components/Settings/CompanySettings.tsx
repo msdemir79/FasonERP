@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Building2, Save, Check, Database, Download, Upload, AlertTriangle, RefreshCw, FileText, Image as ImageIcon, Trash2, UploadCloud } from 'lucide-react';
+import { Building2, Save, Check, Database, Download, Upload, AlertTriangle, RefreshCw, FileText, Image as ImageIcon, Trash2, UploadCloud, RotateCcw } from 'lucide-react';
 import { db, seedDatabase } from '../../db';
+import { erpService } from '../../services/erpService';
 import type { AppSettings, CompanySettings as CompanySettingsType } from '../../types';
 
 interface CompanySettingsProps {
@@ -28,6 +29,26 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isClearingMovements, setIsClearingMovements] = useState(false);
+
+  // Reset Movements Except Today's Orders
+  const handleResetExceptToday = async () => {
+    if (!confirm('DİKKAT: Bugün girdiğiniz siparişler hariç tüm stok, finans, cari ve TDHP hareketleri sıfırlanacaktır.\n\n• Stok kartları, Cari kartları ve TDHP hesap planı kartları KORUNACAKTIR.\n• Sadece geçmiş hareket/işlem verileri temizlenecektir.\n\nDevam etmek istiyor musunuz?')) {
+      return;
+    }
+
+    setIsClearingMovements(true);
+    try {
+      const res = await erpService.resetExceptTodayOrders();
+      alert(`Sıfırlama İşlemi Başarılı!\n\n• Korunan Bugün Siparişleri: ${res.keptOrdersCount} adet\n• Silinen Eski Siparişler: ${res.deletedOrdersCount} adet\n• Tüm stok, cari, finans ve TDHP hareketleri başarıyla temizlendi.`);
+      window.location.reload();
+    } catch (err) {
+      console.error('Sıfırlama hatası:', err);
+      alert('Sıfırlama yapılırken bir sorun oluştu.');
+    } finally {
+      setIsClearingMovements(false);
+    }
+  };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -399,7 +420,28 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
           </div>
         </div>
 
-        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Reset Movements Except Today's Orders */}
+          <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-5 flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+                <RotateCcw className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wider">Hareketleri Sıfırla (Kartlar Dursun)</h4>
+              <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80">Bugün girilen siparişler hariç; stok, cari, finans ve TDHP hareketlerini temizler. Stok, cari ve TDHP kartları korunur.</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleResetExceptToday}
+              disabled={isClearingMovements}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            >
+              <RotateCcw className={`w-4 h-4 ${isClearingMovements ? 'animate-spin' : ''}`} />
+              {isClearingMovements ? 'Temizleniyor...' : 'Eski Hareketleri Sıfırla'}
+            </button>
+          </div>
+
           {/* Backup */}
           <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 flex flex-col justify-between space-y-4">
             <div className="space-y-2">
