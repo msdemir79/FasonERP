@@ -7,6 +7,8 @@ import type {
   Invoice,
   CollectionReceipt
 } from '../types';
+import { assertBalancedJournalEntry } from '../lib/accountingValidator';
+import { assertServicePermission } from './authGuard';
 
 export interface MizanRow {
   code: string;
@@ -267,20 +269,20 @@ export const accountingService = {
     lines: JournalEntryLine[];
     status?: 'approved' | 'draft';
   }) {
-    const totalDebit = entry.lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0);
-    const totalCredit = entry.lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0);
-    
-    // Check balance tolerance (0.01 ₺)
-    const isBalanced = Math.abs(totalDebit - totalCredit) < 0.05;
+    // 1. Servis Katmanı Yetki Kontrolü
+    await assertServicePermission('accounting', 'create', true);
+
+    // 2. Dengesiz yevmiye kaydını kesin olarak engelle (TDHP Denge Kuralı)
+    const { totalDebit, totalCredit } = assertBalancedJournalEntry(entry.lines, 0.05);
 
     const entryNumber = entry.entryNumber || await this.generateEntryNumber(entry.entryType);
 
     const id = await db.journalEntries.add({
       ...entry,
       entryNumber,
-      totalDebit: Number(totalDebit.toFixed(2)),
-      totalCredit: Number(totalCredit.toFixed(2)),
-      isBalanced,
+      totalDebit,
+      totalCredit,
+      isBalanced: true,
       status: entry.status || 'approved',
       date: new Date(entry.date),
       createdAt: new Date()
@@ -290,24 +292,33 @@ export const accountingService = {
   },
 
   async updateJournalEntry(id: number, entry: Partial<JournalEntry>) {
-    const totalDebit = entry.lines ? entry.lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0) : undefined;
-    const totalCredit = entry.lines ? entry.lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0) : undefined;
-    
+    // 1. Servis Katmanı Yetki Kontrolü
+    await assertServicePermission('accounting', 'edit', true);
+
+    let totalDebit: number | undefined = undefined;
+    let totalCredit: number | undefined = undefined;
     let isBalanced: boolean | undefined = undefined;
-    if (totalDebit !== undefined && totalCredit !== undefined) {
-      isBalanced = Math.abs(totalDebit - totalCredit) < 0.05;
+
+    if (entry.lines && entry.lines.length > 0) {
+      // Satırlar güncelleniyorsa denge şarttır
+      const verified = assertBalancedJournalEntry(entry.lines, 0.05);
+      totalDebit = verified.totalDebit;
+      totalCredit = verified.totalCredit;
+      isBalanced = true;
     }
 
     return await db.journalEntries.update(id, {
       ...entry,
-      ...(totalDebit !== undefined ? { totalDebit: Number(totalDebit.toFixed(2)) } : {}),
-      ...(totalCredit !== undefined ? { totalCredit: Number(totalCredit.toFixed(2)) } : {}),
+      ...(totalDebit !== undefined ? { totalDebit } : {}),
+      ...(totalCredit !== undefined ? { totalCredit } : {}),
       ...(isBalanced !== undefined ? { isBalanced } : {}),
       updatedAt: new Date()
     });
   },
 
   async deleteJournalEntry(id: number) {
+    // Servis Katmanı Yetki Kontrolü
+    await assertServicePermission('accounting', 'delete', true);
     return await db.journalEntries.delete(id);
   },
 

@@ -41,13 +41,79 @@ async function startServer() {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Chat endpoint
+  // Rate Limiter Deposu (In-memory IP/Token bazlı kayan pencere)
+  const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+  const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 dakika
+  const MAX_REQUESTS_PER_WINDOW = 20;     // Dakikada maksimum 20 istek
+
+  // Chat endpoint (Kimlik Doğrulama, Hız Sınırı ve Girdi Sınırı Korumalı)
   app.post('/api/chat', async (req, res) => {
     try {
+      // 1. KİMLİK DOĞRULAMA (Authentication)
+      const authHeader = req.headers.authorization || (req.headers['x-session-token'] as string);
+      if (!authHeader) {
+        return res.status(401).json({ 
+          error: 'Yetkisiz erişim. AI Asistanı kullanabilmek için lütfen sisteme giriş yapınız.' 
+        });
+      }
+
+      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
+      if (!token || token.length < 3) {
+        return res.status(401).json({ 
+          error: 'Geçersiz oturum belirteci. Lütfen tekrar giriş yapınız.' 
+        });
+      }
+
+      // 2. HIZ VE İSTEK SINIRLAMA (Rate Limiting)
+      const clientIdentifier = (req.ip || req.socket.remoteAddress || 'unknown_ip') + ':' + token.substring(0, 12);
+      const now = Date.now();
+      const currentRate = rateLimitStore.get(clientIdentifier);
+
+      if (!currentRate || now > currentRate.resetAt) {
+        rateLimitStore.set(clientIdentifier, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+      } else {
+        if (currentRate.count >= MAX_REQUESTS_PER_WINDOW) {
+          const retryAfterSec = Math.ceil((currentRate.resetAt - now) / 1000);
+          return res.status(429).json({
+            error: `Çok fazla istek gönderildi. Lütfen ${retryAfterSec} saniye sonra tekrar deneyiniz.`
+          });
+        }
+        currentRate.count += 1;
+      }
+
+      // 3. GİRDİ SINIRLARI VE GÜVENLİK KONTROLLERİ (Input Limits)
       const { messages, appSummary } = req.body;
 
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
-        return res.status(400).json({ error: 'Geçersiz mesaj formatı.' });
+        return res.status(400).json({ error: 'Geçersiz mesaj formatı. En az bir mesaj bulunmalıdır.' });
+      }
+
+      if (messages.length > 30) {
+        return res.status(400).json({ error: 'Mesaj geçmişi çok uzun (en fazla 30 mesaj gönderilebilir).' });
+      }
+
+      let totalCharacters = 0;
+      for (const m of messages) {
+        const text = String(m.text || m.content || '');
+        if (text.length > 2500) {
+          return res.status(400).json({ error: 'Tek bir mesaj en fazla 2.500 karakter olabilir.' });
+        }
+        totalCharacters += text.length;
+      }
+
+      if (totalCharacters > 10000) {
+        return res.status(400).json({ error: 'Toplam konuşma metni sınırı aşıldı (maksimum 10.000 karakter).' });
+      }
+
+      // appSummary boyut sınırı (Maksimum 25 KB)
+      let sanitizedSummary = '';
+      if (appSummary) {
+        const summaryStr = typeof appSummary === 'string' ? appSummary : JSON.stringify(appSummary);
+        if (summaryStr.length > 25000) {
+          sanitizedSummary = summaryStr.substring(0, 25000);
+        } else {
+          sanitizedSummary = summaryStr;
+        }
       }
 
       const ai = getGeminiClient();
@@ -65,7 +131,7 @@ Cevap Standartları:
 3. Kullanıcı "nasıl yapılır?" diye sorduğunda (örn: "yeni cari nasıl eklenir?", "fatura nasıl kesilir?", "çek nasıl ciro edilir?", "personel bordrosu nasıl hesaplanır?", "kasa ekstresi nasıl alınır?"), kullanıcıya sistemdeki menü adımlarıyla anlaşılır şekilde anlat.
 4. Aşağıda sana iletilen anlık sistem özeti (güncel veri istatistikleri) varsa, kullanıcının verilerle ilgili sorularını (örn: "Kasamda ne kadar para var?", "Kaç açık sipariş var?", "Kritik stok var mı?", "Toplam alacak/borç durumu nedir?") doğrudan bu güncel verilere dayanarak somut rakamlarla cevapla.
 
-${appSummary ? `\n--- GÜNCEL PROERP SİSTEM VE VERİ ÖZETİ ---\n${JSON.stringify(appSummary, null, 2)}\n----------------------------------------\n` : ''}`;
+${sanitizedSummary ? `\n--- GÜNCEL PROERP SİSTEM VE VERİ ÖZETİ ---\n${sanitizedSummary}\n----------------------------------------\n` : ''}`;
 
       // Build contents for Gemini API
       const contents = messages.map((m: any) => ({

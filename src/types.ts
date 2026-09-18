@@ -175,6 +175,7 @@ export interface AppSettings {
   barcodePrefix?: string;
   nextBarcodeSequence: number;
   movementsReset?: boolean;
+  productionReset?: boolean;
   company?: CompanySettings;
   stock?: Partial<StockModuleSettings>;
   order?: Partial<OrderModuleSettings>;
@@ -250,6 +251,7 @@ export interface RecipeIngredient {
   quantity: number;                // 1 çift/adet mamul için sarfiyat
   unit?: string;                   // Çift, dm2, Adet, Kg, Metre, Plak vb.
   isMatrixMatched?: boolean;       // Numara/Beden Matris Eşleşmeli (Taban, Mostra, Fuspet için sipariş asortisi ile 1:1 eşleşir)
+  wasteRate?: number;              // Fire / Zayiat Oranı (%)
   notes?: string;
 }
 
@@ -372,6 +374,13 @@ export interface MrpRequirementItem {
   preferredSupplierName?: string;
   workOrderCount: number;
   affectedWorkOrderIds: number[];
+  affectedWorkOrders?: {
+    workOrderId: number;
+    barcode: string;
+    quantity: number;
+    modelName?: string;
+  }[];
+  warehouseStock?: number;
 }
 
 export interface MrpCalculationResult {
@@ -839,9 +848,22 @@ export interface PayrollRecord {
   // Kesintiler (SGK'lı Personel İçin)
   employeeSgkShare: number;         // SGK İşçi Payı (%14)
   employeeUnemploymentShare: number;// İşsizlik İşçi Payı (%1)
+  incomeTaxBase?: number;           // Aylık Gelir Vergisi Matrahı
+  previousCumulativeTaxBase?: number; // Önceki Kümülatif Vergi Matrahı
+  cumulativeTaxBase?: number;       // Güncel Kümülatif Vergi Matrahı
+  appliedTaxRate?: number;          // Uygulanan Vergi Dilimi Oranı (%)
   incomeTax: number;                // Gelir Vergisi (Asgari ücret muafiyeti düşülmüş)
   stampTax: number;                 // Damga Vergisi (Asgari ücret muafiyeti düşülmüş)
   totalLegalDeductions: number;     // Yasal Kesintiler Toplamı
+  
+  // Kuruş Cinsinden Hassas Tam Sayı Karşılıkları (Integer Kuruş)
+  totalGrossPayKurus?: number;
+  employeeSgkShareKurus?: number;
+  employeeUnemploymentShareKurus?: number;
+  incomeTaxKurus?: number;
+  stampTaxKurus?: number;
+  netSalaryKurus?: number;
+  totalEmployerCostKurus?: number;
   
   // Şirket İçi Kesintiler (Her ikisi için)
   advanceDeduction: number;          // Avans Kesintisi
@@ -937,6 +959,10 @@ export interface AppUser {
   avatar?: string;
   color?: string;
   pinCode?: string;
+  passwordHash?: string;
+  passwordSalt?: string;
+  sessionToken?: string;
+  sessionExpiresAt?: Date;
   lastLoginAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;

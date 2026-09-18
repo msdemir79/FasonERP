@@ -10,7 +10,10 @@ interface AuthContextType {
   users: AppUser[];
   roles: Role[];
   isLoading: boolean;
+  sessionToken: string | null;
   switchUser: (userId: number) => Promise<void>;
+  login: (username: string, passwordAttempt: string) => Promise<{ success: boolean; user?: AppUser; token?: string; error?: string }>;
+  logout: () => Promise<void>;
   hasPermission: (module: AppModule, action?: PermissionAction) => boolean;
   isSuperAdmin: boolean;
   refreshAuth: () => Promise<void>;
@@ -21,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [currentRole, setCurrentRole] = useState<Role | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(() => userService.getSessionTokenSync());
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Live queries for all users and roles
@@ -31,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const user = await userService.getActiveUser();
       setCurrentUser(user);
+      setSessionToken(userService.getSessionTokenSync());
 
       if (user) {
         let role: Role | undefined;
@@ -57,6 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = userService.onActiveUserChange((user, role) => {
       setCurrentUser(user);
       setCurrentRole(role);
+      setSessionToken(userService.getSessionTokenSync());
     });
 
     return () => {
@@ -86,6 +92,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const login = async (username: string, passwordAttempt: string) => {
+    setIsLoading(true);
+    try {
+      const res = await userService.login(username, passwordAttempt);
+      if (res.success) {
+        await loadActiveUserAndRole();
+      }
+      return res;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      await userService.logout();
+      setCurrentUser(null);
+      setCurrentRole(null);
+      setSessionToken(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const hasPermission = useCallback(
     (module: AppModule, action: PermissionAction = 'view'): boolean => {
       return userService.hasPermission(currentUser, currentRole, module, action);
@@ -103,7 +134,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     users,
     roles,
     isLoading,
+    sessionToken,
     switchUser,
+    login,
+    logout,
     hasPermission,
     isSuperAdmin,
     refreshAuth: loadActiveUserAndRole

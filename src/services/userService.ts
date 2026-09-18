@@ -9,8 +9,10 @@ import type {
   UserStatus
 } from '../types';
 import { INITIAL_ROLES } from '../data/initialRoles';
+import { hashPassword, generateSalt, generateSessionToken, verifyPassword } from './authGuard';
 
 const ACTIVE_USER_STORAGE_KEY = 'proerp_active_user_id';
+const ACTIVE_SESSION_TOKEN_KEY = 'proerp_session_token';
 
 class UserService {
   // Listeners for active user changes
@@ -46,8 +48,18 @@ class UserService {
       roleName = role?.name;
     }
 
+    // Parola güvenliği: pinCode veya şifre hashleme
+    let passwordHash = user.passwordHash;
+    let passwordSalt = user.passwordSalt;
+    if (!passwordHash && user.pinCode) {
+      passwordSalt = generateSalt();
+      passwordHash = await hashPassword(user.pinCode, passwordSalt);
+    }
+
     const newId = await db.users.add({
       ...user,
+      passwordHash,
+      passwordSalt,
       roleName,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -82,8 +94,18 @@ class UserService {
       roleName = role?.name;
     }
 
+    // Parola güncelleniyorsa yeniden hashle
+    let passwordHash = updates.passwordHash || existing.passwordHash;
+    let passwordSalt = updates.passwordSalt || existing.passwordSalt;
+    if (updates.pinCode && updates.pinCode !== existing.pinCode) {
+      passwordSalt = generateSalt();
+      passwordHash = await hashPassword(updates.pinCode, passwordSalt);
+    }
+
     await db.users.update(id, {
       ...updates,
+      passwordHash,
+      passwordSalt,
       roleName,
       updatedAt: new Date()
     });
@@ -291,6 +313,143 @@ class UserService {
       return raw ? parseInt(raw, 10) : null;
     } catch {
       return null;
+    }
+  }
+
+  getSessionTokenSync(): string | null {
+    try {
+      return localStorage.getItem(ACTIVE_SESSION_TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Gerçek Parola Doğrulaması ve Oturum Açma (Login)
+   */
+  async login(
+    username: string, 
+    passwordAttempt: string
+  ): Promise<{ success: boolean; user?: AppUser; token?: string; error?: string }> {
+    const user = await db.users.where('username').equals(username.trim().toLowerCase()).first();
+    if (!user) {
+      return { success: false, error: 'Kullanıcı adı veya parola hatalı.' };
+    }
+
+    if (user.status !== 'active') {
+      return { 
+        success: false, 
+        error: `Hesabınız ${user.status === 'suspended' ? 'askıya alınmıştır' : 'pasif durumdadır'}. Lütfen sistem yöneticisi ile görüşünüz.` 
+      };
+    }
+
+    let isValid = false;
+
+    // 1. Hash ve Salt kontrolü
+    if (user.passwordHash && user.passwordSalt) {
+      isValid = await verifyPassword(passwordAttempt, user.passwordSalt, user.passwordHash);
+    } 
+    // 2. Geriye dönük uyumluluk: pinCode ile kontrol edip derhal hashlemeye yükseltme
+    else if (user.pinCode) {
+      isValid = (user.pinCode === passwordAttempt);
+      if (isValid && user.id) {
+        const salt = generateSalt();
+        const hash = await hashPassword(passwordAttempt, salt);
+        await db.users.update(user.id, {
+          passwordHash: hash,
+          passwordSalt: salt
+        });
+      }
+    } else if (passwordAttempt === '1234') {
+      // Varsayılan ilk giriş şifresi
+      isValid = true;
+      if (user.id) {
+        const salt = generateSalt();
+        const hash = await hashPassword('1234', salt);
+        await db.users.update(user.id, {
+          passwordHash: hash,
+          passwordSalt: salt
+        });
+      }
+    }
+
+    if (!isValid) {
+      await this.logAudit(
+        'login',
+        'auth',
+        `Başarısız giriş denemesi: "${username}" için parola hatalı girildi.`,
+        undefined,
+        user.id
+      );
+      return { success: false, error: 'Kullanıcı adı veya parola hatalı.' };
+    }
+
+    // Başarılı giriş: Oturum belirteci ve son giriş zamanı
+    const sessionToken = generateSessionToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 saat
+
+    if (user.id) {
+      await db.users.update(user.id, {
+        sessionToken,
+        sessionExpiresAt: expiresAt,
+        lastLoginAt: new Date()
+      });
+      localStorage.setItem(ACTIVE_USER_STORAGE_KEY, user.id.toString());
+      localStorage.setItem(ACTIVE_SESSION_TOKEN_KEY, sessionToken);
+    }
+
+    await this.logAudit(
+      'login',
+      'auth',
+      `Oturum açıldı: ${user.fullName} (${user.roleName || user.roleCode})`,
+      'Başarılı parola doğrulaması yapıldı.',
+      user.id
+    );
+
+    this.notifyActiveUserChanged();
+    return { success: true, user, token: sessionToken };
+  }
+
+  /**
+   * Oturumu Güvenle Kapatma (Logout)
+   */
+  async logout(): Promise<void> {
+    const activeUser = await this.getActiveUser();
+    if (activeUser?.id) {
+      await db.users.update(activeUser.id, {
+        sessionToken: undefined,
+        sessionExpiresAt: undefined
+      });
+      await this.logAudit(
+        'logout',
+        'auth',
+        `Oturum kapatıldı: ${activeUser.fullName} (${activeUser.roleName || activeUser.roleCode})`,
+        'Kullanıcı güvenli çıkış yaptı.',
+        activeUser.id
+      );
+    }
+
+    localStorage.removeItem(ACTIVE_USER_STORAGE_KEY);
+    localStorage.removeItem(ACTIVE_SESSION_TOKEN_KEY);
+    this.notifyActiveUserChanged();
+  }
+
+  /**
+   * Sistemdeki kullanıcıların parola hashlerini güvenceye alır
+   */
+  async ensureHashedCredentials(): Promise<void> {
+    const allUsers = await db.users.toArray();
+    for (const u of allUsers) {
+      if (!u.id) continue;
+      if (!u.passwordHash || !u.passwordSalt) {
+        const rawPin = u.pinCode || '1234';
+        const salt = generateSalt();
+        const hash = await hashPassword(rawPin, salt);
+        await db.users.update(u.id, {
+          passwordHash: hash,
+          passwordSalt: salt
+        });
+      }
     }
   }
 

@@ -86,6 +86,31 @@ export function formatQuantity(val: number): string {
 }
 
 /**
+ * Robust Turkish-aware color normalization and matching helper.
+ * Handles casing (I/i/İ/ı), trailing spaces, and standardizes generic/universal indicators.
+ */
+export function normalizeColorKey(c?: string | null): string {
+  if (!c) return '';
+  const s = c.trim().toLowerCase()
+    .replace(/ı/g, 'i')
+    .replace(/İ/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c');
+  if (['genel', 'all', 'standart', 'tumu', 'tümü', 'hepsi', 'default', '-', 'yok', 'tanimsiz', 'yok/tanimsiz'].includes(s)) return '';
+  return s;
+}
+
+export function colorsMatch(c1?: string | null, c2?: string | null): boolean {
+  const n1 = normalizeColorKey(c1);
+  const n2 = normalizeColorKey(c2);
+  if (!n1 || !n2) return true; // If either is empty, generic or ALL, it matches!
+  return n1 === n2;
+}
+
+/**
  * Calculates the next sequential contact code based on existing contacts and type.
  * Müşteri (customer): CAR-001, CAR-002, CAR-003, ... (remembers highest number, e.g. CAR-004 -> CAR-005)
  * Tedarikçi (supplier): TED-001, TED-002, TED-003, ...
@@ -1111,8 +1136,19 @@ export const erpService = {
         );
 
         const totalIngNeeded = ing.quantity * wo.quantity;
-        const ingColor = ing.color || wo.color || '';
-        const key = `${ing.productId}__${ingColor || 'ALL'}`;
+        let ingColor = ing.color?.trim() || '';
+        if (!ingColor) {
+          const hasMultipleColors = rawProduct.colors && rawProduct.colors.length > 1;
+          if (hasMultipleColors) {
+            ingColor = wo.color?.trim() || '';
+          } else if (rawProduct.colors && rawProduct.colors.length === 1 && normalizeColorKey(rawProduct.colors[0]) !== '') {
+            ingColor = rawProduct.colors[0];
+          } else {
+            ingColor = ''; // Generic / universal color
+          }
+        }
+
+        const key = `${ing.productId}__${normalizeColorKey(ingColor) || 'ALL'}`;
 
         let existing = rawMaterialNeeds.get(key);
         if (!existing) {
@@ -1162,10 +1198,8 @@ export const erpService = {
       // Filter matching active purchase order items for this rawMaterialId and color
       const matchingPOItems = activePurchaseOrderItems.filter(poi => {
         if (poi.productId !== data.rawMaterialId) return false;
-        if (data.color && data.color.trim() !== '') {
-          if (poi.color && poi.color.trim() !== '' && poi.color.trim().toLowerCase() !== data.color.trim().toLowerCase()) {
-            return false;
-          }
+        if (!colorsMatch(poi.color, data.color)) {
+          return false;
         }
         return true;
       });
@@ -1182,7 +1216,10 @@ export const erpService = {
 
       const poAggMap = new Map<number, number>();
       for (const poi of matchingPOItems) {
-        const remaining = Math.max(0, (poi.quantity || 0) - (poi.shippedQuantity || 0));
+        const shipped = poi.shippedQuantity || 0;
+        const invoiced = poi.invoicedQuantity || 0;
+        const fulfilled = Math.max(shipped, invoiced);
+        const remaining = Math.max(0, (poi.quantity || 0) - fulfilled);
         if (remaining > 0) {
           poAggMap.set(poi.orderId, (poAggMap.get(poi.orderId) || 0) + remaining);
         }
@@ -1207,7 +1244,7 @@ export const erpService = {
           let sizeStock = 0;
           if (rawProduct.variantBarcodes && rawProduct.variantBarcodes.length > 0) {
             const matchingVariants = rawProduct.variantBarcodes.filter(v => 
-              (!data.color || !v.color || v.color.toLowerCase() === (data.color || '').toLowerCase()) &&
+              colorsMatch(v.color, data.color) &&
               (v.size && v.size.toString().trim() === size.toString().trim())
             );
             sizeStock = matchingVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
@@ -1219,7 +1256,12 @@ export const erpService = {
             poi.size && poi.size.toString().trim() === size.toString().trim()
           );
           const sizeOnOrder = roundUpQuantity(
-            sizeMatchingPOItems.reduce((sum, poi) => sum + Math.max(0, (poi.quantity || 0) - (poi.shippedQuantity || 0)), 0),
+            sizeMatchingPOItems.reduce((sum, poi) => {
+              const shipped = poi.shippedQuantity || 0;
+              const invoiced = poi.invoicedQuantity || 0;
+              const fulfilled = Math.max(shipped, invoiced);
+              return sum + Math.max(0, (poi.quantity || 0) - fulfilled);
+            }, 0),
             2
           );
 
@@ -1247,32 +1289,51 @@ export const erpService = {
         const totalReqFromSizes = sizeBreakdownList.reduce((s, x) => s + x.required, 0);
         const totalStockFromSizes = sizeBreakdownList.reduce((s, x) => s + x.currentStock, 0);
         const totalOnOrderFromSizes = sizeBreakdownList.reduce((s, x) => s + (x.onOrderQuantity || 0), 0);
-        const totalShortageFromSizes = sizeBreakdownList.reduce((s, x) => s + x.shortage, 0);
 
-        currentStock = totalStockFromSizes;
-        onOrderQuantity = totalOnOrderFromSizes;
-        grossShortageQuantity = Math.max(0, roundUpQuantity(totalReqFromSizes - currentStock, 2));
-        shortageQuantity = totalShortageFromSizes;
-        
-        // If rawProduct has stock at header level but variantBarcodes didn't have size stock
-        if (currentStock === 0 && (rawProduct.stock || 0) > 0 && (!rawProduct.variantBarcodes || rawProduct.variantBarcodes.length === 0)) {
-          currentStock = rawProduct.stock;
-          grossShortageQuantity = Math.max(0, roundUpQuantity(totalReqFromSizes - currentStock, 2));
-          shortageQuantity = Math.max(0, roundUpQuantity(totalReqFromSizes - currentStock - onOrderQuantity, 2));
-        }
-      } else {
-        // Non-matrix stock and PO check
-        currentStock = rawProduct.stock || 0;
-        if (data.color && rawProduct.variantBarcodes && rawProduct.variantBarcodes.length > 0) {
-          const colorVariants = rawProduct.variantBarcodes.filter(v => v.color && v.color.toLowerCase() === (data.color || '').toLowerCase());
-          if (colorVariants.length > 0) {
-            currentStock = colorVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+        // Check if there is total warehouse inventory (e.g. from waybill / invoice) that wasn't barcode-split or exceeds variant stock
+        const totalWarehouseStock = roundUpQuantity(rawProduct.stock || 0, 2);
+        let unallocatedStock = Math.max(0, roundUpQuantity(totalWarehouseStock - totalStockFromSizes, 2));
+
+        // If unallocated stock exists, fulfill shortages across sizes
+        if (unallocatedStock > 0) {
+          for (const sb of sizeBreakdownList) {
+            if (sb.shortage > 0 && unallocatedStock > 0) {
+              const allocation = Math.min(sb.shortage, unallocatedStock);
+              sb.currentStock = roundUpQuantity(sb.currentStock + allocation, 2);
+              sb.shortage = roundUpQuantity(Math.max(0, sb.required - sb.currentStock - (sb.onOrderQuantity || 0)), 2);
+              unallocatedStock = roundUpQuantity(unallocatedStock - allocation, 2);
+            }
           }
         }
-        currentStock = roundUpQuantity(currentStock, 2);
+
+        // Effective stock
+        const calculatedStockFromSizes = sizeBreakdownList.reduce((s, x) => s + x.currentStock, 0);
+        currentStock = Math.max(calculatedStockFromSizes, totalWarehouseStock);
+        onOrderQuantity = totalOnOrderFromSizes;
+        grossShortageQuantity = Math.max(0, roundUpQuantity(totalReqFromSizes - currentStock, 2));
+
+        const sumShortageFromSizes = sizeBreakdownList.reduce((s, x) => s + x.shortage, 0);
+        shortageQuantity = Math.min(sumShortageFromSizes, Math.max(0, roundUpQuantity(totalReqFromSizes - currentStock - onOrderQuantity, 2)));
+      } else {
+        // Non-matrix stock and PO check
+        let variantStock = 0;
+        if (rawProduct.variantBarcodes && rawProduct.variantBarcodes.length > 0) {
+          const colorVariants = rawProduct.variantBarcodes.filter(v => colorsMatch(v.color, data.color));
+          if (colorVariants.length > 0) {
+            variantStock = colorVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+          }
+        }
+
+        const warehouseStock = roundUpQuantity(rawProduct.stock || 0, 2);
+        currentStock = roundUpQuantity(Math.max(warehouseStock, variantStock), 2);
 
         onOrderQuantity = roundUpQuantity(
-          matchingPOItems.reduce((sum, poi) => sum + Math.max(0, (poi.quantity || 0) - (poi.shippedQuantity || 0)), 0),
+          matchingPOItems.reduce((sum, poi) => {
+            const shipped = poi.shippedQuantity || 0;
+            const invoiced = poi.invoicedQuantity || 0;
+            const fulfilled = Math.max(shipped, invoiced);
+            return sum + Math.max(0, (poi.quantity || 0) - fulfilled);
+          }, 0),
           2
         );
 
@@ -1303,6 +1364,17 @@ export const erpService = {
       const preferredSupplierId = rawProduct.preferredSupplierId;
       const preferredSupplierName = preferredSupplierId ? (rawProduct.preferredSupplierName || supplierMap.get(preferredSupplierId)) : undefined;
 
+      const affectedWOs = data.affectedWorkOrderIds.map(woId => {
+        const wo = workOrdersToAnalyze.find(w => w.id === woId);
+        const prod = wo ? productMap.get(wo.productId) : undefined;
+        return {
+          workOrderId: woId,
+          barcode: wo?.barcode || `#WO-${woId}`,
+          quantity: wo?.quantity || 0,
+          modelName: prod?.name || 'Ürün'
+        };
+      });
+
       mrpItems.push({
         rawMaterialId: data.rawMaterialId,
         rawMaterialName: rawProduct.name,
@@ -1326,7 +1398,9 @@ export const erpService = {
         preferredSupplierId,
         preferredSupplierName,
         workOrderCount: data.affectedWorkOrderIds.length,
-        affectedWorkOrderIds: data.affectedWorkOrderIds
+        affectedWorkOrderIds: data.affectedWorkOrderIds,
+        affectedWorkOrders: affectedWOs,
+        warehouseStock: rawProduct.stock || 0
       });
     }
 
@@ -1352,7 +1426,7 @@ export const erpService = {
 
       for (const ing of recipe.ingredients) {
         const ingColor = ing.color || wo.color || '';
-        const item = mrpItems.find(m => m.rawMaterialId === ing.productId && (m.color || '') === ingColor);
+        const item = mrpItems.find(m => m.rawMaterialId === ing.productId && colorsMatch(m.color, ingColor));
         if (item) {
           if (item.status === 'shortage') {
             hasShortage = true;
@@ -2729,9 +2803,12 @@ export const erpService = {
       }
 
       // Recalculate total product stock from variant stocks to ensure perfect sync
-      const calculatedTotalStock = variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+      let calculatedTotalStock = variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+      if (variants.length === 0 || (!isSpecificSize && (!assortment || assortment.length === 0) && variants.filter(v => v.color === effectiveColor).length === 0)) {
+        calculatedTotalStock = Math.max(0, roundUpQuantity((product.stock || 0) + (deltaSign * item.quantity), 2));
+      }
       await db.products.update(item.productId, {
-        variantBarcodes: variants,
+        variantBarcodes: variants.length > 0 ? variants : product.variantBarcodes,
         stock: calculatedTotalStock
       });
 
@@ -3247,85 +3324,116 @@ export const erpService = {
   },
 
   /**
+   * Resets all production planning data (work orders, job tickets, tracking logs)
+   * while keeping master products and BOM recipes intact.
+   */
+  async clearProductionData(): Promise<number> {
+    const count = await db.workOrders.count();
+    await db.workOrders.clear();
+    try {
+      const currentSettings = await db.settings.get('global_barcode');
+      if (currentSettings) {
+        await db.settings.update('global_barcode', { productionReset: true } as any);
+      } else {
+        await db.settings.put({
+          id: 'global_barcode',
+          barcodeType: 'CODE-128',
+          barcodePrefix: '869',
+          nextBarcodeSequence: 1000000,
+          productionReset: true
+        } as any);
+      }
+    } catch (e) {
+      console.warn('Ayarlar güncellenemedi:', e);
+    }
+    return count;
+  },
+
+  /**
    * Resets all movement and transactional data (stock movements, financial transactions,
    * contact balances, TDHP journal entries, invoices, waybills, work orders, HR logs)
-   * EXCEPT for orders created today (and their order items / linked work orders).
+   * EXCEPT for orders created today (and their order items).
    * Master cards (products, contacts, TDHP accounts, recipes, employees, templates) are KEPT intact.
    */
-  async resetExceptTodayOrders(): Promise<{
+  async resetExceptTodayOrders(options?: { clearWorkOrders?: boolean }): Promise<{
     keptOrdersCount: number;
     deletedOrdersCount: number;
     keptWorkOrdersCount: number;
     deletedWorkOrdersCount: number;
   }> {
-    const today = new Date();
-    const todayYear = today.getFullYear();
-    const todayMonth = today.getMonth();
-    const todayDay = today.getDate();
+    const shouldClearWorkOrders = options?.clearWorkOrders ?? true;
+
+    // Resilient date matcher comparing YYYY-MM-DD
+    const getFormattedDate = (d: Date | string | number | undefined): string => {
+      if (!d) return '';
+      if (typeof d === 'string') {
+        const match = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+      }
+      const dateObj = new Date(d);
+      if (isNaN(dateObj.getTime())) return '';
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     const isTodayDate = (d: Date | string | number | undefined): boolean => {
       if (!d) return false;
-      const dateObj = new Date(d);
-      if (isNaN(dateObj.getTime())) return false;
-      return (
-        dateObj.getFullYear() === todayYear &&
-        dateObj.getMonth() === todayMonth &&
-        dateObj.getDate() === todayDay
-      );
+      const formatted = getFormattedDate(d);
+      return formatted === todayStr;
     };
 
-    return await db.transaction('rw', [
-      db.orders,
-      db.orderItems,
-      db.inventoryLogs,
-      db.transactions,
-      db.journalEntries,
-      db.collectionReceipts,
-      db.checks,
-      db.invoices,
-      db.invoiceItems,
-      db.waybills,
-      db.waybillItems,
-      db.workOrders,
-      db.products,
-      db.contacts,
-      db.accounts,
-      db.cashBoxes,
-      db.bankAccounts,
-      db.attendanceRecords,
-      db.leaveRequests,
-      db.payrollRecords,
-      db.advanceRequests,
-      db.auditLogs,
-      db.settings
-    ], async () => {
-      // 1. Mark movements as reset in settings
+    // 1. Mark movements as reset in settings
+    try {
       const currentSettings = await db.settings.get('global_barcode');
       if (currentSettings) {
-        await db.settings.update('global_barcode', { movementsReset: true } as any);
+        await db.settings.update('global_barcode', { movementsReset: true, productionReset: true } as any);
+      } else {
+        await db.settings.put({
+          id: 'global_barcode',
+          barcodeType: 'CODE-128',
+          barcodePrefix: '869',
+          nextBarcodeSequence: 1000000,
+          movementsReset: true,
+          productionReset: true
+        } as any);
       }
+    } catch (e) {
+      console.warn('Ayar güncelleme uyarısı:', e);
+    }
 
-      // 2. Identify orders created today
-      const allOrders = await db.orders.toArray();
-      const keptOrders = allOrders.filter(o => isTodayDate(o.date) || isTodayDate(o.createdAt));
-      const keptOrderIds = new Set(keptOrders.map(o => o.id).filter(Boolean) as number[]);
-      const deletedOrders = allOrders.filter(o => !o.id || !keptOrderIds.has(o.id));
+    // 2. Identify orders created today vs older
+    const allOrders = await db.orders.toArray();
+    const keptOrders = allOrders.filter(o => isTodayDate(o.date) || isTodayDate(o.createdAt));
+    const keptOrderIds = new Set(keptOrders.map(o => o.id).filter(Boolean) as number[]);
+    const deletedOrders = allOrders.filter(o => !o.id || !keptOrderIds.has(o.id));
 
-      const deletedOrderIds = deletedOrders.map(o => o.id).filter(Boolean) as number[];
-      if (deletedOrderIds.length > 0) {
-        await db.orders.bulkDelete(deletedOrderIds);
-      }
+    const deletedOrderIds = deletedOrders.map(o => o.id).filter(Boolean) as number[];
+    if (deletedOrderIds.length > 0) {
+      await db.orders.bulkDelete(deletedOrderIds);
+    }
 
-      // 3. Delete order items for deleted orders
-      const allOrderItems = await db.orderItems.toArray();
-      const orderItemsToDelete = allOrderItems.filter(oi => !keptOrderIds.has(oi.orderId));
-      if (orderItemsToDelete.length > 0) {
-        const itemIdsToDelete = orderItemsToDelete.map(oi => oi.id).filter(Boolean) as number[];
-        await db.orderItems.bulkDelete(itemIdsToDelete);
-      }
+    // 3. Delete order items for deleted orders
+    const allOrderItems = await db.orderItems.toArray();
+    const orderItemsToDelete = allOrderItems.filter(oi => !keptOrderIds.has(oi.orderId));
+    if (orderItemsToDelete.length > 0) {
+      const itemIdsToDelete = orderItemsToDelete.map(oi => oi.id).filter(Boolean) as number[];
+      await db.orderItems.bulkDelete(itemIdsToDelete);
+    }
 
-      // 4. Handle work orders
-      const allWorkOrders = await db.workOrders.toArray();
+    // 4. Handle work orders
+    const allWorkOrders = await db.workOrders.toArray();
+    let keptWorkOrdersCount = 0;
+    let deletedWorkOrdersCount = 0;
+
+    if (shouldClearWorkOrders) {
+      deletedWorkOrdersCount = allWorkOrders.length;
+      await db.workOrders.clear();
+    } else {
       const keptWorkOrders = allWorkOrders.filter(wo => {
         if (wo.orderId && keptOrderIds.has(wo.orderId)) return true;
         if (isTodayDate(wo.createdAt) || isTodayDate(wo.orderDate)) return true;
@@ -3333,40 +3441,49 @@ export const erpService = {
       });
       const keptWoIds = new Set(keptWorkOrders.map(wo => wo.id).filter(Boolean) as number[]);
       const workOrdersToDelete = allWorkOrders.filter(wo => !wo.id || !keptWoIds.has(wo.id));
-
       if (workOrdersToDelete.length > 0) {
         const woIdsToDelete = workOrdersToDelete.map(wo => wo.id).filter(Boolean) as number[];
         await db.workOrders.bulkDelete(woIdsToDelete);
       }
+      keptWorkOrdersCount = keptWorkOrders.length;
+      deletedWorkOrdersCount = workOrdersToDelete.length;
+    }
 
-      // 5. Clear all movement / transaction logs
-      await db.inventoryLogs.clear();
-      await db.transactions.clear();
-      await db.journalEntries.clear();
-      await db.collectionReceipts.clear();
-      await db.checks.clear();
-      await db.invoices.clear();
-      await db.invoiceItems.clear();
-      await db.waybills.clear();
-      await db.waybillItems.clear();
-      await db.attendanceRecords.clear();
-      await db.leaveRequests.clear();
-      await db.payrollRecords.clear();
-      await db.advanceRequests.clear();
-      await db.auditLogs.clear();
+    // 5. Clear all movement / transaction logs safely
+    try { await db.inventoryLogs.clear(); } catch (e) { console.warn(e); }
+    try { await db.transactions.clear(); } catch (e) { console.warn(e); }
+    try { await db.journalEntries.clear(); } catch (e) { console.warn(e); }
+    try { await db.collectionReceipts.clear(); } catch (e) { console.warn(e); }
+    try { await db.checks.clear(); } catch (e) { console.warn(e); }
+    try { await db.invoices.clear(); } catch (e) { console.warn(e); }
+    try { await db.invoiceItems.clear(); } catch (e) { console.warn(e); }
+    try { await db.waybills.clear(); } catch (e) { console.warn(e); }
+    try { await db.waybillItems.clear(); } catch (e) { console.warn(e); }
+    try { await db.attendanceRecords.clear(); } catch (e) { console.warn(e); }
+    try { await db.leaveRequests.clear(); } catch (e) { console.warn(e); }
+    try { await db.payrollRecords.clear(); } catch (e) { console.warn(e); }
+    try { await db.advanceRequests.clear(); } catch (e) { console.warn(e); }
+    try { await db.auditLogs.clear(); } catch (e) { console.warn(e); }
 
-      // 6. Reset Product Stocks to 0 (Keep product master cards!)
+    // 6. Reset Product Stocks to 0 (Keep product master cards!)
+    try {
       const products = await db.products.toArray();
       for (const p of products) {
         if (!p.id) continue;
-        const updatedVariants = p.variantBarcodes?.map(v => ({ ...v, stock: 0 }));
+        const updatedVariants = p.variantBarcodes && p.variantBarcodes.length > 0
+          ? p.variantBarcodes.map(v => ({ ...v, stock: 0 }))
+          : p.variantBarcodes;
         await db.products.update(p.id, {
           stock: 0,
           variantBarcodes: updatedVariants
         });
       }
+    } catch (e) {
+      console.warn('Ürün stok sıfırlama hatası:', e);
+    }
 
-      // 7. Reset Contact Financial Balances to 0 (Keep contact master cards!)
+    // 7. Reset Contact Financial Balances to 0 (Keep contact master cards!)
+    try {
       const contacts = await db.contacts.toArray();
       for (const c of contacts) {
         if (!c.id) continue;
@@ -3375,29 +3492,39 @@ export const erpService = {
           updatedAt: new Date()
         });
       }
+    } catch (e) {
+      console.warn('Cari bakiye sıfırlama hatası:', e);
+    }
 
-      // 8. Reset CashBox and BankAccount balances to 0 (Keep definitions!)
+    // 8. Reset CashBox and BankAccount balances to 0 (Keep definitions!)
+    try {
       const cashBoxes = await db.cashBoxes.toArray();
       for (const cb of cashBoxes) {
         if (cb.id) {
           await db.cashBoxes.update(cb.id, { balance: 0 });
         }
       }
+    } catch (e) {
+      console.warn('Kasa sıfırlama hatası:', e);
+    }
 
+    try {
       const bankAccounts = await db.bankAccounts.toArray();
       for (const ba of bankAccounts) {
         if (ba.id) {
           await db.bankAccounts.update(ba.id, { balance: 0 });
         }
       }
+    } catch (e) {
+      console.warn('Banka sıfırlama hatası:', e);
+    }
 
-      return {
-        keptOrdersCount: keptOrders.length,
-        deletedOrdersCount: deletedOrders.length,
-        keptWorkOrdersCount: keptWorkOrders.length,
-        deletedWorkOrdersCount: workOrdersToDelete.length
-      };
-    });
+    return {
+      keptOrdersCount: keptOrders.length,
+      deletedOrdersCount: deletedOrders.length,
+      keptWorkOrdersCount,
+      deletedWorkOrdersCount
+    };
   },
 
   // --- Waybill Management (İrsaliye & Sevkiyat Yönetimi) ---

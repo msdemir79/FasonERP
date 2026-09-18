@@ -31,11 +31,7 @@ import { ThemeProvider } from './context/ThemeContext';
 
 export default function App() {
   React.useEffect(() => {
-    seedDatabase().then(() => {
-      erpService.resetExceptTodayOrders().catch(err => {
-        console.error('Sıfırlama çalıştırılamadı:', err);
-      });
-    });
+    seedDatabase();
   }, []);
 
   return (

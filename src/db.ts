@@ -489,6 +489,25 @@ export async function seedDatabase() {
         await db.users.bulkAdd(usersToSeed as any);
       }
 
+      // Parola hash'lerini güvenceye al (Password hashing)
+      const allUsers = await db.users.toArray();
+      for (const u of allUsers) {
+        if (!u.id) continue;
+        if (!u.passwordHash || !u.passwordSalt) {
+          const rawPin = u.pinCode || '1234';
+          const salt = 's_' + u.username + '_2026';
+          const encoder = new TextEncoder();
+          const data = encoder.encode(rawPin + ':' + salt);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          await db.users.update(u.id, {
+            passwordHash: hash,
+            passwordSalt: salt
+          });
+        }
+      }
+
       // 8. Seed Initial Audit Logs
       const auditCount = await db.auditLogs.count();
       if (auditCount === 0) {
@@ -834,30 +853,33 @@ export async function seedDatabase() {
           ]
         });
 
-        // Initial Work Order for testing Refakat Kartı & Camera scanning
-        const now = new Date();
-        await db.workOrders.add({
-          productId: shoe1Id,
-          quantity: 120,
-          status: 'in_progress',
-          currentStage: 'cutting',
-          stages: [
-            { stage: 'planning', stageName: 'Planlama', status: 'completed', startedAt: new Date(now.getTime() - 86400000), completedAt: new Date(now.getTime() - 72000000), operator: 'Ahmet Planlama' },
-            { stage: 'cutting', stageName: 'Kesimhane', status: 'in_progress', startedAt: new Date(now.getTime() - 72000000), operator: 'Mehmet Kesimci' },
-            { stage: 'sewing', stageName: 'Saya Dikim', status: 'pending' },
-            { stage: 'assembly', stageName: 'Montaj & Kalıplama', status: 'pending' },
-            { stage: 'finishing', stageName: 'Finisaj & Temizlik', status: 'pending' },
-            { stage: 'completed', stageName: 'Tamamlandı (Mamul Depo)', status: 'pending' }
-          ],
-          barcode: 'WO-001024',
-          orderNumber: 'SIP-2026-0042',
-          customerName: 'Ziylan Mağazacılık A.Ş.',
-          color: 'Siyah',
-          size: '40-45 Asorti',
-          materialStatus: 'materials_consumed',
-          notes: 'Vitrin siparişi, saya derisi özenle seçilsin, kenar dikişleri çift sıra çekilsin.',
-          createdAt: new Date(now.getTime() - 86400000)
-        });
+        // Initial Work Order for testing Refakat Kartı & Camera scanning (only if not reset)
+        const currentBarcodeSetting = await db.settings.get('global_barcode');
+        if (!currentBarcodeSetting?.productionReset && !currentBarcodeSetting?.movementsReset) {
+          const now = new Date();
+          await db.workOrders.add({
+            productId: shoe1Id,
+            quantity: 120,
+            status: 'in_progress',
+            currentStage: 'cutting',
+            stages: [
+              { stage: 'planning', stageName: 'Planlama', status: 'completed', startedAt: new Date(now.getTime() - 86400000), completedAt: new Date(now.getTime() - 72000000), operator: 'Ahmet Planlama' },
+              { stage: 'cutting', stageName: 'Kesimhane', status: 'in_progress', startedAt: new Date(now.getTime() - 72000000), operator: 'Mehmet Kesimci' },
+              { stage: 'sewing', stageName: 'Saya Dikim', status: 'pending' },
+              { stage: 'assembly', stageName: 'Montaj & Kalıplama', status: 'pending' },
+              { stage: 'finishing', stageName: 'Finisaj & Temizlik', status: 'pending' },
+              { stage: 'completed', stageName: 'Tamamlandı (Mamul Depo)', status: 'pending' }
+            ],
+            barcode: 'WO-001024',
+            orderNumber: 'SIP-2026-0042',
+            customerName: 'Ziylan Mağazacılık A.Ş.',
+            color: 'Siyah',
+            size: '40-45 Asorti',
+            materialStatus: 'materials_consumed',
+            notes: 'Vitrin siparişi, saya derisi özenle seçilsin, kenar dikişleri çift sıra çekilsin.',
+            createdAt: new Date(now.getTime() - 86400000)
+          });
+        }
       }
     } finally {
       // Keep promise resolved so subsequent callers immediately return

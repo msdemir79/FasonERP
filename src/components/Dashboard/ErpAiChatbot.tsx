@@ -151,10 +151,17 @@ ProERP içerisindeki tüm modüller, iş süreçleri ve sistem kullanımınızla
     setIsLoading(true);
 
     try {
+      const sessionToken = localStorage.getItem('proerp_session_token') || 
+                           localStorage.getItem('proerp_active_user_id') || 
+                           'pe_session_active';
+
       // Send conversation history to backend Gemini API
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
         body: JSON.stringify({
           messages: newHistory.map(m => ({
             role: m.role === 'assistant' ? 'model' : 'user',

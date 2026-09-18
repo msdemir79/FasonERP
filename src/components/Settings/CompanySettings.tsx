@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Building2, Save, Check, Database, Download, Upload, AlertTriangle, RefreshCw, FileText, Image as ImageIcon, Trash2, UploadCloud, RotateCcw } from 'lucide-react';
+import { Building2, Save, Check, Database, Download, Upload, AlertTriangle, RefreshCw, FileText, Image as ImageIcon, Trash2, UploadCloud, RotateCcw, Factory, CheckCircle2, X } from 'lucide-react';
 import { db, seedDatabase } from '../../db';
 import { erpService } from '../../services/erpService';
+import Modal from '../Modal';
 import type { AppSettings, CompanySettings as CompanySettingsType } from '../../types';
 
 interface CompanySettingsProps {
@@ -30,23 +31,68 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
   const [isResetting, setIsResetting] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isClearingMovements, setIsClearingMovements] = useState(false);
+  const [isClearingProduction, setIsClearingProduction] = useState(false);
+
+  // Modal states replacing blocked browser confirm()
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isDemoConfirmOpen, setIsDemoConfirmOpen] = useState(false);
+  const [isClearProductionConfirmOpen, setIsClearProductionConfirmOpen] = useState(false);
+  const [feedbackNotice, setFeedbackNotice] = useState<{
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+    details?: string[];
+  } | null>(null);
 
   // Reset Movements Except Today's Orders
-  const handleResetExceptToday = async () => {
-    if (!confirm('DİKKAT: Bugün girdiğiniz siparişler hariç tüm stok, finans, cari ve TDHP hareketleri sıfırlanacaktır.\n\n• Stok kartları, Cari kartları ve TDHP hesap planı kartları KORUNACAKTIR.\n• Sadece geçmiş hareket/işlem verileri temizlenecektir.\n\nDevam etmek istiyor musunuz?')) {
-      return;
-    }
-
+  const executeResetExceptToday = async () => {
     setIsClearingMovements(true);
     try {
-      const res = await erpService.resetExceptTodayOrders();
-      alert(`Sıfırlama İşlemi Başarılı!\n\n• Korunan Bugün Siparişleri: ${res.keptOrdersCount} adet\n• Silinen Eski Siparişler: ${res.deletedOrdersCount} adet\n• Tüm stok, cari, finans ve TDHP hareketleri başarıyla temizlendi.`);
-      window.location.reload();
-    } catch (err) {
+      const res = await erpService.resetExceptTodayOrders({ clearWorkOrders: true });
+      setIsResetConfirmOpen(false);
+      setFeedbackNotice({
+        type: 'success',
+        title: 'Hareket Sıfırlama Başarılı!',
+        message: 'Bugün girilen siparişler hariç tüm hareketler ve üretim planlama verileri temizlendi.',
+        details: [
+          `Korunan Bugün Siparişleri: ${res.keptOrdersCount} adet`,
+          `Silinen Eski Siparişler: ${res.deletedOrdersCount} adet`,
+          `Silinen Üretim İş Emirleri: ${res.deletedWorkOrdersCount} adet`,
+          'Stok, Cari, TDHP Kartları ve Reçeteler eksiksiz korundu.'
+        ]
+      });
+    } catch (err: any) {
       console.error('Sıfırlama hatası:', err);
-      alert('Sıfırlama yapılırken bir sorun oluştu.');
+      setFeedbackNotice({
+        type: 'error',
+        title: 'Sıfırlama Sırasında Sorun Oluştu',
+        message: err?.message || 'İşlem tamamlanırken bir hata oluştu. Lütfen tekrar deneyiniz.'
+      });
     } finally {
       setIsClearingMovements(false);
+    }
+  };
+
+  // Reset Production Planning Only
+  const executeClearProduction = async () => {
+    setIsClearingProduction(true);
+    try {
+      const count = await erpService.clearProductionData();
+      setIsClearProductionConfirmOpen(false);
+      setFeedbackNotice({
+        type: 'success',
+        title: 'Üretim Planlama Sıfırlandı!',
+        message: `Tüm iş emirleri ve proses takibi temizlendi (${count} adet iş emri silindi). Ürün reçeteleriniz (BOM) ve stok kartlarınız korundu. Sıfırdan yeni iş emirleri oluşturabilirsiniz.`
+      });
+    } catch (err: any) {
+      console.error('Üretim temizleme hatası:', err);
+      setFeedbackNotice({
+        type: 'error',
+        title: 'Temizleme Hatası',
+        message: err?.message || 'Üretim verileri silinirken hata oluştu.'
+      });
+    } finally {
+      setIsClearingProduction(false);
     }
   };
 
@@ -192,19 +238,26 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
   };
 
   // Re-seed Database with demo data
-  const handleResetToDemo = async () => {
-    if (!confirm('DİKKAT: Tüm veritabanı sıfırlanacak ve zengin hazır ayakkabı demo verileri yüklenecektir. Devam etmek istiyor musunuz?')) {
-      return;
-    }
-
+  const executeResetToDemo = async () => {
     setIsResetting(true);
     try {
       await seedDatabase();
-      alert('Sistem demo verileriyle başarıyla sıfırlandı!');
-      window.location.reload();
-    } catch (err) {
+      setIsDemoConfirmOpen(false);
+      setFeedbackNotice({
+        type: 'success',
+        title: 'Demo Verileri Yüklendi!',
+        message: 'Tüm sistem varsayılan zengin ayakkabı demo verileriyle yenilendi.'
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
       console.error('Sıfırlama hatası:', err);
-      alert('Demo verileri yüklenirken bir hata oluştu.');
+      setFeedbackNotice({
+        type: 'error',
+        title: 'Demo Yükleme Hatası',
+        message: err?.message || 'Demo verileri yüklenirken bir hata oluştu.'
+      });
     } finally {
       setIsResetting(false);
     }
@@ -212,6 +265,41 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
 
   return (
     <div className="space-y-8">
+      {/* Feedback Notice Banner */}
+      {feedbackNotice && (
+        <div className={`p-4 rounded-xl border flex items-start justify-between shadow-xs ${
+          feedbackNotice.type === 'success'
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+            : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200'
+        }`}>
+          <div className="flex items-start gap-3">
+            {feedbackNotice.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 mt-0.5 shrink-0" />
+            )}
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider">{feedbackNotice.title}</h4>
+              <p className="text-xs mt-0.5 opacity-90">{feedbackNotice.message}</p>
+              {feedbackNotice.details && (
+                <ul className="mt-2 space-y-1 text-[11px] list-disc list-inside opacity-85">
+                  {feedbackNotice.details.map((d, i) => (
+                    <li key={i}>{d}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedbackNotice(null)}
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {saveSuccess && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
@@ -420,25 +508,46 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
           </div>
         </div>
 
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {/* Reset Movements Except Today's Orders */}
           <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-5 flex flex-col justify-between space-y-4">
             <div className="space-y-2">
               <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center">
                 <RotateCcw className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wider">Hareketleri Sıfırla (Kartlar Dursun)</h4>
-              <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80">Bugün girilen siparişler hariç; stok, cari, finans ve TDHP hareketlerini temizler. Stok, cari ve TDHP kartları korunur.</p>
+              <h4 className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wider">Hareketleri Sıfırla</h4>
+              <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80">Bugün girilen siparişler hariç; stok, cari, finans, TDHP ve üretim hareketlerini temizler. Kartlar korunur.</p>
             </div>
 
             <button
               type="button"
-              onClick={handleResetExceptToday}
+              onClick={() => setIsResetConfirmOpen(true)}
               disabled={isClearingMovements}
               className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
               <RotateCcw className={`w-4 h-4 ${isClearingMovements ? 'animate-spin' : ''}`} />
-              {isClearingMovements ? 'Temizleniyor...' : 'Eski Hareketleri Sıfırla'}
+              {isClearingMovements ? 'Temizleniyor...' : 'Hareketleri Sıfırla'}
+            </button>
+          </div>
+
+          {/* Reset Production Planning Only */}
+          <div className="bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/50 rounded-xl p-5 flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 flex items-center justify-center">
+                <Factory className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-black text-purple-900 dark:text-purple-200 uppercase tracking-wider">Üretim Planlama Sıfırla</h4>
+              <p className="text-[11px] text-purple-800/80 dark:text-purple-300/80">Tüm aktif ve geçmiş iş emirlerini temizler, sıfırdan planlama başlatır. Ürün kartları ve reçeteler korunur.</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsClearProductionConfirmOpen(true)}
+              disabled={isClearingProduction}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            >
+              <Trash2 className={`w-4 h-4 ${isClearingProduction ? 'animate-spin' : ''}`} />
+              {isClearingProduction ? 'Siliniyor...' : 'İş Emirlerini Temizle'}
             </button>
           </div>
 
@@ -497,7 +606,7 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
 
             <button
               type="button"
-              onClick={handleResetToDemo}
+              onClick={() => setIsDemoConfirmOpen(true)}
               disabled={isResetting}
               className="w-full bg-slate-900 hover:bg-rose-600 text-white py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
@@ -507,6 +616,158 @@ export default function CompanySettings({ settings, onSave }: CompanySettingsPro
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal: Reset Movements */}
+      <Modal
+        isOpen={isResetConfirmOpen}
+        onClose={() => setIsResetConfirmOpen(false)}
+        title="Hareketleri Sıfırla (Kartlar Dursun)"
+        size="lg"
+      >
+        <div className="p-6 space-y-5">
+          <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4 text-amber-900 dark:text-amber-200">
+            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-bold text-sm">Bu işlem geri alınamaz!</p>
+              <p>Bugün girilen siparişler haricindeki tüm geçmiş işlem ve hareket kayıtları temizlenecektir.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-3.5 space-y-2">
+              <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>KORUNACAK KARTLAR</span>
+              </div>
+              <ul className="space-y-1 text-slate-700 dark:text-slate-300 list-disc list-inside text-[11px]">
+                <li>Stok & Hammadde Kartları (Bakiye sıfırlanır)</li>
+                <li>Cari Hesap Kartları (Müşteri & Tedarikçi)</li>
+                <li>TDHP Hesap Planı Kartları</li>
+                <li>Ürün Reçeteleri (BOM) & Şablonlar</li>
+                <li>Personel & Kullanıcı Kartları</li>
+                <li><strong>Bugün girilen siparişler</strong> ve kalemleri</li>
+              </ul>
+            </div>
+
+            <div className="bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/50 rounded-xl p-3.5 space-y-2">
+              <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-300">
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>TEMİZLENECEK HAREKETLER</span>
+              </div>
+              <ul className="space-y-1 text-slate-700 dark:text-slate-300 list-disc list-inside text-[11px]">
+                <li>Eski siparişler ve geçmiş sipariş kayıtları</li>
+                <li>Stok giriş / çıkış / transfer hareket logları</li>
+                <li>Üretim iş emirleri (sıfırdan başlama)</li>
+                <li>Satış ve alış faturaları & irsaliyeler</li>
+                <li>Kasa, banka, çek ve tahsilat hareketleri</li>
+                <li>TDHP Yevmiye defteri kayıtları</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setIsResetConfirmOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              onClick={executeResetExceptToday}
+              disabled={isClearingMovements}
+              className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
+            >
+              <RotateCcw className={`w-4 h-4 ${isClearingMovements ? 'animate-spin' : ''}`} />
+              {isClearingMovements ? 'Sıfırlanıyor...' : 'Evet, Hareketleri Sıfırla'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirmation Modal: Clear Production Planning */}
+      <Modal
+        isOpen={isClearProductionConfirmOpen}
+        onClose={() => setIsClearProductionConfirmOpen(false)}
+        title="Üretim Planlama Verilerini Sıfırla"
+        size="md"
+      >
+        <div className="p-6 space-y-4">
+          <div className="flex items-start gap-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/50 rounded-xl p-4 text-purple-900 dark:text-purple-200">
+            <Factory className="w-6 h-6 text-purple-600 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-bold text-sm">Üretim Planlamayı Sıfırdan Başlat</p>
+              <p>Mevcut tüm aktif, beklemede veya tamamlanmış iş emirleri silinecektir. Ürün kartlarınız ve ürün reçeteleriniz (BoM) kesinlikle silinmez.</p>
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-600 dark:text-slate-400 space-y-2">
+            <p>Bu işlem ile:</p>
+            <ul className="list-disc list-inside space-y-1 text-[11px]">
+              <li>Tüm iş emirleri (Refakat kartları) temizlenir.</li>
+              <li>MRP hesaplama sonuçları sıfırlanır.</li>
+              <li>Ürün kartları, stok miktarları ve reçeteleriniz KORUNUR.</li>
+            </ul>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setIsClearProductionConfirmOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              onClick={executeClearProduction}
+              disabled={isClearingProduction}
+              className="px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
+            >
+              <Trash2 className={`w-4 h-4 ${isClearingProduction ? 'animate-spin' : ''}`} />
+              {isClearingProduction ? 'Temizleniyor...' : 'Evet, İş Emirlerini Temizle'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirmation Modal: Demo Data Reset */}
+      <Modal
+        isOpen={isDemoConfirmOpen}
+        onClose={() => setIsDemoConfirmOpen(false)}
+        title="Fabrika / Demo Verilerine Sıfırla"
+        size="md"
+      >
+        <div className="p-6 space-y-4">
+          <div className="flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl p-4 text-rose-900 dark:text-rose-200">
+            <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-bold text-sm">Tüm Veriler Silinecektir!</p>
+              <p>Mevcut tüm tablolar sıfırlanacak ve hazır ayakkabı imalat demo verileri yüklenecektir. Bu işlem geri alınamaz.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setIsDemoConfirmOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              onClick={executeResetToDemo}
+              disabled={isResetting}
+              className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
+            >
+              <RefreshCw className={`w-4 h-4 ${isResetting ? 'animate-spin' : ''}`} />
+              {isResetting ? 'Yükleniyor...' : 'Evet, Demo Verisi Yükle'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

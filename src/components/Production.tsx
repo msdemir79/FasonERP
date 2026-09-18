@@ -57,6 +57,7 @@ import { BarcodeSvg } from './BarcodeSvg';
 import DetailedWorkOrderCardModal from './Production/DetailedWorkOrderCardModal';
 import ProductionRefakatKartiModal from './Production/ProductionRefakatKartiModal';
 import BomConsumptionModal from './Production/BomConsumptionModal';
+import { RecipeModal } from './Production/RecipeModal';
 import CameraBarcodeScannerModal, { type ScannerMode } from './Common/CameraBarcodeScannerModal';
 import { PurchaseOrderPrintModal } from './Orders/PurchaseOrderPrintModal';
 import ProductionReport from './Reports/ProductionReport';
@@ -170,13 +171,6 @@ export default function Production() {
   // Recipe Modal State
   const [selectedProductId, setSelectedProductId] = React.useState<number>(0);
   const [selectedRecipeTargetColor, setSelectedRecipeTargetColor] = React.useState<string>('all');
-  const [recipeIngredients, setRecipeIngredients] = React.useState<RecipeIngredient[]>([]);
-  const [recipeLaborCost, setRecipeLaborCost] = React.useState<number>(0);
-  const [recipeNotes, setRecipeNotes] = React.useState<string>('');
-  const [isCopyRecipeModalOpen, setIsCopyRecipeModalOpen] = React.useState(false);
-  const [copySourceColor, setCopySourceColor] = React.useState<string>('');
-  const [copyTargetColors, setCopyTargetColors] = React.useState<string[]>([]);
-  const [copyFeedbackMsg, setCopyFeedbackMsg] = React.useState<string | null>(null);
 
   // Manual Work Order Form State
   const [manualWoProductId, setManualWoProductId] = React.useState<number>(0);
@@ -231,6 +225,33 @@ export default function Production() {
   }[]>([]);
 
   const barcodeInputRef = React.useRef<HTMLInputElement>(null);
+  const [mrpWoFilter, setMrpWoFilter] = React.useState<string>('all');
+
+  // Reset Production Planning State
+  const [isClearAllWoConfirmOpen, setIsClearAllWoConfirmOpen] = React.useState(false);
+  const [isClearingAllWo, setIsClearingAllWo] = React.useState(false);
+  const [noticeBanner, setNoticeBanner] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleClearAllWorkOrders = async () => {
+    setIsClearingAllWo(true);
+    try {
+      const count = await erpService.clearProductionData();
+      setIsClearAllWoConfirmOpen(false);
+      setMrpResult(null);
+      setNoticeBanner({
+        type: 'success',
+        text: `Üretim planlama verileri başarıyla temizlendi (${count} adet iş emri silindi). Sıfırdan yeni iş emirleri ekleyebilirsiniz.`
+      });
+      setTimeout(() => setNoticeBanner(null), 6000);
+    } catch (err: any) {
+      setNoticeBanner({
+        type: 'error',
+        text: `Temizleme hatası: ${err?.message || 'Bir sorun oluştu'}`
+      });
+    } finally {
+      setIsClearingAllWo(false);
+    }
+  };
 
   // Helper Maps
   const productMap = React.useMemo(() => new Map((products || []).map(p => [p.id!, p])), [products]);
@@ -316,200 +337,12 @@ export default function Production() {
     }
   };
 
-  // Recipe helpers: Load existing recipe or prefill draft for specific variant color
-  const loadRecipeForProductAndColor = (productId: number, targetColor: string) => {
-    setSelectedProductId(productId);
-    setSelectedRecipeTargetColor(targetColor);
-
-    const allProdRecipes = recipes?.filter(r => r.productId === productId) || [];
-    const exactMatch = allProdRecipes.find(r => (r.targetColor || 'all') === targetColor);
-
-    if (exactMatch) {
-      setRecipeIngredients(exactMatch.ingredients.map(ing => {
-        const mat = productMap.get(ing.productId);
-        const isSemi = mat?.categoryType === 'semi_finished' || mat?.isFootwear || mat?.unit === 'Çift';
-        return {
-          productId: ing.productId,
-          color: ing.color || (targetColor !== 'all' ? targetColor : undefined),
-          quantity: ing.quantity,
-          unit: ing.unit || mat?.unit || 'Adet',
-          isMatrixMatched: ing.isMatrixMatched ?? isSemi,
-          notes: ing.notes || ''
-        };
-      }));
-      setRecipeLaborCost(exactMatch.laborCost || 0);
-      setRecipeNotes(exactMatch.notes || '');
-      return;
-    }
-
-    // If no exact match and looking for specific color, use generic 'all' recipe as draft template
-    if (targetColor !== 'all') {
-      const generic = allProdRecipes.find(r => !r.targetColor || r.targetColor === 'all');
-      if (generic) {
-        setRecipeIngredients(generic.ingredients.map(ing => {
-          const mat = productMap.get(ing.productId);
-          const isSemi = mat?.categoryType === 'semi_finished' || mat?.isFootwear || mat?.unit === 'Çift';
-          const matHasTargetColor = mat?.colors?.includes(targetColor);
-          return {
-            productId: ing.productId,
-            color: matHasTargetColor ? targetColor : (ing.color || targetColor),
-            quantity: ing.quantity,
-            unit: ing.unit || mat?.unit || 'Adet',
-            isMatrixMatched: ing.isMatrixMatched ?? isSemi,
-            notes: ing.notes || ''
-          };
-        }));
-        setRecipeLaborCost(generic.laborCost || 0);
-        setRecipeNotes(generic.notes || '');
-        return;
-      }
-    }
-
-    // Default blank recipe
-    setRecipeIngredients([{
-      productId: 0,
-      color: targetColor !== 'all' ? targetColor : undefined,
-      quantity: 1,
-      unit: 'Adet',
-      isMatrixMatched: false
-    }]);
-    setRecipeLaborCost(0);
-    setRecipeNotes('');
-  };
-
-  const handleOpenCopyModal = () => {
-    if (!selectedProductId) return;
-    setCopySourceColor(selectedRecipeTargetColor);
-    setCopyTargetColors([]);
-    setCopyFeedbackMsg(null);
-    setIsCopyRecipeModalOpen(true);
-  };
-
-  const handleExecuteCopyRecipe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProductId) return;
-    if (copyTargetColors.length === 0) {
-      alert('Lütfen kopyalamak istediğiniz en az bir hedef renk seçin veya girin.');
-      return;
-    }
-
-    const validIngredients = recipeIngredients.filter(i => i.productId > 0 && i.quantity > 0);
-    if (validIngredients.length === 0) {
-      alert('Kopyalanacak reçetede en az 1 geçerli malzeme bulunmalıdır.');
-      return;
-    }
-
-    try {
-      for (const targetCol of copyTargetColors) {
-        // Adapt ingredients for the target color
-        const adaptedIngredients = validIngredients.map(ing => {
-          const mat = productMap.get(ing.productId);
-          let newColor = ing.color;
-          // If the material has colors that include this target color, automatically adapt to target color
-          if (mat?.colors && mat.colors.includes(targetCol)) {
-            newColor = targetCol;
-          } else if (copySourceColor !== 'all' && ing.color === copySourceColor) {
-            // If the ingredient had the source color, change it to target color
-            newColor = targetCol;
-          }
-          return {
-            ...ing,
-            color: newColor
-          };
-        });
-
-        await erpService.saveRecipe({
-          productId: selectedProductId,
-          targetColor: targetCol !== 'all' ? targetCol : undefined,
-          ingredients: adaptedIngredients,
-          laborCost: recipeLaborCost,
-          notes: recipeNotes ? `${recipeNotes} (${targetCol} rengi için kopyalandı)` : undefined
-        });
-      }
-
-      setCopyFeedbackMsg(`Reçete ${copyTargetColors.length} adet renk varyantına başarıyla kopyalandı ve kaydedildi!`);
-      handleCalculateMRP();
-      setTimeout(() => {
-        setIsCopyRecipeModalOpen(false);
-        setCopyFeedbackMsg(null);
-      }, 1200);
-    } catch (err: any) {
-      alert(`Kopyalama sırasında hata: ${err.message}`);
-    }
-  };
-
-  const handleQuickApplySourceColor = (fromColor: string) => {
-    if (!selectedProductId) return;
-    const allProdRecipes = recipes?.filter(r => r.productId === selectedProductId) || [];
-    const srcRecipe = allProdRecipes.find(r => (r.targetColor || 'all') === fromColor);
-    if (!srcRecipe) {
-      alert(`"${fromColor}" rengi için kayıtlı reçete bulunamadı.`);
-      return;
-    }
-
-    // Clone ingredients and auto-replace color where relevant
-    const cloned = srcRecipe.ingredients.map(ing => {
-      const mat = productMap.get(ing.productId);
-      const isSemi = mat?.categoryType === 'semi_finished' || mat?.isFootwear || mat?.unit === 'Çift';
-      let adaptedColor = ing.color;
-      if (selectedRecipeTargetColor !== 'all') {
-        if (mat?.colors && mat.colors.includes(selectedRecipeTargetColor)) {
-          adaptedColor = selectedRecipeTargetColor;
-        } else if (fromColor !== 'all' && ing.color === fromColor) {
-          adaptedColor = selectedRecipeTargetColor;
-        }
-      }
-      return {
-        productId: ing.productId,
-        department: ing.department || 'KESİM',
-        partName: ing.partName || '',
-        color: adaptedColor,
-        quantity: ing.quantity,
-        unit: ing.unit || mat?.unit || 'Adet',
-        isMatrixMatched: ing.isMatrixMatched ?? isSemi,
-        notes: ing.notes || ''
-      };
-    });
-
-    setRecipeIngredients(cloned);
-    setRecipeLaborCost(srcRecipe.laborCost || 0);
-    setRecipeNotes(srcRecipe.notes || '');
-  };
-
   const openRecipeModalForProduct = (productId: number, targetColor?: string) => {
     setSelectedProductId(productId);
     const prod = productMap.get(productId);
     const colorToUse = targetColor || (prod?.colors && prod.colors.length > 0 ? prod.colors[0] : 'all');
-    loadRecipeForProductAndColor(productId, colorToUse);
+    setSelectedRecipeTargetColor(colorToUse);
     setIsRecipeModalOpen(true);
-  };
-
-  const handleSaveRecipe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProductId) {
-      alert('Lütfen bir hedef model seçin.');
-      return;
-    }
-    const validIngredients = recipeIngredients.filter(i => i.productId > 0 && i.quantity > 0);
-    if (validIngredients.length === 0) {
-      alert('Reçete için en az bir hammadde veya yarı mamul ve geçerli miktar girilmelidir.');
-      return;
-    }
-
-    try {
-      await erpService.saveRecipe({
-        productId: selectedProductId,
-        targetColor: selectedRecipeTargetColor !== 'all' ? selectedRecipeTargetColor : undefined,
-        ingredients: validIngredients,
-        laborCost: recipeLaborCost,
-        notes: recipeNotes
-      });
-      setIsRecipeModalOpen(false);
-      // Recalculate MRP with new recipe
-      handleCalculateMRP();
-    } catch (err: any) {
-      alert(err.message);
-    }
   };
 
   const handleDeleteRecipe = async (recipeId: number) => {
@@ -911,6 +744,16 @@ export default function Production() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={() => setIsClearAllWoConfirmOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-lg text-xs font-bold transition-colors shadow-xs cursor-pointer"
+              title="Üretim planlamadaki tüm iş emirlerini sil ve sıfırdan başla"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>Planlamayı Sıfırla</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => handleOpenScanner('production_wo')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-bold transition-colors shadow-xs cursor-pointer"
               title="Kamera ile Canlı Barkod/Karekod Okut (Stok Sayımı, Mal Kabul, İrsaliye, İş Emri)"
@@ -956,6 +799,31 @@ export default function Production() {
           </div>
         }
       />
+
+      {/* Action Notice Banner */}
+      {noticeBanner && (
+        <div className={`p-4 rounded-xl border flex items-center justify-between shadow-xs ${
+          noticeBanner.type === 'success'
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+            : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200'
+        }`}>
+          <div className="flex items-center gap-2.5 text-xs font-bold">
+            {noticeBanner.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+            )}
+            <span>{noticeBanner.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNoticeBanner(null)}
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Quick Stat Highlights */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -1483,16 +1351,50 @@ export default function Production() {
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Aktif ve bekleyen tüm üretim iş emirlerinin reçetelerine göre gerekli hammadde ihtiyaçları anlık stok ile karşılaştırılır.
+                Aktif üretim iş emirlerinin reçete hammadde ihtiyaçları anlık depo mevcudu ve satın alma siparişleriyle uzlaştırılır.
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center flex-wrap gap-3">
+              {/* Work Order Filter Dropdown */}
+              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">Kapsam:</label>
+                <select
+                  value={mrpWoFilter}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setMrpWoFilter(val);
+                    if (val === 'all') {
+                      handleCalculateMRP();
+                    } else {
+                      handleCalculateMRP([Number(val)]);
+                    }
+                  }}
+                  className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">Tüm Aktif İş Emirleri (Genel MRP)</option>
+                  {(workOrders || []).filter(w => w.status === 'pending' || w.status === 'in_progress').map(wo => {
+                    const p = productMap.get(wo.productId);
+                    return (
+                      <option key={`mrp-wo-opt-${wo.id}`} value={wo.id}>
+                        {wo.barcode || `#WO-${wo.id}`} — {p?.name || 'Ürün'} ({wo.quantity} Çift)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
               <button
                 type="button"
-                onClick={() => handleCalculateMRP()}
+                onClick={() => {
+                  if (mrpWoFilter === 'all') {
+                    handleCalculateMRP();
+                  } else {
+                    handleCalculateMRP([Number(mrpWoFilter)]);
+                  }
+                }}
                 disabled={isMrpCalculating}
-                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2"
               >
                 <RefreshCw className={cn("w-4 h-4", isMrpCalculating && "animate-spin")} />
                 Yeniden Hesapla
@@ -1502,7 +1404,7 @@ export default function Production() {
                 <button
                   type="button"
                   onClick={handleOpenPurchaseOrderModal}
-                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-md shadow-rose-100 animate-pulse"
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-md shadow-rose-100 animate-pulse"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   Eksikler İçin Satın Alma Oluştur ({mrpResult?.shortageItemsCount})
@@ -1510,7 +1412,7 @@ export default function Production() {
               ) : mrpResult && mrpResult.items.some(i => i.status === 'po_created') ? (
                 <div className="px-3.5 py-2 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300 rounded-xl text-xs font-black flex items-center gap-2">
                   <Truck className="w-4 h-4 text-sky-600" />
-                  <span>Eksik Malzemeler Siparişte (Mükerrer Sipariş Koruması Aktif)</span>
+                  <span>Eksik Malzemeler Siparişte (Mükerrer Koruma Aktif)</span>
                 </div>
               ) : null}
             </div>
@@ -1631,6 +1533,22 @@ export default function Production() {
                               </div>
                               <div className="text-[10px] font-mono text-slate-400 mt-0.5">{item.rawMaterialCode}</div>
 
+                              {/* Affected Work Orders badge / tags */}
+                              {item.affectedWorkOrders && item.affectedWorkOrders.length > 0 && (
+                                <div className="mt-1 flex flex-wrap items-center gap-1">
+                                  <span className="text-[9px] font-bold text-slate-400">İş Emirleri ({item.affectedWorkOrders.length}):</span>
+                                  {item.affectedWorkOrders.map((wo, woIdx) => (
+                                    <span
+                                      key={`wo-badge-${itemKey}-${wo.workOrderId}-${woIdx}`}
+                                      className="inline-flex items-center gap-1 text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
+                                      title={`${wo.modelName} — ${wo.quantity} Çift`}
+                                    >
+                                      <span>{wo.barcode} ({wo.quantity} Çift)</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
                               {/* Active PO tags linked to this material */}
                               {item.activePurchaseOrders && item.activePurchaseOrders.length > 0 && (
                                 <div className="mt-1 flex flex-wrap gap-1">
@@ -1684,13 +1602,18 @@ export default function Production() {
                               </span>
                             </td>
                             <td className="p-4 text-right align-top">
-                              <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                              <div className="text-xs font-black text-slate-800 dark:text-slate-200">
                                 {formatQuantity(item.currentStock)} {item.unit}
                               </div>
+                              {item.warehouseStock !== undefined && item.warehouseStock !== item.currentStock && (
+                                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                                  Depo Kartı: {formatQuantity(item.warehouseStock)} {item.unit}
+                                </div>
+                              )}
                               {item.onOrderQuantity && item.onOrderQuantity > 0 ? (
                                 <div className="text-[10px] font-bold text-sky-600 dark:text-sky-400 flex items-center justify-end gap-1 mt-0.5">
                                   <Truck className="w-3 h-3" />
-                                  <span>Yolda: +{formatQuantity(item.onOrderQuantity)} {item.unit}</span>
+                                  <span>Yolda (SAS): +{formatQuantity(item.onOrderQuantity)} {item.unit}</span>
                                 </div>
                               ) : null}
                             </td>
@@ -2068,15 +1991,12 @@ export default function Production() {
                               <div className="flex items-center gap-1.5">
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    openRecipeModalForProduct(prod.id!, rc.targetColor || 'all');
-                                    setTimeout(() => handleOpenCopyModal(), 50);
-                                  }}
+                                  onClick={() => openRecipeModalForProduct(prod.id!, rc.targetColor || 'all')}
                                   className="text-[9px] font-black text-slate-600 dark:text-slate-300 hover:text-indigo-600 uppercase flex items-center gap-0.5"
-                                  title="Bu rengi başka renklere kopyala"
+                                  title="Reçeteyi aç veya başka renklere kopyala"
                                 >
                                   <Copy className="w-3 h-3" />
-                                  Kopyala
+                                  Düzenle / Kopyala
                                 </button>
                                 <button
                                   type="button"
@@ -2276,736 +2196,20 @@ export default function Production() {
         </form>
       </Modal>
 
-      {/* MODAL 2: RECIPE (BoM) BUILDER */}
-      <Modal 
-        isOpen={isRecipeModalOpen} 
-        onClose={() => setIsRecipeModalOpen(false)} 
-        title={`Ürün Reçetesi (BoM) & Sarfiyat Yönetimi ${selectedProductId ? `• ${productMap.get(selectedProductId)?.name || ''}` : ''}`} 
-        size="3xl"
-        allowFullscreen={true}
-        className="max-w-6xl"
-        headerActions={
-          selectedProductId > 0 && recipeIngredients.length > 0 && (
-            <button
-              type="button"
-              onClick={handleOpenCopyModal}
-              className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition-all shadow-xs"
-              title="Mevcut reçeteyi diğer renk varyantlarına kopyala"
-            >
-              <Copy className="w-3.5 h-3.5" />
-              <span>Reçeteyi Kopyala</span>
-            </button>
-          )
-        }
-      >
-        <form onSubmit={handleSaveRecipe} className="space-y-5">
-          {/* Top Control Bar: Model Select & Target Color / Variant Switcher */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 bg-slate-50 dark:bg-slate-800/60 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
-            {/* Target Product Selection */}
-            <div className="lg:col-span-4 space-y-1.5">
-              <label className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                Hedef Model / Mamul
-              </label>
-              <select
-                required
-                value={selectedProductId}
-                onChange={e => {
-                  const newId = Number(e.target.value);
-                  const prod = productMap.get(newId);
-                  const colorToUse = prod?.colors && prod.colors.length > 0 ? prod.colors[0] : 'all';
-                  loadRecipeForProductAndColor(newId, colorToUse);
-                }}
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-2.5 text-sm font-black text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs"
-              >
-                <option value="0">Model Seçiniz...</option>
-                {products?.filter(p => p.categoryType === 'finished' || (!p.categoryType && !p.isRawMaterial && p.categoryType !== 'semi_finished' && p.categoryType !== 'accessory')).map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''}</option>
-                ))}
-              </select>
-              {selectedProductId > 0 && productMap.get(selectedProductId) && (
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2 pt-0.5">
-                  <span className="bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">Kod: {productMap.get(selectedProductId)?.code}</span>
-                  {productMap.get(selectedProductId)?.moldGroup && (
-                    <span className="text-slate-500">{productMap.get(selectedProductId)?.moldGroup}</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Target Variant / Color Tabs */}
-            <div className="lg:col-span-8 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <label className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5 text-indigo-600" />
-                  Hedef Renk Varyantı
-                </label>
-                <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                  <span>Düzenlenen:</span>
-                  <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-800">
-                    {selectedRecipeTargetColor === 'all' ? 'Genel (Tüm Renkler)' : `${selectedRecipeTargetColor} Rengi`}
-                  </span>
-                </div>
-              </div>
-
-              {selectedProductId > 0 ? (
-                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  {/* Generic Option */}
-                  <button
-                    type="button"
-                    onClick={() => loadRecipeForProductAndColor(selectedProductId, 'all')}
-                    className={cn(
-                      "px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wide border transition-all cursor-pointer",
-                      selectedRecipeTargetColor === 'all'
-                        ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                        : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-400"
-                    )}
-                  >
-                    🌐 Genel Reçete
-                  </button>
-
-                  {/* Specific Colors defined on the finished good */}
-                  {productMap.get(selectedProductId)?.colors?.map(col => {
-                    const hasColorRecipe = recipes?.some(r => r.productId === selectedProductId && r.targetColor === col);
-                    const isCurrent = selectedRecipeTargetColor === col;
-                    return (
-                      <button
-                        key={col}
-                        type="button"
-                        onClick={() => loadRecipeForProductAndColor(selectedProductId, col)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wide border transition-all flex items-center gap-1.5 cursor-pointer",
-                          isCurrent
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                            : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
-                        )}
-                      >
-                        <span>{col}</span>
-                        {hasColorRecipe ? (
-                          <span className={cn(
-                            "text-[9px] px-1.5 py-0.2 rounded font-black",
-                            isCurrent ? "bg-indigo-800 text-white" : "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
-                          )}>
-                            ✓ Reçeteli
-                          </span>
-                        ) : (
-                          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">
-                            + Yeni
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-
-                  {/* Custom Color Input */}
-                  <div className="flex items-center gap-1 ml-auto">
-                    <input
-                      type="text"
-                      placeholder="+ Başka Renk..."
-                      className="border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-xl px-2.5 py-1 text-xs font-bold uppercase w-32 focus:outline-none focus:border-indigo-500 shadow-xs"
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const val = (e.target as HTMLInputElement).value.trim();
-                          if (val) {
-                            loadRecipeForProductAndColor(selectedProductId, val);
-                            (e.target as HTMLInputElement).value = '';
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-xs text-slate-400 italic py-1">Lütfen önce yukarıdan bir model seçiniz.</div>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Clone / Pull From Existing Colors Toolbar */}
-          {selectedProductId > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-indigo-50/50 dark:bg-slate-800/40 p-3 px-4 rounded-xl border border-indigo-100 dark:border-slate-700/80">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                  Hızlı Veri Aktarımı / Şablon Çek:
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
-                  Başka bir rengin reçetesini bu ekrana yükleyip düzenleyebilirsiniz.
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <select
-                  defaultValue=""
-                  onChange={e => {
-                    const fromCol = e.target.value;
-                    if (fromCol) {
-                      handleQuickApplySourceColor(fromCol);
-                      e.target.value = '';
-                    }
-                  }}
-                  className="border border-indigo-200 dark:border-slate-600 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value="">Rengin Reçetesini Buraya Yükle...</option>
-                  {recipes?.filter(r => r.productId === selectedProductId).map(r => (
-                    <option key={`clone-opt-${r.id}`} value={r.targetColor || 'all'}>
-                      {r.targetColor ? `${r.targetColor} Rengi Reçetesi` : 'Genel Reçete'} ({r.ingredients?.length || 0} malzeme)
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  type="button"
-                  onClick={handleOpenCopyModal}
-                  className="px-3 py-1.5 bg-white dark:bg-slate-900 hover:bg-indigo-50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-slate-600 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition-all shadow-2xs"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  Toplu Renklere Çoğalt
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Ingredients Section */}
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2.5 gap-2">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                    Reçete Bileşenleri, Yarı Mamul ve Hammaddeler
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                    {recipeIngredients.length} Kalem
-                  </span>
-                </div>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  1 çift/adet mamul üretimi için harcanacak sarfiyat miktarlarını, departman ve parçalarını belirleyin.
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setRecipeIngredients([
-                  ...recipeIngredients, 
-                  { 
-                    productId: 0, 
-                    department: 'KESİM',
-                    partName: '',
-                    color: selectedRecipeTargetColor !== 'all' ? selectedRecipeTargetColor : undefined,
-                    quantity: 1, 
-                    unit: 'Adet',
-                    isMatrixMatched: false
-                  }
-                ])}
-                className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition-all shadow-sm cursor-pointer active:scale-98"
-              >
-                <Plus className="w-4 h-4" /> Yeni Satır Ekle
-              </button>
-            </div>
-
-            {/* Column Header for Desktop */}
-            <div className="hidden md:grid grid-cols-12 gap-2.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800/80 rounded-lg">
-              <div className="col-span-2">Departman / Proses</div>
-              <div className="col-span-2">Parça / Açıklama</div>
-              <div className="col-span-4">Kullanılacak Malzeme (Stok Kartı)</div>
-              <div className="col-span-2">Malzeme Rengi</div>
-              <div className="col-span-1 text-center">Birim Miktar</div>
-              <div className="col-span-1 text-center">İşlem</div>
-            </div>
-
-            {/* Ingredients Rows Container */}
-            <div className="space-y-2.5 max-h-[52vh] overflow-y-auto pr-1">
-              {recipeIngredients.length === 0 ? (
-                <div className="p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
-                  <Package className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-50" />
-                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Bu reçetede henüz malzeme ekli değil.</p>
-                  <p className="text-[11px] text-slate-400 mt-1">Yukarıdaki "Yeni Satır Ekle" veya "Şablon Çek" düğmesini kullanabilirsiniz.</p>
-                </div>
-              ) : (
-                recipeIngredients.map((ing, idx) => {
-                  const selectedMat = productMap.get(ing.productId);
-                  const isSemi = selectedMat?.categoryType === 'semi_finished';
-
-                  return (
-                    <div 
-                      key={idx} 
-                      className="bg-slate-50 dark:bg-slate-800/70 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 transition-all space-y-2 shadow-2xs"
-                    >
-                      {/* Responsive Grid Row */}
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
-                        {/* 1. Departman */}
-                        <div className="md:col-span-2">
-                          <label className="text-[10px] font-bold text-slate-400 md:hidden uppercase">Departman</label>
-                          <select
-                            value={ing.department || 'KESİM'}
-                            onChange={e => {
-                              const next = [...recipeIngredients];
-                              next[idx].department = e.target.value;
-                              setRecipeIngredients(next);
-                            }}
-                            className="w-full border border-slate-200 dark:border-slate-600 rounded-xl p-2 text-xs font-bold text-amber-900 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-950/40 focus:outline-none focus:ring-1 focus:ring-amber-500 uppercase"
-                          >
-                            <option value="KESİM">🟡 KESİM</option>
-                            <option value="BASKI">🟡 BASKI</option>
-                            <option value="SAYA">🟡 SAYA</option>
-                            <option value="BAĞCIK">🟡 BAĞCIK</option>
-                            <option value="MONTA">🟡 MONTA</option>
-                            <option value="TEMİZLEME">🟡 TEMİZLEME</option>
-                            <option value="DİĞER">⚪ DİĞER</option>
-                          </select>
-                        </div>
-
-                        {/* 2. Parça / Açıklama */}
-                        <div className="md:col-span-2">
-                          <label className="text-[10px] font-bold text-slate-400 md:hidden uppercase">Parça / Açıklama</label>
-                          <input
-                            type="text"
-                            placeholder="Parça (Örn: ÇEMBER)"
-                            value={ing.partName || ''}
-                            onChange={e => {
-                              const next = [...recipeIngredients];
-                              next[idx].partName = e.target.value;
-                              setRecipeIngredients(next);
-                            }}
-                            className="w-full border border-slate-200 dark:border-slate-600 rounded-xl p-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-900 uppercase focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            list="part-suggestions"
-                          />
-                          <datalist id="part-suggestions">
-                            <option value="ÇEMBER" />
-                            <option value="NAL" />
-                            <option value="GAMBA" />
-                            <option value="CIRT" />
-                            <option value="KUŞ" />
-                            <option value="FORT" />
-                            <option value="YÜZ" />
-                            <option value="DİL" />
-                            <option value="KONÇ" />
-                            <option value="GAMBA ASTAR" />
-                            <option value="DİL ASTAR" />
-                            <option value="VİZO" />
-                            <option value="FORT BASKI" />
-                            <option value="GAMBA BASKI" />
-                            <option value="KUŞ BASKISI" />
-                            <option value="CIRT BASKISI" />
-                            <option value="DİL ALTI ETİKET" />
-                            <option value="KAPSÜL" />
-                            <option value="CIRT TOKA" />
-                            <option value="MOSTRA ETİKETİ" />
-                            <option value="BAĞCIK" />
-                            <option value="TABAN" />
-                            <option value="FUSPET" />
-                            <option value="KOLİ" />
-                            <option value="KUTU" />
-                            <option value="İÇ KAĞIT" />
-                            <option value="PELUR" />
-                            <option value="ZİNCİR" />
-                            <option value="TANITIM KARTI" />
-                          </datalist>
-                        </div>
-
-                        {/* 3. Malzeme (Stok Kartı) */}
-                        <div className="md:col-span-4">
-                          <label className="text-[10px] font-bold text-slate-400 md:hidden uppercase">Malzeme Kartı</label>
-                          <select
-                            required
-                            value={ing.productId}
-                            onChange={e => {
-                              const newMatId = Number(e.target.value);
-                              const next = [...recipeIngredients];
-                              next[idx].productId = newMatId;
-                              const mat = productMap.get(newMatId);
-                              if (mat) {
-                                next[idx].unit = mat.unit || 'Adet';
-                                if (mat.categoryType === 'semi_finished' || mat.isFootwear || mat.unit === 'Çift') {
-                                  next[idx].isMatrixMatched = true;
-                                }
-                                if (selectedRecipeTargetColor !== 'all' && mat.colors?.includes(selectedRecipeTargetColor)) {
-                                  next[idx].color = selectedRecipeTargetColor;
-                                }
-                              }
-                              setRecipeIngredients(next);
-                            }}
-                            className="w-full border border-slate-200 dark:border-slate-600 rounded-xl p-2 text-xs font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                          >
-                            <option value="0">Malzeme Seçiniz...</option>
-                            
-                            {/* Yarı Mamuller */}
-                            <optgroup label="── 🏭 Yarı Mamuller (Taban, Mostra, Parça) ──">
-                              {products?.filter(p => p.categoryType === 'semi_finished').map(p => (
-                                <option key={`opt-semi-${p.id}`} value={p.id}>
-                                  [Yarı Mamul] {p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''} {p.colors && p.colors.length > 0 ? `[${p.colors.join(', ')}]` : ''}
-                                </option>
-                              ))}
-                            </optgroup>
-
-                            {/* Hammaddeler */}
-                            <optgroup label="── 📦 Hammaddeler (Deri, Kumaş, Plaka) ──">
-                              {products?.filter(p => (p.categoryType === 'raw_material' || (!p.categoryType && p.isRawMaterial)) && p.categoryType !== 'semi_finished').map(p => (
-                                <option key={`opt-raw-${p.id}`} value={p.id}>
-                                  [Hammadde] {p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''} {p.colors && p.colors.length > 0 ? `[${p.colors.join(', ')}]` : ''}
-                                </option>
-                              ))}
-                            </optgroup>
-
-                            {/* Aksesuar & Sarf */}
-                            <optgroup label="── ✂️ Aksesuar & Sarf Malzemeler ──">
-                              {products?.filter(p => p.categoryType === 'accessory').map(p => (
-                                <option key={`opt-acc-${p.id}`} value={p.id}>
-                                  [Aksesuar/Sarf] {p.name} ({p.code}) {p.subType ? `• ${p.subType}` : ''} {p.colors && p.colors.length > 0 ? `[${p.colors.join(', ')}]` : ''}
-                                </option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </div>
-
-                        {/* 4. Malzeme Rengi */}
-                        <div className="md:col-span-2">
-                          <label className="text-[10px] font-bold text-slate-400 md:hidden uppercase">Renk</label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="Renk (Örn: SİYAH)"
-                              value={ing.color || ''}
-                              onChange={e => {
-                                const next = [...recipeIngredients];
-                                next[idx].color = e.target.value || undefined;
-                                setRecipeIngredients(next);
-                              }}
-                              className="w-full border border-slate-200 dark:border-slate-600 rounded-xl p-2 text-xs font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 uppercase focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                              list={`color-sug-${idx}`}
-                            />
-                            {Array.isArray(selectedMat?.colors) && selectedMat.colors.length > 0 && (
-                              <datalist id={`color-sug-${idx}`}>
-                                {Array.from(new Set(selectedMat.colors)).map((c, cIdx) => (
-                                  <option key={`col-sug-${idx}-${c}-${cIdx}`} value={c} />
-                                ))}
-                              </datalist>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 5. Miktar ve Birim */}
-                        <div className="md:col-span-1">
-                          <label className="text-[10px] font-bold text-slate-400 md:hidden uppercase">Miktar & Birim</label>
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              step="0.00001"
-                              min="0.00001"
-                              required
-                              placeholder="Miktar"
-                              value={ing.quantity}
-                              onChange={e => {
-                                const next = [...recipeIngredients];
-                                next[idx].quantity = Number(e.target.value);
-                                setRecipeIngredients(next);
-                              }}
-                              className="w-full border border-slate-200 dark:border-slate-600 rounded-xl p-2 text-xs font-black text-slate-900 dark:text-slate-100 text-center bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            />
-                          </div>
-                        </div>
-
-                        {/* 6. Silme & Birim etiketi */}
-                        <div className="md:col-span-1 flex items-center justify-center gap-1">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter truncate max-w-[36px]" title={ing.unit || 'ADET'}>
-                            {ing.unit || 'ADET'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setRecipeIngredients(recipeIngredients.filter((_, i) => i !== idx))}
-                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-all cursor-pointer"
-                            title="Satırı Sil"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Bottom Options inside Ingredient: Matrix Matching & Unit editor */}
-                      <div className="flex flex-wrap items-center justify-between pt-1.5 border-t border-slate-200/80 dark:border-slate-700/60 text-xs gap-2">
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={!!ing.isMatrixMatched}
-                            onChange={e => {
-                              const next = [...recipeIngredients];
-                              next[idx].isMatrixMatched = e.target.checked;
-                              setRecipeIngredients(next);
-                            }}
-                            className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
-                          />
-                          <span className={cn(
-                            "font-black text-[11px] uppercase tracking-wide",
-                            ing.isMatrixMatched ? "text-emerald-700 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400"
-                          )}>
-                            🎯 Asorti / Beden Matris Eşlemeli
-                          </span>
-                        </label>
-
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] text-slate-400 font-medium italic hidden sm:inline">
-                            {ing.isMatrixMatched 
-                              ? '✓ Siparişteki 40,41,42 vb. ayakkabı asortisi, bu malzemenin aynı numaralarından otomatik düşülür.'
-                              : 'Çift başına sabit sarfiyat.'}
-                          </span>
-
-                          <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase">Birim:</span>
-                            <input
-                              type="text"
-                              value={ing.unit || 'ADET'}
-                              onChange={e => {
-                                const next = [...recipeIngredients];
-                                next[idx].unit = e.target.value;
-                                setRecipeIngredients(next);
-                              }}
-                              className="border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase w-16 bg-white dark:bg-slate-900 text-center focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Bottom Costs & Notes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Tahmini Birim İşçilik Maliyeti (₺)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={recipeLaborCost}
-                onChange={e => setRecipeLaborCost(Number(e.target.value))}
-                placeholder="Örn: 25.50"
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Reçete Notları / Proses & Talimat Bilgisi
-              </label>
-              <input
-                type="text"
-                value={recipeNotes}
-                onChange={e => setRecipeNotes(e.target.value)}
-                placeholder="Örn: 126 Taban için 224 nolu kalıp, saya montada çift dikiş..."
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs"
-              />
-            </div>
-          </div>
-
-          {/* Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setIsRecipeModalOpen(false)}
-              className="px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-            >
-              Vazgeç / Kapat
-            </button>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleOpenCopyModal}
-                disabled={!selectedProductId || recipeIngredients.length === 0}
-                className="px-4 py-3 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                <Copy className="w-4 h-4" />
-                <span>Bu Reçeteyi Diğer Renklere Kopyala</span>
-              </button>
-
-              <button
-                type="submit"
-                className="bg-slate-900 hover:bg-indigo-600 text-white px-7 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-98"
-              >
-                <Check className="w-4 h-4" />
-                <span>{selectedRecipeTargetColor !== 'all' ? `"${selectedRecipeTargetColor}" Reçetesini Kaydet` : 'Genel Reçeteyi Kaydet'}</span>
-              </button>
-            </div>
-          </div>
-        </form>
-      </Modal>
-
-      {/* MODAL 2.1: COPY RECIPE MODAL */}
-      <Modal
-        isOpen={isCopyRecipeModalOpen}
-        onClose={() => setIsCopyRecipeModalOpen(false)}
-        title="Reçeteyi Başka Renklere Kopyala"
-        size="lg"
-      >
-        <form onSubmit={handleExecuteCopyRecipe} className="space-y-5">
-          <div className="bg-indigo-50/70 dark:bg-slate-800/60 p-4 rounded-2xl border border-indigo-100 dark:border-slate-700 space-y-2">
-            <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-black text-xs uppercase tracking-wide">
-              <Copy className="w-4 h-4" />
-              Kaynak Model & Reçete:
-            </div>
-            <div className="text-sm font-black text-slate-900 dark:text-slate-100">
-              {productMap.get(selectedProductId)?.name} ({productMap.get(selectedProductId)?.code})
-            </div>
-            <div className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
-              <span>Kaynak Varyant:</span>
-              <span className="font-black bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-indigo-200 dark:border-slate-600 text-indigo-700 dark:text-indigo-400">
-                {copySourceColor === 'all' ? '🌐 Genel (Tüm Renkler)' : `${copySourceColor} Rengi`}
-              </span>
-              <span className="text-slate-400">• ({recipeIngredients.length} malzeme)</span>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <label className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider block">
-              Hangi Renk Varyantlarına Kopyalansın? (Birden fazla seçebilirsiniz)
-            </label>
-
-            {/* Model's defined colors */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {productMap.get(selectedProductId)?.colors?.map(col => {
-                const isSelected = copyTargetColors.includes(col);
-                const isSource = col === copySourceColor;
-                const alreadyHas = recipes?.some(r => r.productId === selectedProductId && r.targetColor === col);
-
-                return (
-                  <button
-                    key={`target-col-${col}`}
-                    type="button"
-                    disabled={isSource}
-                    onClick={() => {
-                      if (isSelected) {
-                        setCopyTargetColors(copyTargetColors.filter(c => c !== col));
-                      } else {
-                        setCopyTargetColors([...copyTargetColors, col]);
-                      }
-                    }}
-                    className={cn(
-                      "p-3 rounded-xl border text-left flex flex-col gap-1 transition-all cursor-pointer relative",
-                      isSource 
-                        ? "opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700" 
-                        : isSelected
-                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                          : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-400"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase tracking-wider">{col}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5" />}
-                    </div>
-                    <div className={cn("text-[10px]", isSelected ? "text-indigo-100" : "text-slate-400")}>
-                      {isSource ? '(Mevcut Kaynak)' : alreadyHas ? '⚠️ Üzerine Yazılacak' : '✓ Yeni Reçete'}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Manual Color Entry */}
-            <div className="pt-2">
-              <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">
-                Listede olmayan özel bir renk ekle:
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Örn: Siyah Siyah veya Siyah Beyaz"
-                  className="flex-1 border border-slate-300 dark:border-slate-600 rounded-xl p-2.5 text-xs font-bold uppercase bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const val = (e.target as HTMLInputElement).value.trim();
-                      if (val && !copyTargetColors.includes(val)) {
-                        setCopyTargetColors([...copyTargetColors, val]);
-                        (e.target as HTMLInputElement).value = '';
-                      }
-                    }
-                  }}
-                  id="custom-target-color-input"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById('custom-target-color-input') as HTMLInputElement;
-                    if (el && el.value.trim()) {
-                      const val = el.value.trim();
-                      if (!copyTargetColors.includes(val)) {
-                        setCopyTargetColors([...copyTargetColors, val]);
-                        el.value = '';
-                      }
-                    }
-                  }}
-                  className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer"
-                >
-                  Ekle
-                </button>
-              </div>
-            </div>
-
-            {/* Selected Summary Chips */}
-            {copyTargetColors.length > 0 && (
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] font-bold text-slate-500 mr-1">Seçilen Hedefler ({copyTargetColors.length}):</span>
-                {copyTargetColors.map(c => (
-                  <span
-                    key={`selected-chip-${c}`}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-200 rounded-lg text-xs font-black uppercase"
-                  >
-                    <span>{c}</span>
-                    <button
-                      type="button"
-                      onClick={() => setCopyTargetColors(copyTargetColors.filter(item => item !== c))}
-                      className="hover:text-rose-600 cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Smart Auto-matching Info */}
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/50 text-[11px] text-amber-800 dark:text-amber-300 space-y-1">
-              <div className="font-black flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Akıllı Malzeme Renk Eşlemesi:
-              </div>
-              <div>
-                Kopyalanan malzemelerden stok kartında hedef rengi (örn: Siyah) barındıran yarı mamul veya deri/ipliklerin rengi otomatik olarak hedef renge güncellenir.
-              </div>
-            </div>
-
-            {copyFeedbackMsg && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 text-emerald-800 dark:text-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-600" />
-                {copyFeedbackMsg}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setIsCopyRecipeModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold uppercase text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-            >
-              Vazgeç
-            </button>
-            <button
-              type="submit"
-              disabled={copyTargetColors.length === 0}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm flex items-center gap-2 cursor-pointer active:scale-98"
-            >
-              <Copy className="w-3.5 h-3.5" />
-              <span>{copyTargetColors.length} Hedef Renge Kopyala & Kaydet</span>
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {/* MODAL 2: RECIPE (BoM) BUILDER & VARIANT MANAGEMENT */}
+      <RecipeModal
+        isOpen={isRecipeModalOpen}
+        onClose={() => setIsRecipeModalOpen(false)}
+        selectedProductId={selectedProductId}
+        setSelectedProductId={setSelectedProductId}
+        selectedRecipeTargetColor={selectedRecipeTargetColor}
+        setSelectedRecipeTargetColor={setSelectedRecipeTargetColor}
+        products={products}
+        recipes={recipes}
+        onSaveSuccess={() => {
+          handleCalculateMRP();
+        }}
+      />
 
       {/* MODAL 3: STAGE ADVANCEMENT MODAL */}
       <Modal isOpen={isStageTransitionModalOpen} onClose={() => setIsStageTransitionModalOpen(false)} title="Üretim Aşaması İlerlemesi">
@@ -3587,6 +2791,52 @@ export default function Production() {
         }}
         orderId={printPoId}
       />
+
+      {/* MODAL 10: ÜRETİM PLANLAMA SIFIRLAMA ONAY MODALI */}
+      <Modal
+        isOpen={isClearAllWoConfirmOpen}
+        onClose={() => setIsClearAllWoConfirmOpen(false)}
+        title="Üretim Planlama Verilerini Sıfırla"
+        size="md"
+      >
+        <div className="p-6 space-y-4">
+          <div className="flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl p-4 text-rose-900 dark:text-rose-200">
+            <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-bold text-sm">Tüm İş Emirleri Silinecektir!</p>
+              <p>Mevcut tüm aktif, beklemede veya tamamlanmış iş emirleri ve aşama proses kayıtları temizlenecektir.</p>
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-600 dark:text-slate-400 space-y-2">
+            <p><strong>Neler değişecek:</strong></p>
+            <ul className="list-disc list-inside space-y-1 text-[11px]">
+              <li>Tüm iş emirleri silinir ve boru hattı (pipeline) boşaltılır.</li>
+              <li>MRP ihtiyaç ve malzeme sipariş planlaması sıfırlanır.</li>
+              <li><strong>Ürün kartlarınız ve ürün reçeteleriniz (BoM) KESİNLİKLE KORUNUR.</strong></li>
+            </ul>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setIsClearAllWoConfirmOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              onClick={handleClearAllWorkOrders}
+              disabled={isClearingAllWo}
+              className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
+            >
+              <Trash2 className={`w-4 h-4 ${isClearingAllWo ? 'animate-spin' : ''}`} />
+              {isClearingAllWo ? 'Temizleniyor...' : 'Evet, Tüm İş Emirlerini Sil'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
