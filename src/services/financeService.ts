@@ -11,21 +11,16 @@ import type {
 } from '../types';
 import { accountingService } from './accountingService';
 import { turkishIncludes } from '../lib/turkishUtils';
+import { sequenceService } from './sequenceService';
 
 export const financeService = {
   // --- Receipt Number Generation ---
   async generateReceiptNumber(type: ReceiptType): Promise<string> {
-    const year = new Date().getFullYear();
-    const count = await db.collectionReceipts.count();
-    const prefix = type === 'collection' ? 'THS' : 'TED';
-    return `${prefix}-${year}-${(count + 1).toString().padStart(6, '0')}`;
+    return await sequenceService.generateReceiptNumber(type);
   },
 
   async generateCheckPortfolioNumber(type: string): Promise<string> {
-    const year = new Date().getFullYear();
-    const count = await db.checks.count();
-    const prefix = type.includes('check') ? 'CEK' : 'SNT';
-    return `${prefix}-${year}-${(count + 1).toString().padStart(4, '0')}`;
+    return await sequenceService.generateCheckPortfolioNumber(type);
   },
 
   // --- Collection & Disbursement Operations ---

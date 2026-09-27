@@ -293,7 +293,7 @@ export function PurchaseOrderPrintModal({
 
       setLoading(true);
       try {
-        let loadedOrder = initialOrderData;
+        let loadedOrder: (Order & { items: OrderItem[] }) | null | undefined = initialOrderData;
         if (orderId) {
           loadedOrder = await erpService.getOrder(orderId);
         }

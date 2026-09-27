@@ -6,28 +6,34 @@ import type {
   LeaveRequest, 
   LeaveType, 
   PayrollRecord, 
-  AdvanceRequest,
+  AdvanceRequest, 
   SgkStatus,
   AttendancePeriodLock
 } from '../types';
 import { accountingService } from './accountingService';
+import { 
+  HR_CONSTANTS_2026, 
+  calculatePayroll2026, 
+  calculateGrossFromNet, 
+  toKurus, 
+  fromKurus 
+} from '../lib/payrollCalculator';
 
-// Standart 2026 Türkiye Parametreleri (Referans)
+// 2026 Türkiye Parametreleri (Geriye Dönük Uyumluluk ve Dışa Aktarım)
 export const HR_CONSTANTS = {
-  SGK_WORKER_RATE: 0.14,            // %14 SGK İşçi Payı
-  UNEMPLOYMENT_WORKER_RATE: 0.01,   // %1 İşsizlik İşçi Payı
-  SGK_EMPLOYER_RATE: 0.155,         // %15.5 SGK İşveren Payı (5 puanlık Hazine teşviki ile)
-  UNEMPLOYMENT_EMPLOYER_RATE: 0.02, // %2 İşveren İşsizlik Payı
-  INCOME_TAX_RATE_TIER1: 0.15,      // %15 1. Vergi Dilimi
-  STAMP_TAX_RATE: 0.00759,          // Binde 7.59 Damga Vergisi
+  SGK_WORKER_RATE: HR_CONSTANTS_2026.SGK_WORKER_RATE,
+  UNEMPLOYMENT_WORKER_RATE: HR_CONSTANTS_2026.UNEMPLOYMENT_WORKER_RATE,
+  SGK_EMPLOYER_RATE: HR_CONSTANTS_2026.SGK_EMPLOYER_RATE,
+  UNEMPLOYMENT_EMPLOYER_RATE: HR_CONSTANTS_2026.UNEMPLOYMENT_EMPLOYER_RATE,
+  INCOME_TAX_RATE_TIER1: 0.15,
+  STAMP_TAX_RATE: HR_CONSTANTS_2026.STAMP_TAX_RATE,
   
-  // Asgari Ücret Parametreleri (İstisna Hesaplaması İçin)
-  MIN_WAGE_GROSS: 26005.00,
-  MIN_WAGE_NET: 22104.00,
-  MIN_WAGE_SGK_WORKER: 3640.70,     // 26005 * 0.14
-  MIN_WAGE_UNEMPLOYMENT: 260.05,    // 26005 * 0.01
-  MIN_WAGE_INCOME_TAX_EXEMPTION: 3315.64, // İstisna edilecek gelir vergisi
-  MIN_WAGE_STAMP_TAX_EXEMPTION: 197.38    // İstisna edilecek damga vergisi
+  MIN_WAGE_GROSS: HR_CONSTANTS_2026.MIN_WAGE_GROSS_TL,
+  MIN_WAGE_NET: HR_CONSTANTS_2026.MIN_WAGE_NET_TL,
+  MIN_WAGE_SGK_WORKER: HR_CONSTANTS_2026.MIN_WAGE_GROSS_TL * HR_CONSTANTS_2026.SGK_WORKER_RATE,
+  MIN_WAGE_UNEMPLOYMENT: HR_CONSTANTS_2026.MIN_WAGE_GROSS_TL * HR_CONSTANTS_2026.UNEMPLOYMENT_WORKER_RATE,
+  MIN_WAGE_INCOME_TAX_EXEMPTION: HR_CONSTANTS_2026.MIN_WAGE_INCOME_TAX_EXEMPTION_TL,
+  MIN_WAGE_STAMP_TAX_EXEMPTION: HR_CONSTANTS_2026.MIN_WAGE_STAMP_TAX_EXEMPTION_TL
 };
 
 export const hrService = {
@@ -460,13 +466,14 @@ export const hrService = {
   },
 
   // ==================== BORDRO VE ÜCRET HESAPLAMA MOTORU ====================
-  // Tek bir personel için aylık bordro ve maliyet hesabı
+  // Tek bir personel için aylık bordro ve maliyet hesabı (2026 Kümülatif Vergi & Kuruş Aritmetiği)
   calculatePayrollForEmployee(
     employee: Employee,
     attendanceList: AttendanceRecord[],
     advances: AdvanceRequest[],
     month: number,
-    year: number
+    year: number,
+    previousCumulativeTaxBaseTL: number = 0
   ): Omit<PayrollRecord, 'id' | 'createdAt'> {
     const daysInMonth = new Date(year, month, 0).getDate();
     
@@ -514,183 +521,88 @@ export const hrService = {
       }
     }
 
-    // Ücret kesintisine tabi toplam gün sayısı (devamsızlık + ücretsiz izin + yarım gün açığı)
-    const totalDeductedDays = absentDays + unpaidLeaveDays + (halfDays * 0.5);
-
     // Toplam Avans Kesintisi
     const employeeAdvances = advances.filter(a => a.employeeId === employee.id && a.status === 'paid');
     const advanceDeduction = employeeAdvances.reduce((sum, a) => sum + a.amount, 0);
 
     const isSgkLi = employee.sgkStatus === 'sgk_li';
 
-    // -------------------------------------------------------------
-    // SENARYO 1: SGK'LI PERSONEL (Bordrolu / Yasal Kesintili Hesaplama)
-    // -------------------------------------------------------------
-    if (isSgkLi) {
-      // Netten Brüte veya Brüt bazlı hesaplama
-      // Net anlaşılan tutardan brüt tahmini katsayısı: ~1.42 (asgari ücret muafiyeti dikkate alınarak)
-      let grossSalary = 0;
-      if (employee.salaryType === 'monthly_net') {
-        const targetNet = employee.baseSalary || 30000;
-        // Basitleştirilmiş hassas Türkiye bordro net-brüt dönüştürücüsü
-        // Net = Brüt - (Brüt * 0.15) - Gelir Vergisi (İstisna düşülmüş) - Damga Vergisi (İstisna düşülmüş)
-        grossSalary = targetNet <= HR_CONSTANTS.MIN_WAGE_NET
-          ? HR_CONSTANTS.MIN_WAGE_GROSS
-          : HR_CONSTANTS.MIN_WAGE_GROSS + (targetNet - HR_CONSTANTS.MIN_WAGE_NET) / 0.7149;
-      } else {
-        grossSalary = employee.baseSalary;
-      }
-
-      // Çalışılan güne oranla temel hak ediş (30 gün standardı)
-      const standardDays = 30;
-      const effectiveDays = Math.max(0, standardDays - totalDeductedDays);
-      const basePay = (grossSalary / standardDays) * effectiveDays;
-
-      // Fazla mesai brüt ücreti (Saatlik Brüt * 1.5 * Saat)
-      const hourlyGross = grossSalary / 225; // 225 aylık yasal çalışma saati
-      const overtimePay = hourlyGross * 1.5 * overtimeHours;
-      const bonusPay = 0; // Yol, yemek, prim eklenebilir
-
-      const totalGrossPay = basePay + overtimePay + bonusPay;
-
-      // Yasal Kesintiler
-      const employeeSgkShare = totalGrossPay * HR_CONSTANTS.SGK_WORKER_RATE; // %14
-      const employeeUnemploymentShare = totalGrossPay * HR_CONSTANTS.UNEMPLOYMENT_WORKER_RATE; // %1
-
-      // Gelir Vergisi Matrahı
-      const incomeTaxBase = totalGrossPay - employeeSgkShare - employeeUnemploymentShare;
-      const rawIncomeTax = incomeTaxBase * HR_CONSTANTS.INCOME_TAX_RATE_TIER1; // %15
-      // Asgari Ücret Vergi İstisnası Düşümü
-      const incomeTax = Math.max(0, rawIncomeTax - HR_CONSTANTS.MIN_WAGE_INCOME_TAX_EXEMPTION);
-
-      // Damga Vergisi Matrahı & İstisnası
-      const rawStampTax = totalGrossPay * HR_CONSTANTS.STAMP_TAX_RATE;
-      const stampTax = Math.max(0, rawStampTax - HR_CONSTANTS.MIN_WAGE_STAMP_TAX_EXEMPTION);
-
-      const totalLegalDeductions = employeeSgkShare + employeeUnemploymentShare + incomeTax + stampTax;
-
-      // Net Ödenecek
-      const netSalary = Math.max(0, totalGrossPay - totalLegalDeductions - advanceDeduction);
-
-      // İşveren Maliyeti
-      const employerSgkShare = totalGrossPay * HR_CONSTANTS.SGK_EMPLOYER_RATE; // %15.5
-      const employerUnemploymentShare = totalGrossPay * HR_CONSTANTS.UNEMPLOYMENT_EMPLOYER_RATE; // %2
-      const totalEmployerCost = totalGrossPay + employerSgkShare + employerUnemploymentShare;
-
-      return {
-        employeeId: employee.id!,
-        employeeName: employee.name,
-        employeeCode: employee.employeeCode,
-        department: employee.department,
-        month,
-        year,
-        sgkStatus: 'sgk_li',
-        salaryType: employee.salaryType,
-        daysWorked,
-        weeklyRestDays,
-        paidLeaveDays,
-        unpaidLeaveDays,
-        absentDays,
-        totalDays: effectiveDays,
-        overtimeHours,
-        baseSalary: Math.round(grossSalary),
-        basePay: Math.round(basePay),
-        overtimePay: Math.round(overtimePay),
-        bonusPay,
-        totalGrossPay: Math.round(totalGrossPay),
-        employeeSgkShare: Math.round(employeeSgkShare),
-        employeeUnemploymentShare: Math.round(employeeUnemploymentShare),
-        incomeTax: Math.round(incomeTax),
-        stampTax: Math.round(stampTax),
-        totalLegalDeductions: Math.round(totalLegalDeductions),
-        advanceDeduction: Math.round(advanceDeduction),
-        otherDeductions: 0,
-        netSalary: Math.round(netSalary),
-        employerSgkShare: Math.round(employerSgkShare),
-        employerUnemploymentShare: Math.round(employerUnemploymentShare),
-        totalEmployerCost: Math.round(totalEmployerCost),
-        paymentStatus: 'unpaid',
-        isAccounted: false,
-        notes: `SGK'lı Bordro Hesabı (${effectiveDays} gün hak ediş${absentDays > 0 ? `, ${absentDays} gün devamsız` : ''}${unpaidLeaveDays > 0 ? `, ${unpaidLeaveDays} gün ücr. izin` : ''}${overtimeHours > 0 ? `, ${overtimeHours} sa mesai` : ''})`
-      };
-    } 
-    
-    // -------------------------------------------------------------
-    // SENARYO 2: SGK'SIZ / GÜNLÜK YEVMİYELİ / HARİCİ PERSONEL
-    // (Vergi ve SGK kesintisi yok, fiili net hakediş ve yevmiye bazlı)
-    // -------------------------------------------------------------
-    else {
-      let basePay = 0;
-      let hourlyRate = 0;
-
-      if (employee.salaryType === 'daily') {
-        // Günlük Yevmiye:
-        // Fiili çalışılan gün sayısı + Ücretli izin günleri üzerinden ödenir.
-        // Devamsızlık veya ücretsiz izin günleri kesinlikle ödenmez.
-        const dailyRate = employee.baseSalary || 1500;
-        const payableDays = Math.max(0, daysWorked + paidLeaveDays);
-        basePay = dailyRate * payableDays;
-        hourlyRate = dailyRate / 8;
-      } else if (employee.salaryType === 'hourly') {
-        hourlyRate = employee.baseSalary || 200;
-        basePay = (daysWorked * 8) * hourlyRate;
-      } else {
-        // Aylık sabit net anlaşılan tutar: 30 gün standardı üzerinden devamsızlık düşülür
-        const monthlyNet = employee.baseSalary || 30000;
-        const standardDays = 30;
-        const effectiveDays = Math.max(0, standardDays - totalDeductedDays);
-        basePay = (monthlyNet / standardDays) * effectiveDays;
-        hourlyRate = monthlyNet / 240;
-      }
-
-      // Fazla Mesai (Saatlik Ücret * 1.5 * Mesai Saati)
-      const overtimePay = hourlyRate * 1.5 * overtimeHours;
-      const bonusPay = 0;
-      const totalNetEarned = basePay + overtimePay + bonusPay;
-
-      // Net Ödenecek (Avanslar Düşülür)
-      const netSalary = Math.max(0, totalNetEarned - advanceDeduction);
-
-      // SGK'sız personelde işveren maliyeti net ödenen toplam tutardır (Ek yasal prim maliyeti yoktur)
-      const totalEmployerCost = totalNetEarned;
-
-      return {
-        employeeId: employee.id!,
-        employeeName: employee.name,
-        employeeCode: employee.employeeCode,
-        department: employee.department,
-        month,
-        year,
-        sgkStatus: 'sgk_siz',
-        salaryType: employee.salaryType,
-        daysWorked,
-        weeklyRestDays,
-        paidLeaveDays,
-        unpaidLeaveDays,
-        absentDays,
-        totalDays: employee.salaryType === 'daily' ? Math.max(0, daysWorked + paidLeaveDays) : Math.max(0, 30 - totalDeductedDays),
-        overtimeHours,
-        baseSalary: employee.baseSalary,
-        basePay: Math.round(basePay),
-        overtimePay: Math.round(overtimePay),
-        bonusPay,
-        totalGrossPay: Math.round(totalNetEarned),
-        employeeSgkShare: 0,
-        employeeUnemploymentShare: 0,
-        incomeTax: 0,
-        stampTax: 0,
-        totalLegalDeductions: 0,
-        advanceDeduction: Math.round(advanceDeduction),
-        otherDeductions: 0,
-        netSalary: Math.round(netSalary),
-        employerSgkShare: 0,
-        employerUnemploymentShare: 0,
-        totalEmployerCost: Math.round(totalEmployerCost),
-        paymentStatus: 'unpaid',
-        isAccounted: false,
-        notes: `SGK'sız / Yevmiyeli Net Hak Ediş (${daysWorked} fiili gün${absentDays > 0 ? `, ${absentDays} gün devamsız` : ''}${unpaidLeaveDays > 0 ? `, ${unpaidLeaveDays} gün ücr. izin` : ''}${overtimeHours > 0 ? `, ${overtimeHours} sa mesai` : ''})`
-      };
+    // Brüt veya Net anlaşılan maaşı belirle
+    let targetGrossTL = employee.baseSalary || HR_CONSTANTS_2026.MIN_WAGE_GROSS_TL;
+    if (isSgkLi && employee.salaryType === 'monthly_net') {
+      targetGrossTL = calculateGrossFromNet(employee.baseSalary || HR_CONSTANTS_2026.MIN_WAGE_NET_TL, previousCumulativeTaxBaseTL);
     }
+
+    // 2026 Hassas Matematiksel Bordro Motorunu Çalıştır
+    const calc = calculatePayroll2026({
+      grossSalaryTL: targetGrossTL,
+      salaryType: employee.salaryType === 'daily' ? 'daily' : employee.salaryType === 'hourly' ? 'hourly' : 'monthly',
+      sgkStatus: employee.sgkStatus,
+      daysWorked,
+      weeklyRestDays,
+      paidLeaveDays,
+      unpaidLeaveDays,
+      absentDays,
+      overtimeHours,
+      bonusPayTL: 0,
+      advanceDeductionTL: advanceDeduction,
+      otherDeductionsTL: 0,
+      previousCumulativeTaxBaseTL
+    });
+
+    const effectiveDays = isSgkLi 
+      ? Math.max(0, 30 - (absentDays + unpaidLeaveDays + (halfDays * 0.5)))
+      : (employee.salaryType === 'daily' ? Math.max(0, daysWorked + paidLeaveDays) : Math.max(0, 30 - (absentDays + unpaidLeaveDays + (halfDays * 0.5))));
+
+    return {
+      employeeId: employee.id!,
+      employeeName: employee.name,
+      employeeCode: employee.employeeCode,
+      department: employee.department,
+      month,
+      year,
+      sgkStatus: employee.sgkStatus,
+      salaryType: employee.salaryType,
+      daysWorked,
+      weeklyRestDays,
+      paidLeaveDays,
+      unpaidLeaveDays,
+      absentDays,
+      totalDays: effectiveDays,
+      overtimeHours,
+      baseSalary: calc.baseSalary,
+      basePay: calc.basePay,
+      overtimePay: calc.overtimePay,
+      bonusPay: calc.bonusPay,
+      totalGrossPay: calc.totalGrossPay,
+      employeeSgkShare: calc.employeeSgkShare,
+      employeeUnemploymentShare: calc.employeeUnemploymentShare,
+      incomeTaxBase: calc.incomeTaxBase,
+      previousCumulativeTaxBase: calc.previousCumulativeTaxBase,
+      cumulativeTaxBase: calc.cumulativeTaxBase,
+      appliedTaxRate: calc.appliedTaxRate,
+      incomeTax: calc.incomeTax,
+      stampTax: calc.stampTax,
+      totalLegalDeductions: calc.totalLegalDeductions,
+      totalGrossPayKurus: calc.totalGrossPayKurus,
+      employeeSgkShareKurus: calc.employeeSgkShareKurus,
+      employeeUnemploymentShareKurus: calc.employeeUnemploymentShareKurus,
+      incomeTaxKurus: calc.incomeTaxKurus,
+      stampTaxKurus: calc.stampTaxKurus,
+      netSalaryKurus: calc.netSalaryKurus,
+      totalEmployerCostKurus: calc.totalEmployerCostKurus,
+      advanceDeduction: calc.advanceDeduction,
+      otherDeductions: calc.otherDeductions,
+      netSalary: calc.netSalary,
+      employerSgkShare: calc.employerSgkShare,
+      employerUnemploymentShare: calc.employerUnemploymentShare,
+      totalEmployerCost: calc.totalEmployerCost,
+      paymentStatus: 'unpaid',
+      isAccounted: false,
+      notes: isSgkLi 
+        ? `SGK'lı 2026 Kümülatif Bordro (${effectiveDays} gün hak ediş${absentDays > 0 ? `, ${absentDays} gün devamsız` : ''}${unpaidLeaveDays > 0 ? `, ${unpaidLeaveDays} gün ücr. izin` : ''}${overtimeHours > 0 ? `, ${overtimeHours} sa mesai` : ''})`
+        : `SGK'sız / Yevmiyeli Net Hak Ediş (${daysWorked} fiili gün${absentDays > 0 ? `, ${absentDays} gün devamsız` : ''}${unpaidLeaveDays > 0 ? `, ${unpaidLeaveDays} gün ücr. izin` : ''}${overtimeHours > 0 ? `, ${overtimeHours} sa mesai` : ''})`
+    };
   },
 
   // Tüm personeller için seçilen ayın bordrosunu hesaplayıp veritabanına kaydet/güncelle
@@ -707,13 +619,34 @@ export const hrService = {
       .filter(a => a.month === month && a.status === 'paid')
       .toArray();
 
+    // Önceki aylara ait kümülatif vergi matrahlarını hesapla
+    const priorPayrolls = await db.payrollRecords
+      .where('year')
+      .equals(year)
+      .filter(p => p.month < month)
+      .toArray();
+
     const generated: PayrollRecord[] = [];
 
     for (const emp of employees) {
       if (!emp.id) continue;
       const empAttendance = attendanceRecords.filter(a => a.employeeId === emp.id);
       
-      const payrollData = this.calculatePayrollForEmployee(emp, empAttendance, advances, month, year);
+      // Personelin yıl içindeki önceki kümülatif gelir vergisi matrahı toplamı
+      const employeePriorPayrolls = priorPayrolls.filter(p => p.employeeId === emp.id);
+      const prevCumulativeTaxBaseTL = employeePriorPayrolls.reduce(
+        (sum, p) => sum + (p.incomeTaxBase || 0), 
+        0
+      );
+
+      const payrollData = this.calculatePayrollForEmployee(
+        emp, 
+        empAttendance, 
+        advances, 
+        month, 
+        year, 
+        prevCumulativeTaxBaseTL
+      );
 
       // Varolan bordro kaydı var mı
       const existing = await db.payrollRecords

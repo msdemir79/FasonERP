@@ -1206,7 +1206,7 @@ export default function AttendanceTab({ employees, onAttendanceChanged }: Attend
                   {periodLock && (
                     <div className="mt-2 pt-2 border-t border-amber-200/60 text-[11px] text-amber-800 space-y-0.5">
                       <div><b>Kitleyen:</b> {periodLock.lockedBy || 'Yetkili'}</div>
-                      <div><b>Kilitleme Tarihi:</b> {new Date(periodLock.lockedAt).toLocaleString('tr-TR')}</div>
+                      <div><b>Kilitleme Tarihi:</b> {periodLock.lockedAt ? new Date(periodLock.lockedAt).toLocaleString('tr-TR') : '-'}</div>
                       {periodLock.notes && <div><b>Mevcut Not:</b> {periodLock.notes}</div>}
                     </div>
                   )}

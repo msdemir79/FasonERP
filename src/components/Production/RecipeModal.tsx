@@ -889,7 +889,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
 
                               {/* Hammaddeler */}
                               <optgroup label="── 📦 Hammaddeler (Deri, Kumaş, Plaka) ──">
-                                {products.filter(p => (p.categoryType === 'raw_material' || (!p.categoryType && p.isRawMaterial)) && p.categoryType !== 'semi_finished').map(p => (
+                                {products.filter(p => (p.categoryType === 'raw_material' || (!p.categoryType && p.isRawMaterial))).map(p => (
                                   <option key={`opt-raw-${p.id}`} value={p.id}>
                                     {p.name} ({p.code}) {p.colors && p.colors.length > 0 ? `[${p.colors.join(', ')}]` : ''}
                                   </option>

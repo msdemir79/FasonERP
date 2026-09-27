@@ -1537,24 +1537,30 @@ function ActionWaybillModal({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCancel = async () => {
-    if (!waybill.id) return;
+    if (!waybill.id || isDeleting) return;
+    setIsDeleting(true);
     try {
       await erpService.cancelWaybill(waybill.id, reason);
       onSuccess(`${waybill.waybillNumber} no'lu irsaliye iptal edildi, sipariş sevk miktarı ve stok geri yüklendi.`);
     } catch (err: any) {
       alert('İptal işlemi başarısız: ' + err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!waybill.id) return;
+    if (!waybill.id || isDeleting) return;
     if (!confirm('Bu irsaliye kaydını kalıcı olarak silmek istediğinize emin misiniz?')) return;
 
+    setIsDeleting(true);
     try {
       await erpService.deleteWaybill(waybill.id);
       onSuccess(`${waybill.waybillNumber} no'lu irsaliye kalıcı olarak silindi.`);
     } catch (err: any) {
       alert('Silme işlemi başarısız: ' + err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1606,16 +1612,16 @@ function ActionWaybillModal({
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={handleCancel}
-                  disabled={waybill.invoicedStatus === 'invoiced'}
-                  className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+                  disabled={waybill.invoicedStatus === 'invoiced' || isDeleting}
+                  className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Ban className="w-4 h-4" />
-                  <span>İrsaliyeyi İptal Et</span>
+                  <span>{isDeleting ? 'İşleniyor...' : 'İrsaliyeyi İptal Et'}</span>
                 </button>
                 <button
                   onClick={handleDelete}
-                  disabled={waybill.invoicedStatus === 'invoiced'}
-                  className="px-3 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 font-bold rounded-xl transition-all"
+                  disabled={waybill.invoicedStatus === 'invoiced' || isDeleting}
+                  className="px-3 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 font-bold rounded-xl transition-all cursor-pointer"
                   title="Kalıcı Olarak Sil"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1628,10 +1634,10 @@ function ActionWaybillModal({
                 Bu irsaliye taslak veya iptal durumundadır. Kaydı kalıcı olarak veritabanından temizlemek istiyor musunuz?
               </p>
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={onClose} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl">Vazgeç</button>
-                <button onClick={handleDelete} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl flex items-center gap-1.5">
+                <button onClick={onClose} disabled={isDeleting} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl cursor-pointer">Vazgeç</button>
+                <button onClick={handleDelete} disabled={isDeleting} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer">
                   <Trash2 className="w-4 h-4" />
-                  <span>Kalıcı Olarak Sil</span>
+                  <span>{isDeleting ? 'Siliniyor...' : 'Kalıcı Olarak Sil'}</span>
                 </button>
               </div>
             </>

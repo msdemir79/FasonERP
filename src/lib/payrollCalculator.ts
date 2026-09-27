@@ -61,6 +61,50 @@ export function fromKurus(kurus: number): number {
 }
 
 /**
+ * Net ücretten brüt ücreti 2026 kümülatif vergi ve SGK dilimlerine göre tam kuruş hassasiyetinde çözer
+ */
+export function calculateGrossFromNet(
+  targetNetTL: number,
+  previousCumulativeTaxBaseTL: number = 0
+): number {
+  if (!targetNetTL || isNaN(targetNetTL) || targetNetTL <= 0) return 0;
+
+  // Asgari ücret netinin altında ise asgari brüt
+  if (targetNetTL <= HR_CONSTANTS_2026.MIN_WAGE_NET_TL) {
+    return HR_CONSTANTS_2026.MIN_WAGE_GROSS_TL;
+  }
+
+  const targetNetKurus = toKurus(targetNetTL);
+  let lowKurus = targetNetKurus;
+  let highKurus = targetNetKurus * 3;
+  let bestGrossKurus = highKurus;
+
+  // Binary search for exact gross cent value
+  for (let i = 0; i < 35; i++) {
+    const midKurus = Math.round((lowKurus + highKurus) / 2);
+    const result = calculatePayroll2026({
+      grossSalaryTL: fromKurus(midKurus),
+      daysWorked: 30,
+      weeklyRestDays: 0,
+      paidLeaveDays: 0,
+      unpaidLeaveDays: 0,
+      absentDays: 0,
+      overtimeHours: 0,
+      previousCumulativeTaxBaseTL
+    });
+
+    if (result.netSalaryKurus >= targetNetKurus) {
+      bestGrossKurus = midKurus;
+      highKurus = midKurus - 1;
+    } else {
+      lowKurus = midKurus + 1;
+    }
+  }
+
+  return fromKurus(bestGrossKurus);
+}
+
+/**
  * 2026 Kümülatif Vergi Matrahına göre Gelir Vergisi hesaplar (Kuruş cinsinden)
  */
 export function calculateProgressiveIncomeTaxKurus(

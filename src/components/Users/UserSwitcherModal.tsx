@@ -113,7 +113,11 @@ export default function UserSwitcherModal({ isOpen, onClose }: UserSwitcherModal
                     <button
                       type="button"
                       disabled={!isActive}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all flex items-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isActive) handleSelectUser(u);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer disabled:cursor-not-allowed"
                     >
                       <span>Geçiş Yap</span>
                       <ArrowRight className="w-3.5 h-3.5" />

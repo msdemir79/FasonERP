@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
-import FloatingAiAssistant from "./FloatingAiAssistant";
 import { 
   LayoutDashboard, 
   Package, 
@@ -425,7 +424,6 @@ export default function Layout() {
         </main>
       </div>
 
-      <FloatingAiAssistant />
       {/* User Switcher Simulator Modal */}
       <UserSwitcherModal
         isOpen={isSwitcherOpen}

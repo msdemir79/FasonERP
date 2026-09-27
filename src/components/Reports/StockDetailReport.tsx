@@ -605,7 +605,7 @@ export default function StockDetailReport() {
     const rows: (string | number)[][] = [];
 
     processedProducts.forEach(p => {
-      const typeLabel = CATEGORY_TYPE_META[p.categoryType]?.label || 'Mamül';
+      const typeLabel = (p.categoryType && CATEGORY_TYPE_META[p.categoryType]) ? CATEGORY_TYPE_META[p.categoryType].label : 'Mamül';
       const statusLabel = (p as any).isBroken ? 'KIRIK BEDEN' : p.isCritical ? 'KRİTİK STOK' : p.isOutOfStock ? 'TÜKENDİ' : 'NORMAL';
 
       if (p.colorRows && p.colorRows.length > 0) {

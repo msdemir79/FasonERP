@@ -225,7 +225,7 @@ export default function Dashboard() {
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                   itemStyle={{ fontSize: '13px', fontWeight: 600 }}
                   labelStyle={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}
-                  formatter={(value: number) => [formatCurrency(value), '']}
+                  formatter={(value: any) => [formatCurrency(Number(value || 0)), '']}
                 />
                 <Area type="monotone" dataKey="gelir" name="Gelir" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorGelir)" />
                 <Area type="monotone" dataKey="gider" name="Gider" stroke="#f43f5e" strokeWidth={3} fillOpacity={1} fill="url(#colorGider)" />

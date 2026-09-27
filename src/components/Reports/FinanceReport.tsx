@@ -745,7 +745,7 @@ export default function FinanceReport() {
                       <td className="py-2 px-3 text-right">{cashStatementData.initialBalance < 0 ? `₺${Math.abs(cashStatementData.initialBalance).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : '-'}</td>
                       <td className="py-2 px-3 text-right font-bold text-gray-900">₺{cashStatementData.initialBalance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
                     </tr>
-                    {cashStatementData.items.map((item, idx) => (
+                    {cashStatementData.items.map((item: any, idx: number) => (
                       <tr key={idx} className="hover:bg-slate-50 dark:bg-slate-800/50/80">
                         <td className="py-2.5 px-3 text-gray-700">{new Date(item.date).toLocaleDateString('tr-TR')}</td>
                         <td className="py-2.5 px-3 text-indigo-600 font-bold">{item.documentNo || '-'}</td>
@@ -901,7 +901,7 @@ export default function FinanceReport() {
                       <td className="py-2 px-3 text-right">{bankStatementData.initialBalance < 0 ? `₺${Math.abs(bankStatementData.initialBalance).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}` : '-'}</td>
                       <td className="py-2 px-3 text-right font-bold text-gray-900">₺{bankStatementData.initialBalance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
                     </tr>
-                    {bankStatementData.items.map((item, idx) => (
+                    {bankStatementData.items.map((item: any, idx: number) => (
                       <tr key={idx} className="hover:bg-slate-50 dark:bg-slate-800/50/80">
                         <td className="py-2.5 px-3 text-gray-700">{new Date(item.date).toLocaleDateString('tr-TR')}</td>
                         <td className="py-2.5 px-3 text-blue-600 font-bold">{item.documentNo || '-'}</td>

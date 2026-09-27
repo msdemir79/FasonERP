@@ -614,6 +614,7 @@ export interface JournalEntry {
   totalCredit: number;     // Toplam Alacak
   isBalanced: boolean;     // Borç === Alacak
   status: 'approved' | 'draft';
+  notes?: string;
   createdAt: Date;
   updatedAt?: Date;
 }

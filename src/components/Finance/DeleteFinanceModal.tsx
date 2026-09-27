@@ -136,7 +136,7 @@ export default function DeleteFinanceModal({
               type="button"
               disabled={deleting || (receiptCount > 0 && !forceConfirmed)}
               onClick={handleDelete}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 rounded-lg shadow-sm transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" />
               {deleting ? 'Siliniyor...' : 'Evet, Sil'}

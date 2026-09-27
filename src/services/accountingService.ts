@@ -9,6 +9,7 @@ import type {
 } from '../types';
 import { assertBalancedJournalEntry } from '../lib/accountingValidator';
 import { assertServicePermission } from './authGuard';
+import { sequenceService } from './sequenceService';
 
 export interface MizanRow {
   code: string;
@@ -252,10 +253,7 @@ export const accountingService = {
 
   // --- Journal Entries ---
   async generateEntryNumber(type: JournalEntryType = 'mahsup'): Promise<string> {
-    const year = new Date().getFullYear();
-    const count = await db.journalEntries.count();
-    const prefix = type === 'tahsil' ? 'THS' : type === 'tediye' ? 'TDY' : type === 'acilis' ? 'ACL' : type === 'kapanis' ? 'KPN' : 'YEV';
-    return `${prefix}-${year}-${(count + 1).toString().padStart(6, '0')}`;
+    return await sequenceService.generateEntryNumber(type);
   },
 
   async createJournalEntry(entry: {
@@ -847,6 +845,53 @@ export const accountingService = {
     });
 
     return entryId;
+  },
+
+  // Fatura İptali / Silinmesi Durumunda Ters Yevmiye Kaydı (Reversing Journal Entry)
+  async reverseInvoiceJournalEntry(invoiceId: number, reason: string = 'Fatura İptal Edildi'): Promise<number | null> {
+    const existingEntry = await db.journalEntries
+      .where('documentType')
+      .equals('invoice')
+      .and(e => e.documentId === invoiceId)
+      .first();
+
+    if (!existingEntry || !existingEntry.lines || existingEntry.lines.length === 0) {
+      return null;
+    }
+
+    const invoice = await db.invoices.get(invoiceId);
+    const invoiceNumber = invoice ? invoice.invoiceNumber : (existingEntry.documentNumber || `FAT-${invoiceId}`);
+
+    // Borç ve Alacakları ters çevirerek sıfırlayıcı ters kayıt oluştur (Reversing Entry)
+    const reversedLines: JournalEntryLine[] = existingEntry.lines.map(line => ({
+      id: `rev-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      accountCode: line.accountCode,
+      accountName: line.accountName,
+      description: `[TERS KAYIT] ${line.description || invoiceNumber} - ${reason}`,
+      debit: line.credit || 0,
+      credit: line.debit || 0,
+      contactId: line.contactId
+    }));
+
+    const revEntryId = await this.createJournalEntry({
+      entryType: 'mahsup',
+      date: new Date(),
+      description: `[TERS KAYIT - İPTAL] Fatura No: ${invoiceNumber} (${reason})`,
+      documentType: 'invoice',
+      documentId: invoiceId,
+      documentNumber: invoiceNumber,
+      lines: reversedLines,
+      status: 'approved'
+    });
+
+    // Orijinal fişin notunu güncelle
+    await db.journalEntries.update(existingEntry.id!, {
+      notes: existingEntry.notes 
+        ? `${existingEntry.notes}\n[TERS KAYIT OLUŞTURULDU: Fiş #${revEntryId}]` 
+        : `[TERS KAYIT OLUŞTURULDU: Fiş #${revEntryId}]`
+    });
+
+    return revEntryId;
   },
 
   // Batch Auto-Accounting for All Unaccounted Invoices

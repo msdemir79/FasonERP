@@ -377,7 +377,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
   // DIRECT PRINT HANDLER (Uses isolated iframe with instant fallback)
   const handlePrint = async () => {
-    if (totalLabelsCount === 0) return;
+    if (!product || totalLabelsCount === 0) return;
     setIsPrinting(true);
 
     try {

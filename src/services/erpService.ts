@@ -1,5 +1,7 @@
 import { db } from '../db';
 import { accountingService } from './accountingService';
+import { sequenceService } from './sequenceService';
+import { calculateNewStock } from '../lib/inventoryCalculator';
 import type { 
   Contact,
   EntityType,
@@ -1044,7 +1046,7 @@ export const erpService = {
 
     if (targetWorkOrderIds && targetWorkOrderIds.length > 0) {
       const fetched = await db.workOrders.bulkGet(targetWorkOrderIds);
-      workOrdersToAnalyze = fetched.filter((w): w is WorkOrder => Boolean(w) && w.status !== 'completed' && w.status !== 'cancelled');
+      workOrdersToAnalyze = fetched.filter((w): w is WorkOrder => Boolean(w) && (w as WorkOrder).status !== 'completed' && (w as WorkOrder).status !== 'cancelled');
     } else {
       // Analyze all active / pending work orders
       workOrdersToAnalyze = await db.workOrders
@@ -1344,11 +1346,6 @@ export const erpService = {
 
       const buyingPrice = rawProduct.buyingPrice || 0;
       const estimatedCost = roundUpQuantity(shortageQuantity * buyingPrice, 2);
-
-      // Automatically heal floating point precision artifact in DB if detected
-      if (rawProduct.id && Math.abs((rawProduct.stock || 0) - currentStock) > 0.00000001 && (!rawProduct.variantBarcodes || rawProduct.variantBarcodes.length === 0)) {
-        db.products.update(rawProduct.id, { stock: currentStock }).catch(() => {});
-      }
 
       let itemStatus: 'sufficient' | 'shortage' | 'po_created' = 'sufficient';
       if (shortageQuantity > 0) {
@@ -1789,7 +1786,7 @@ export const erpService = {
       const product = await db.products.get(productId);
       if (!product) throw new Error('Ürün bulunamadı');
 
-      const newStock = type === 'in' ? product.stock + quantity : Math.max(0, product.stock - quantity);
+      const newStock = calculateNewStock(product.stock || 0, type, quantity, false);
       
       let updatedVariantBarcodes = product.variantBarcodes;
       let logDesc = description;
@@ -1798,8 +1795,8 @@ export const erpService = {
         logDesc = `${description} [${variant.color} / ${variant.size}: ${type === 'in' ? '+' : '-'}${quantity}]`;
         updatedVariantBarcodes = product.variantBarcodes.map(vb => {
           if (vb.color.toLowerCase() === variant.color!.toLowerCase() && vb.size.toLowerCase() === variant.size!.toLowerCase()) {
-            const vStock = (vb.stock || 0) + (type === 'in' ? quantity : -quantity);
-            return { ...vb, stock: Math.max(0, vStock) };
+            const vStock = calculateNewStock(vb.stock || 0, type, quantity, false);
+            return { ...vb, stock: vStock };
           }
           return vb;
         });
@@ -2509,11 +2506,7 @@ export const erpService = {
   },
 
   async generateInvoiceNumber(type: 'sales' | 'purchase'): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = type === 'sales' ? `SAT-${year}-` : `ALS-${year}-`;
-    const count = await db.invoices.where('type').equals(type).count();
-    const nextSeq = (count + 1).toString().padStart(6, '0');
-    return `${prefix}${nextSeq}`;
+    return await sequenceService.generateInvoiceNumber(type);
   },
 
   async getPendingOrdersForInvoicing(contactId?: number, orderType: 'sales' | 'purchase' = 'sales') {
@@ -2969,7 +2962,9 @@ export const erpService = {
       db.contacts, 
       db.inventoryLogs, 
       db.products,
-      db.assortmentTemplates
+      db.assortmentTemplates,
+      db.journalEntries,
+      db.accounts
     ], async () => {
       const invoice = await db.invoices.get(id);
       if (!invoice) return;
@@ -3078,7 +3073,16 @@ export const erpService = {
         }
       }
 
-      // 4. Update Invoice Status to 'cancelled'
+      // 4. Create Reversing Journal Entry if invoice was accounted
+      if (invoice.status === 'issued') {
+        try {
+          await accountingService.reverseInvoiceJournalEntry(id, reason || 'Fatura İptal Edildi');
+        } catch {
+          // Journal entry might not exist or already reversed, proceed safely
+        }
+      }
+
+      // 5. Update Invoice Status to 'cancelled'
       const formattedDate = new Date().toLocaleDateString('tr-TR');
       const formattedTime = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
       const cancelNote = reason 
@@ -3103,7 +3107,9 @@ export const erpService = {
       db.contacts, 
       db.inventoryLogs, 
       db.products,
-      db.assortmentTemplates
+      db.assortmentTemplates,
+      db.journalEntries,
+      db.accounts
     ], async () => {
       const invoice = await db.invoices.get(id);
       if (!invoice) return;
@@ -3217,6 +3223,13 @@ export const erpService = {
           .toArray();
         for (const l of relatedLogs) {
           if (l.id) await db.inventoryLogs.delete(l.id);
+        }
+
+        // Create reversing journal entry or clean up
+        try {
+          await accountingService.reverseInvoiceJournalEntry(id, 'Fatura Silindi');
+        } catch {
+          // Journal entry might not exist or already reversed, proceed safely
         }
       }
 
@@ -3529,11 +3542,7 @@ export const erpService = {
 
   // --- Waybill Management (İrsaliye & Sevkiyat Yönetimi) ---
   async generateWaybillNumber(type: 'sales' | 'purchase'): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = type === 'sales' ? `IRS-${year}-` : `GIR-${year}-`;
-    const count = await db.waybills.where('type').equals(type).count();
-    const nextSeq = (count + 1).toString().padStart(6, '0');
-    return `${prefix}${nextSeq}`;
+    return await sequenceService.generateWaybillNumber(type);
   },
 
   async getPendingOrdersForWaybill(contactId?: number, orderType: 'sales' | 'purchase' = 'sales') {

@@ -769,7 +769,8 @@ function CreateInvoiceModal({
             const rawWb = await db.waybills.get(initialWaybillId);
             if (rawWb) {
               const rawItems = await db.waybillItems.where('waybillId').equals(initialWaybillId).toArray();
-              targetWb = { ...rawWb, items: rawItems };
+              const contact = rawWb.contactId ? await db.contacts.get(rawWb.contactId) : null;
+              targetWb = { ...rawWb, items: rawItems, contact };
             }
           }
           if (targetWb) {

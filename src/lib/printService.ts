@@ -12,9 +12,22 @@ export interface PrintOptions {
 }
 
 /**
+ * XSS Koruması: Yazdırma içeriğindeki zararlı script etiketlerini, inline olay işleyicileri
+ * (onload, onerror, onclick) ve javascript: URI'larını temizler.
+ */
+export function sanitizePrintHtml(html: string): string {
+  if (!html) return '';
+  let clean = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  clean = clean.replace(/\son[a-zA-Z]+\s*=\s*(['"][^'"]*['"]|[^\s>]+)/gi, '');
+  clean = clean.replace(/(href|src)\s*=\s*['"]javascript:[^'"]*['"]/gi, '$1="#"');
+  return clean;
+}
+
+/**
  * Print raw HTML content using an isolated hidden iframe
  */
 export function printHtml(htmlContent: string, options: PrintOptions = {}): Promise<boolean> {
+  const sanitizedContent = sanitizePrintHtml(htmlContent);
   return new Promise((resolve) => {
     try {
       const title = options.title || 'ProERP Baskı';
@@ -40,7 +53,7 @@ export function printHtml(htmlContent: string, options: PrintOptions = {}): Prom
       const doc = iframe.contentWindow?.document || iframe.contentDocument;
       if (!doc || !iframe.contentWindow) {
         // Fallback to opening printable window
-        openPrintWindow(htmlContent, title, options);
+        openPrintWindow(sanitizedContent, title, options);
         resolve(true);
         return;
       }
@@ -227,6 +240,7 @@ export function openPrintWindow(
   title: string = 'ProERP Baskı Önizleme',
   options: PrintOptions = {}
 ): string | null {
+  const sanitizedContent = sanitizePrintHtml(htmlContent);
   const pageSizeCss = options.widthMm && options.heightMm 
     ? `@page { size: ${options.widthMm}mm ${options.heightMm}mm; margin: 0; }`
     : `@page { margin: 4mm 6mm; size: ${options.landscape ? 'landscape' : 'auto'}; }`;
@@ -346,7 +360,7 @@ export function openPrintWindow(
 
     <!-- Printable Work Order Content -->
     <div class="print-card-wrapper">
-      ${htmlContent}
+      ${sanitizedContent}
     </div>
 
     <script>
