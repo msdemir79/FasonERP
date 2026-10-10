@@ -36,6 +36,49 @@ export interface Contact {
   updatedAt?: Date;
 }
 
+/**
+ * Merkezi renk kartı (Color Master). Renk bilgisi sistemde TEK DOĞRULUK
+ * KAYNAĞI olarak bu tabloda tutulur; ürün kartları, stok hareketleri,
+ * sipariş/irsaliye/fatura satırları, iş emirleri ve reçeteler renge
+ * `colorId` ile bağlanır. Serbest metin renk girişi yoktur.
+ * Renkler fiziksel silinmez; `isActive = false` ile pasifleştirilir.
+ */
+export interface ColorMaster {
+  id?: number;
+  code: string;                  // Benzersiz renk kodu (örn. R-0001); sunucu otomatik üretebilir
+  name: string;                  // Renk adı (örn. SİYAH) — UNIQUE DEĞİLDİR
+  groupName?: string | null;     // Renk grubu (örn. Siyahlar)
+  hexCode?: string | null;       // #RRGGBB biçiminde; zorunlu değil (bilinmiyorsa boş bırakılır)
+  rgbCode?: string | null;       // "R, G, B" — her zaman hexCode'tan türetilir
+  pantoneCode?: string | null;
+  manufacturerCode?: string | null; // Üretici renk kodu (örn. BLK-001)
+  description?: string | null;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  version?: number;
+}
+
+/** Ürün ↔ renk bağı (productColors). Ürün kartındaki renk listesi buradan okunur. */
+export interface ProductColor {
+  id?: number;
+  productId: number;
+  colorId: number;
+  sortOrder?: number;
+}
+
+/** Ürün satırlarına sunucuda eklenen renk künyesi (salt okunur, join sonucu). */
+export interface ProductColorRef {
+  id: number;
+  code: string;
+  name: string;
+  groupName?: string | null;
+  hexCode?: string | null;
+  pantoneCode?: string | null;
+  manufacturerCode?: string | null;
+  isActive: boolean;
+}
+
 export interface AssortmentTemplate {
   id?: number;
   name: string;
@@ -160,6 +203,7 @@ export interface FinanceAccountingModuleSettings {
 export interface HRModuleSettings {
   weeklyWorkHours: number;
   dailyWorkHours: number;
+  weekendDays: number[];              // Hafta tatili günleri (0=Pazar ... 6=Cumartesi)
   overtimeWeekdayMultiplier: number;
   overtimeWeekendMultiplier: number;
   annualLeaveBaseDays: number;
@@ -167,6 +211,14 @@ export interface HRModuleSettings {
   unemploymentEmployeeRate: number;
   sgkEmployerRate: number;
   unemploymentEmployerRate: number;
+  incomeTaxRate: number;              // Gelir vergisi 1. dilim oranı (%)
+  stampTaxPerMille: number;           // Damga vergisi oranı (binde)
+  minWageGross: number;
+  minWageNet: number;
+  minWageIncomeTaxExemption: number;
+  minWageStampTaxExemption: number;
+  sgkMonthlyHours: number;            // SGK'lı aylık yasal çalışma saati (225)
+  nonSgkMonthlyHours: number;         // SGK'sız aylık çalışma saati (240)
 }
 
 export interface AppSettings {
@@ -211,7 +263,16 @@ export interface Product {
   variantBarcodes?: BarcodeVariant[];
   // Footwear & variant specific
   isFootwear?: boolean;             // Compatibility flag (true for finished goods & size-based semi-finished)
+  /**
+   * Ürünün renk adları. Salt OKUNUR: sunucu productColors ⋈ colors join'inden
+   * üretir (merkezi renk kartı tek doğruluk kaynağıdır). Yazmak için `colorIds`
+   * gönderilir; bu alan istemci gövdesinden doğrudan yazılamaz.
+   */
   colors?: string[];
+  /** Ürünün renk künyeleri (kod/HEX/Pantone) — salt okunur, sunucu üretir. */
+  colorRefs?: ProductColorRef[];
+  /** Yazma amaçlı sanal alan: ürüne bağlanacak merkezi renk kartı id'leri. */
+  colorIds?: number[];
   assortmentTemplateId?: number;    // Linked template
   assortment?: {
     size: string;
@@ -248,10 +309,10 @@ export interface RecipeIngredient {
   department?: string;             // 'KESİM' | 'BASKI' | 'SAYA' | 'BAĞCIK' | 'MONTA' | 'TEMİZLEME' | 'DİĞER'
   partName?: string;               // Açıklama / Parça Notu (örn: 'ÇEMBER', 'NAL', 'GAMBA', 'FORT', 'DİL ASTAR', 'TABAN', 'KUTU')
   color?: string;                  // Malzeme / Yarı mamul rengi / Kullanılacak Renk (Örn: Siyah, Beyaz, Saks)
-  quantity: number;                // 1 çift/adet mamul için sarfiyat
+  quantity: number;                // basisQty kadar mamul için sarfiyat
+  basisQty?: number;               // Kaç mamul için (örn. 8'li koli = 8). Boş/1 → 1 çift/adet mamul için
   unit?: string;                   // Çift, dm2, Adet, Kg, Metre, Plak vb.
   isMatrixMatched?: boolean;       // Numara/Beden Matris Eşleşmeli (Taban, Mostra, Fuspet için sipariş asortisi ile 1:1 eşleşir)
-  wasteRate?: number;              // Fire / Zayiat Oranı (%)
   notes?: string;
 }
 
@@ -259,6 +320,7 @@ export interface Recipe {
   id?: number;
   productId: number;               // Mamul Ürün ID
   targetColor?: string;            // Belirli bir renk varyantı reçetesi mi (Örn: "Siyah" veya "Tüm Renkler")
+  targetColorId?: number | null;   // Merkezi renk kartı bağı (colors.id)
   name?: string;
   ingredients: RecipeIngredient[];
   notes?: string;
@@ -320,6 +382,7 @@ export interface WorkOrder {
   
   // Product Variant info & Size Breakdown
   color?: string;
+  colorId?: number | null;         // Merkezi renk kartı bağı (colors.id)
   size?: string;
   assortmentBreakdown?: { size: string; quantity: number }[];
   
@@ -434,6 +497,7 @@ export interface OrderItem {
   orderId: number;
   productId: number;
   color?: string;
+  colorId?: number | null;         // Merkezi renk kartı bağı (colors.id)
   size?: string;
   quantity: number;
   shippedQuantity: number;
@@ -487,6 +551,7 @@ export interface InvoiceItem {
   productCode: string;
   productName: string;
   color?: string;
+  colorId?: number | null;         // Merkezi renk kartı bağı (colors.id)
   size?: string;
   quantity: number;              // Faturalanan Miktar (Çift / Adet)
   unit: string;                  // 'Çift', 'Adet', 'Metre', 'Kg', 'Paket' vb.
@@ -547,6 +612,7 @@ export interface WaybillItem {
   productCode: string;
   productName: string;
   color?: string;
+  colorId?: number | null;         // Merkezi renk kartı bağı (colors.id)
   size?: string;
   quantity: number;              // Sevk Edilen Miktar (Çift / Adet)
   unit: string;                  // 'Çift', 'Adet', 'Metre', 'Kg', 'Paket' vb.
@@ -566,6 +632,7 @@ export interface InventoryLog {
   date: Date;
   description: string;
   color?: string;
+  colorId?: number | null;         // Merkezi renk kartı bağı (colors.id)
   size?: string;
 }
 
@@ -614,7 +681,6 @@ export interface JournalEntry {
   totalCredit: number;     // Toplam Alacak
   isBalanced: boolean;     // Borç === Alacak
   status: 'approved' | 'draft';
-  notes?: string;
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -906,6 +972,7 @@ export interface AttendancePeriodLock {
 export type AppModule = 
   | 'dashboard'
   | 'inventory'
+  | 'colors'
   | 'orders'
   | 'waybills'
   | 'invoices'
@@ -959,11 +1026,12 @@ export interface AppUser {
   status: UserStatus;
   avatar?: string;
   color?: string;
-  pinCode?: string;
-  passwordHash?: string;
-  passwordSalt?: string;
-  sessionToken?: string;
-  sessionExpiresAt?: Date;
+  /**
+   * Yalnızca yazma amaçlı sanal alan: kullanıcı oluştururken/güncellerken parola
+   * göndermek için kullanılır. Sunucu parolayı scrypt ile saklar ve bu alanı
+   * hiçbir zaman geri döndürmez; kalıcı bir kolonu yoktur.
+   */
+  password?: string;
   lastLoginAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -974,6 +1042,7 @@ export type AuditActionType =
   | 'create' 
   | 'update' 
   | 'delete' 
+  | 'delete_denied'
   | 'login' 
   | 'logout'
   | 'export' 
@@ -992,8 +1061,91 @@ export interface AuditLog {
   entityId?: string | number;
   description: string;
   details?: string;
+  /** Kademe 2 silmelerde kullanıcının girdiği zorunlu gerekçe. */
+  reason?: string | null;
+  /** Silinen kaydın tek satırlık tanıtıcısı (kod — ad / fiş no vb.). */
+  recordSummary?: string | null;
   ipAddress?: string;
   timestamp: Date;
+}
+
+// ==========================================
+// SUNUCU TARAFLI İŞLEM SÖZLEŞMELERİ
+// (Atomik stok hareketi, reçete sarfiyatı, cari bakiye)
+// ==========================================
+
+export type StockMovementType = 'in' | 'out' | 'production_in' | 'production_out';
+
+/** Tek transaction içinde uygulanan stok hareketi girdisi. */
+export interface StockMovementInput {
+  productId: number;
+  /** Hareketin büyüklüğü (işaret yön belirlemez, `type` belirler). */
+  quantity: number;
+  type: StockMovementType;
+  description: string;
+  variant?: { color?: string; size?: string };
+  /** Girişlerde ağırlıklı ortalama maliyet (AOM) hesabı için birim maliyet. */
+  unitCost?: number;
+  /** true ise stok negatife düşebilir (varsayılan: 0'da sabitlenir). */
+  allowNegative?: boolean;
+}
+
+export interface StockMovementResult {
+  productId: number;
+  productName: string;
+  type: StockMovementType;
+  quantity: number;
+  stock: number;
+  previousStock: number;
+  variantStock: number | null;
+  unitCost: number | null;
+  /** Stok yetersizliği nedeniyle 0'da sabitlendiyse kapatılan miktar. */
+  shortfall: number;
+  clamped: boolean;
+  logId: number;
+}
+
+export interface RecipeConsumptionParams {
+  productId: number;
+  quantity: number;
+  color?: string;
+  size?: string;
+  operator?: string;
+  notes?: string;
+  orderBarcode?: string;
+}
+
+export interface RecipeConsumptionLine {
+  productId: number;
+  name: string;
+  code: string;
+  unit: string;
+  quantityPerPair: number;
+  totalConsumed: number;
+  remainingStock: number;
+  details: string;
+}
+
+export interface RecipeConsumptionResult {
+  success: boolean;
+  finishedProduct: {
+    productId: number;
+    name: string;
+    code: string;
+    quantityAdded: number;
+    newStock: number;
+  };
+  consumedIngredients: RecipeConsumptionLine[];
+  reference?: { orderBarcode: string | null; operator: string | null; notes: string | null; actor: string };
+  timestamp: string;
+}
+
+export interface ContactBalanceResult {
+  contactId: number;
+  balance: number;
+  debit: number;
+  credit: number;
+  actor?: string;
 }
 
 export interface AccountStatementItem {

@@ -1,9 +1,11 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
 import Templates from './components/Inventory/Templates';
+import BarcodeCenter from './components/Inventory/BarcodeCenter';
+import BulkStockScreen from './components/Inventory/BulkStockScreen';
 import Production from './components/Production';
 import Orders from './components/Orders';
 import Invoices from './components/Invoices';
@@ -19,30 +21,67 @@ import StockDetailReport from './components/Reports/StockDetailReport';
 import StockMovementReport from './components/Reports/StockMovementReport';
 import BrokenSizeReport from './components/Reports/BrokenSizeReport';
 import SettingsHub from './components/Settings';
-import { seedDatabase } from './db';
-import { erpService } from './services/erpService';
-import { AuthProvider } from './context/AuthContext';
+
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { FeedbackHost } from './lib/feedback';
+import LoginScreen from './components/Common/LoginScreen';
+import { useIsMobile } from './hooks/useIsMobile';
+import MobileApp from './mobile/MobileApp';
 
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * Oturum yoksa giriş ekranını gösterir. Yetkilendirme sunucuda yapıldığı için
+ * burada varsayılan bir kullanıcıya düşülmez.
  */
+function AuthGate({ children }: { children: ReactNode }) {
+  const { currentUser, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950">
+        <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-sm">
+          <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          Oturum kontrol ediliyor…
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) return <LoginScreen />;
+
+  return <>{children}</>;
+}
 
 export default function App() {
-  React.useEffect(() => {
-    seedDatabase();
-  }, []);
-
   return (
     <ThemeProvider defaultTheme="system" storageKey="shoerp-theme">
       <AuthProvider>
-        <BrowserRouter>
+        <FeedbackHost />
+        <AuthGate>
+        <RootSwitch />
+        </AuthGate>
+    </AuthProvider>
+    </ThemeProvider>
+  );
+}
+
+/** Dar ekranda mobil kabuk, aksi halde masaüstü yönlendirme tablosu. */
+function RootSwitch() {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileApp />;
+  return <DesktopRoutes />;
+}
+
+function DesktopRoutes() {
+  return (
+    <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="inventory/templates" element={<Templates />} />
+            <Route path="inventory/barcode" element={<BarcodeCenter />} />
+            <Route path="inventory/import" element={<BulkStockScreen />} />
             
             <Route path="reports" element={<ReportsHub />} />
             <Route path="reports/summary" element={<StockSummaryReport />} />
@@ -63,7 +102,5 @@ export default function App() {
           </Route>
         </Routes>
       </BrowserRouter>
-    </AuthProvider>
-    </ThemeProvider>
   );
 }
